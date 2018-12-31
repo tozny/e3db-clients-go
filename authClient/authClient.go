@@ -5,23 +5,21 @@ package authClient
 import (
     "context"
     "fmt"
+    "github.com/tozny/e3db-clients-go"
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/clientcredentials"
-    "os"
+    "net/http"
 )
 
 const (
     AuthServiceBasePath = "v1/auth" //HTTP PATH prefix for calls to the auth service.
 )
 
-var (
-    e3dbBaseURL = os.Getenv("E3DB_API_URL") //HTTP host value for calls to the e3db API.
-)
-
 //E3DBAuthClient implements an http client for communication with an e3db auth service.
 type E3DBAuthClient struct {
     APIKey       string
     APISecret    string
+    Host         string
     oauth2Helper clientcredentials.Config
 }
 
@@ -31,15 +29,22 @@ func (c *E3DBAuthClient) GetToken(ctx context.Context) (*oauth2.Token, error) {
     return c.oauth2Helper.Token(ctx)
 }
 
+// AuthHTTPClient returns an http client that can be used for
+// making authenticated requests to an e3db endpoint using the provided context.
+func (c *E3DBAuthClient) AuthHTTPClient(ctx context.Context) *http.Client {
+    return c.oauth2Helper.Client(ctx)
+}
+
 // New returns a new E3DBAuthClient configured with the specified apiKey and apiSecret values.
-func New(apiKey string, apiSecret string) E3DBAuthClient {
+func New(config e3dbClients.ClientConfig) E3DBAuthClient {
     return E3DBAuthClient{
-        APIKey:    apiKey,
-        APISecret: apiSecret,
+        APIKey:    config.APIKey,
+        APISecret: config.APISecret,
+        Host:      config.Host,
         oauth2Helper: clientcredentials.Config{
-            ClientID:     apiKey,
-            ClientSecret: apiSecret,
-            TokenURL:     fmt.Sprintf("%s/%s/token", e3dbBaseURL, AuthServiceBasePath),
+            ClientID:     config.APIKey,
+            ClientSecret: config.APISecret,
+            TokenURL:     fmt.Sprintf("%s/%s/token", config.Host, AuthServiceBasePath),
         },
     }
 }
