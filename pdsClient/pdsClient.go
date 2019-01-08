@@ -90,8 +90,7 @@ func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsReque
 // InternalGetRecord attempts to get a record using an internal only e3db endpoint, returning fetched record and error (if any).
 func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) (*InternalGetRecordResponse, error) {
     var result *InternalGetRecordResponse
-    var buf bytes.Buffer
-    request, err := http.NewRequest("GET", c.Host+"/internal/"+PDSServiceBasePath+"/records/"+recordID, &buf)
+    request, err := http.NewRequest("GET", c.Host+"/internal/"+PDSServiceBasePath+"/records/"+recordID, nil)
     if err != nil {
         return result, err
     }
