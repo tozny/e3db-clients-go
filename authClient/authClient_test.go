@@ -7,7 +7,7 @@ import (
     "testing"
 )
 
-func TestNewReturnsE3DBAuthClientWithSpecifiedConfiguration(t *testing.T) {
+func TestNewReturnsE3dbAuthClientWithSpecifiedConfiguration(t *testing.T) {
     config := e3dbClients.ClientConfig{
         APIKey:    "MyApiKey",
         APISecret: "MyApiSecret",
@@ -51,5 +51,51 @@ func TestGetTokenSucceedsWhenClientCredentialsAreValid(t *testing.T) {
     _, err := e3dbAuth.GetToken(ctx)
     if err != nil {
         t.Error(err)
+    }
+}
+
+var e3dbClientId = os.Getenv("E3DB_CLIENT_ID")
+
+func TestValidateTokenReturnsValidResultsForValidToken(t *testing.T) {
+    config := e3dbClients.ClientConfig{
+        APIKey:    e3dbAPIKey,
+        APISecret: e3dbAPISecret,
+        Host:      e3dbBaseURL,
+    }
+    e3dbAuth := New(config)
+    ctx := context.TODO()
+    validToken, err := e3dbAuth.GetToken(ctx)
+    if err != nil {
+        t.Error(err)
+    }
+    validateTokenRequestParams := ValidateTokenRequest{Token: validToken.AccessToken}
+    response, err := e3dbAuth.ValidateToken(ctx, validateTokenRequestParams)
+    if err != nil {
+        t.Errorf("Error: %s calling ValidateToken", err)
+    }
+    if response.Valid != true {
+        t.Errorf("Expected token %v to be valid, got %v", validToken, response)
+    }
+    if response.ClientId != e3dbClientId {
+        t.Errorf("Expected token %v to belong to %v valid, got %v", validToken, e3dbClientId, response)
+
+    }
+}
+
+func TestValidateTokenReturnsValidResultsForInvalidToken(t *testing.T) {
+    config := e3dbClients.ClientConfig{
+        APIKey:    e3dbAPIKey,
+        APISecret: e3dbAPISecret,
+        Host:      e3dbBaseURL,
+    }
+    e3dbAuth := New(config)
+    ctx := context.TODO()
+    validateTokenRequestParams := ValidateTokenRequest{Token: "invalidToken.AccessToken"}
+    response, err := e3dbAuth.ValidateToken(ctx, validateTokenRequestParams)
+    if err != nil {
+        t.Errorf("Error: %s calling ValidateToken", err)
+    }
+    if response.Valid != false {
+        t.Errorf("Expected token to be invalid, got %v", response)
     }
 }
