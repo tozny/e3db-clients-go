@@ -20,9 +20,10 @@ var ValidClientConfig = e3dbClients.ClientConfig{
 	Host:      e3dbBaseURL,
 }
 
+var e3dbPDS = New(ValidClientConfig)
+
 func RegisterClient(email string) (E3dbPDSClient, string, error) {
 	var user E3dbPDSClient
-	e3dbPDS := New(ValidClientConfig)
 	publicKey, privateKey, err := e3db.GenerateKeyPair()
 	if err != nil {
 		return user, "", err
@@ -91,13 +92,20 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 		IncludeAllWriters: true,
 	}
 	tok, err := validPDSUser.GetToken(ctx)
-	listedRecords, err := validPDSUser.ListRecords(ctx, tok.AccessToken, params)
+	proxyListedRecords, err := e3dbPDS.ProxyListRecords(ctx, tok.AccessToken, params) // proxy record
+	listedRecords, err := validPDSUser.ListRecords(ctx, params)                       // user request record
 	if err != nil {
 		t.Error(err)
 	}
 	for _, id := range createdRecordIds {
 		var match bool
 		for _, listedRecord := range listedRecords.Results {
+			if id == listedRecord.Metadata.RecordID {
+				match = true
+				break
+			}
+		}
+		for _, listedRecord := range proxyListedRecords.Results {
 			if id == listedRecord.Metadata.RecordID {
 				match = true
 				break
