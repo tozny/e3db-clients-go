@@ -36,27 +36,17 @@ func (err *HTTPError) Error() string {
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
-		requestURL := request.URL.String()
-		return &HTTPError{
-			StatusCode: response.StatusCode,
-			URL:        requestURL,
-			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
-		}
-	}
-	err = json.NewDecoder(response.Body).Decode(&result)
-	return err
+	return makeServiceCall(client, request, result)
 }
 
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
 func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
 	client := &http.Client{}
 	request.Header.Add("Authorization", "Bearer "+userAuthToken)
+	return makeServiceCall(client, request, result)
+}
+
+func makeServiceCall(client *http.Client, request *http.Request, result interface{}) error {
 	response, err := client.Do(request)
 	if err != nil {
 		return err
