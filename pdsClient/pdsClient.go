@@ -14,12 +14,12 @@ const (
 	PDSServiceBasePath = "v1/storage" //HTTP PATH prefix for calls to the Personal Data Storage service
 )
 
-//E3DBAuthClient implements an http client for communication with an e3db PDS service.
+//E3dbAuthClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
 	APIKey    string
 	APISecret string
 	Host      string
-	*authClient.E3DBAuthClient
+	*authClient.E3dbAuthClient
 }
 
 // InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
@@ -27,7 +27,7 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	var result *RegisterClientResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/clients"
 	request, err := createRequest("POST", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3DBAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 
@@ -36,7 +36,7 @@ func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyReq
 	var result *PutAccessKeyResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
 	request, err := createRequest("PUT", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3DBAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 
@@ -49,7 +49,7 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3DBAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 
@@ -61,7 +61,7 @@ func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsReque
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3DBAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 
@@ -85,7 +85,7 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3DBAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 

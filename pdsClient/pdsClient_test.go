@@ -46,7 +46,7 @@ func RegisterClient(email string) (E3dbPDSClient, string, error) {
 	return user, resp.ClientID, err
 }
 
-var validPDSUser, validPDSUserID, _ = RegisterClient(fmt.Sprintf("test+%d@tozny.com", time.Now().Unix()))
+var validPDSUser, validPDSUserID, _ = RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", time.Now().Unix()))
 
 var defaultPDSUserRecordType = "integration_tests"
 
