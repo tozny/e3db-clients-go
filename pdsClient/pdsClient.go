@@ -14,7 +14,7 @@ const (
 	PDSServiceBasePath = "v1/storage" //HTTP PATH prefix for calls to the Personal Data Storage service
 )
 
-//E3dbAuthClient implements an http client for communication with an e3db PDS service.
+//E3dbPDSClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
 	APIKey    string
 	APISecret string
