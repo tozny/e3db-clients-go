@@ -22,6 +22,18 @@ type E3dbPDSClient struct {
 	*authClient.E3dbAuthClient
 }
 
+// InternalAllowedReads attempts to retrieve the list of AllowedRead policies for other users records for the given reader using an internal only e3db endpoint, returning InternalAllowedReadsResponse(which may or may not be empty of AllowedRead policies) and error (if any).
+func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID string) (*InternalAllowedReadsResponse, error) {
+	var result *InternalAllowedReadsResponse
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_reads/" + readerID
+	request, err := createRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
 func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params RegisterClientRequest) (*RegisterClientResponse, error) {
 	var result *RegisterClientResponse
@@ -89,7 +101,7 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 	return result, err
 }
 
-// createListRecordsRequest isolates duplicate code in creating http search request.
+// createRequest isolates duplicate code in creating http search request.
 func createRequest(method string, path string, params interface{}) (*http.Request, error) {
 	var buf bytes.Buffer
 	var request *http.Request

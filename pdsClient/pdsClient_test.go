@@ -154,3 +154,12 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 		}
 	}
 }
+
+func TestInternalAllowedReadReturnsValidResponse(t *testing.T) {
+	ctx := context.TODO()
+	readerId := "3a0649b8-4e4c-4cd0-b909-1179c4d74d42"
+	_, err := e3dbPDS.InternalAllowedReads(ctx, readerId)
+	if err != nil {
+		t.Error(err)
+	}
+}

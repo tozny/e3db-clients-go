@@ -4,6 +4,23 @@ import (
 	"time"
 )
 
+// InternalAllowedReadsRequest represents a valid request to the AllowedReads endpoint
+type InternalAllowedReadsRequest struct {
+	ReaderId string
+}
+
+// InternalAllowedReadsResponse represents a response from calling the AllowedReads endpoint
+type InternalAllowedReadsResponse struct {
+	AllowedReads []AllowedRead `json:"allowed_reads"`
+}
+
+// AllowedRead represents an access policy that allows an e3db user to read records of a specified type written and owned by specified users.
+type AllowedRead struct {
+	UserId      string `json:"user_id"`
+	WriterId    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
 // RegisterClientRequest represents a request to register a client.
 type RegisterClientRequest struct {
 	Email      string    `json:"email"`
@@ -72,7 +89,9 @@ type Meta struct {
 	Created      time.Time         `json:"created"`
 	LastModified time.Time         `json:"last_modified"`
 	Version      string            `json:"version,omitempty"`
-	FileMeta     FileMeta          `json:"file_meta,omitempty"`
+	// Certain pds endpoints such as WriteRecord return 400 Bad Request if this key is present in the JSON
+	// https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
+	FileMeta *FileMeta `json:"file_meta,omitempty"`
 }
 
 // FileMeta contains meta-information about files associated with E3DB Large File Records,
