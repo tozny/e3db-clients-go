@@ -3,6 +3,7 @@ package pdsClient
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-go/v2"
 	"os"
@@ -66,7 +67,7 @@ func MakeClientWriterForRecordType(pdsUser E3dbPDSClient, clientID string, recor
 var validPDSEncryptedAccessKey, _ = MakeClientWriterForRecordType(validPDSUser, validPDSUserID, defaultPDSUserRecordType)
 
 func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
-	var createdRecordIds []string
+	var createdRecordIDs []string
 	ctx := context.TODO()
 	// Create two records with that client
 	for i := 0; i < 2; i++ {
@@ -84,7 +85,7 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		createdRecordIds = append(createdRecordIds, record.Metadata.RecordID)
+		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
 	}
 	// List records and verify the created records are present
 	params := ListRecordsRequest{
@@ -97,7 +98,7 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	for _, id := range createdRecordIds {
+	for _, id := range createdRecordIDs {
 		var match bool
 		for _, listedRecord := range listedRecords.Results {
 			if id == listedRecord.Metadata.RecordID {
@@ -157,9 +158,91 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 
 func TestInternalAllowedReadReturnsValidResponse(t *testing.T) {
 	ctx := context.TODO()
-	readerId := "3a0649b8-4e4c-4cd0-b909-1179c4d74d42"
-	_, err := e3dbPDS.InternalAllowedReads(ctx, readerId)
+	readerID := "3a0649b8-4e4c-4cd0-b909-1179c4d74d42"
+	_, err := e3dbPDS.InternalAllowedReads(ctx, readerID)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
+	// Put an access key
+	recordType := uuid.New().String()
+	ctx := context.TODO()
+	putEAKParams := PutAccessKeyRequest{
+		WriterID:           validPDSUserID,
+		UserID:             validPDSUserID,
+		ReaderID:           validPDSUserID,
+		RecordType:         recordType,
+		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
+	}
+	_, err := validPDSUser.PutAccessKey(ctx, putEAKParams)
+	if err != nil {
+		t.Errorf("Error trying to put access key for %+v %s", validPDSUser, err)
+	}
+	getEAKParams := GetAccessKeyRequest{
+		WriterID:   validPDSUserID,
+		UserID:     validPDSUserID,
+		ReaderID:   validPDSUserID,
+		RecordType: recordType,
+	}
+	getResponse, err := validPDSUser.GetAccessKey(ctx, getEAKParams)
+	if err != nil {
+		t.Errorf("Error trying to put access key for %+v %s", validPDSUser, err)
+	}
+	if getResponse.AuthorizerID != validPDSUserID {
+		t.Errorf("Expected ket to have been authorized by %s, but got %+v", validPDSUserID, getResponse)
+	}
+}
+
+func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this record
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Share records of type created with sharee client
+	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %swith client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify sharee can fetch records of type shared
+	listResponse, err := sharee.ListRecords(ctx, ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+	})
+	if err != nil {
+		t.Errorf("Error %s listing records for client %+v\n", err, sharee)
+	}
+	var found bool
+	for _, record := range listResponse.Results {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Failed to find shared records in list records results %+v\n", listResponse)
 	}
 }

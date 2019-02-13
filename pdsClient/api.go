@@ -4,9 +4,19 @@ import (
 	"time"
 )
 
+// ShareRecordsRequest wraps the needed parameters
+// to share records of a specified type from one
+// user to another
+type ShareRecordsRequest struct {
+	UserID     string
+	WriterID   string
+	ReaderID   string
+	RecordType string
+}
+
 // InternalAllowedReadsRequest represents a valid request to the AllowedReads endpoint
 type InternalAllowedReadsRequest struct {
-	ReaderId string
+	ReaderID string
 }
 
 // InternalAllowedReadsResponse represents a response from calling the AllowedReads endpoint
@@ -16,8 +26,8 @@ type InternalAllowedReadsResponse struct {
 
 // AllowedRead represents an access policy that allows an e3db user to read records of a specified type written and owned by specified users.
 type AllowedRead struct {
-	UserId      string `json:"user_id"`
-	WriterId    string `json:"writer_id"`
+	UserID      string `json:"user_id"`
+	WriterID    string `json:"writer_id"`
 	ContentType string `json:"content_type"`
 }
 
@@ -66,7 +76,7 @@ type WriteRecordResponse = Record
 
 // ListRecordsRequest represents a valid ListRecord call to the PDS service.
 type ListRecordsRequest struct {
-	Count       int  `json:"count"`                  //The maximum number of records to return.
+	Count       int  `json:"count,omitempty"`        //The maximum number of records to return.
 	IncludeData bool `json:"include_data,omitempty"` //If true, include record data with results.
 
 	WriterIDs         []string          `json:"writer_ids,omitempty"`    //If not empty, limit results to records written by the given set of IDs.
@@ -109,6 +119,17 @@ type GetEAKResponse struct {
 	EAK                 string    `json:"eak"`
 	AuthorizerID        string    `json:"authorizer_id"`
 	AuthorizerPublicKey ClientKey `json:"authorizer_public_key"`
+}
+
+// GetAccessKeyResponse contains the api representation of fetching an encrypted access key.
+type GetAccessKeyResponse = GetEAKResponse
+
+// GetAccessKeyRequest represents a request to get an access key from e3db.
+type GetAccessKeyRequest struct {
+	WriterID   string
+	UserID     string
+	ReaderID   string
+	RecordType string
 }
 
 // ClientKey contains a cryptographic key for use in client operations.

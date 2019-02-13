@@ -60,6 +60,11 @@ func makeServiceCall(client *http.Client, request *http.Request, result interfac
 			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
 		}
 	}
+	// If no result is expected, don't attempt to decode a potentially
+	// empty response stream and avoid incurring EOF errors
+	if result == nil {
+		return err
+	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	return err
 }

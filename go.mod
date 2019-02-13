@@ -1,6 +1,7 @@
 module github.com/tozny/e3db-clients-go
 
 require (
+	github.com/google/uuid v1.1.0
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/tozny/e3db-go/v2 v2.1.1
 	golang.org/x/net v0.0.0-20181220203305-927f97764cc3 // indirect
