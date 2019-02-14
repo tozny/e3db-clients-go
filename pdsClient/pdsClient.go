@@ -139,6 +139,17 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	return result, err
 }
 
+// DeleteRecord attempts to delete a record in e3db, returning error (if any).
+func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordRequest) error {
+	path := c.Host + "/" + PDSServiceBasePath + "/records/" + params.RecordID
+	request, err := createRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // ListRecords returns a list of records using any filters provided as params, and error (if any).
 func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsRequest) (*ListRecordsResult, error) {
 	var result *ListRecordsResult
