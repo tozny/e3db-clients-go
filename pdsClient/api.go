@@ -74,6 +74,11 @@ type WriteRecordRequest = Record
 // WriteRecordResponse represents a response from trying to write a record via the e3db api.
 type WriteRecordResponse = Record
 
+// DeleteRecordRequest represents a request to delete a record via e3db api.
+type DeleteRecordRequest struct {
+	RecordID string `json:"record_id"`
+}
+
 // ListRecordsRequest represents a valid ListRecord call to the PDS service.
 type ListRecordsRequest struct {
 	Count       int  `json:"count,omitempty"`        //The maximum number of records to return.

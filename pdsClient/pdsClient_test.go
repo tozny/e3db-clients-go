@@ -201,7 +201,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
-	// Create records to share with this record
+	// Create records to share with this client
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
 	recordToWrite := WriteRecordRequest{
@@ -244,5 +244,31 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("Failed to find shared records in list records results %+v\n", listResponse)
+	}
+}
+
+func TestDeleteRecord(t *testing.T) {
+	// Create record to delete
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to delete %s\n", err)
+	}
+	deleteRequest := DeleteRecordRequest{
+		RecordID: createdRecord.Metadata.RecordID,
+	}
+	err = validPDSUser.DeleteRecord(ctx, deleteRequest)
+	if err != nil {
+		t.Errorf("Error deleting written record %s\n", err)
 	}
 }
