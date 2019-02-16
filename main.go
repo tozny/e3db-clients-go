@@ -1,6 +1,7 @@
 package e3dbClients
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,4 +68,16 @@ func makeServiceCall(client *http.Client, request *http.Request, result interfac
 	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	return err
+}
+
+// createRequest isolates duplicate code in creating http search request.
+func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
+	var buf bytes.Buffer
+	var request *http.Request
+	err := json.NewEncoder(&buf).Encode(&params)
+	if err != nil {
+		return request, err
+	}
+	request, err = http.NewRequest(method, path, &buf)
+	return request, err
 }
