@@ -1,6 +1,7 @@
 package e3dbClients
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -36,17 +37,17 @@ func (err *HTTPError) Error() string {
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
-	return makeServiceCall(client, request, result)
+	return MakeRawServiceCall(client, request, result)
 }
 
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
 func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
 	client := &http.Client{}
 	request.Header.Add("Authorization", "Bearer "+userAuthToken)
-	return makeServiceCall(client, request, result)
+	return MakeRawServiceCall(client, request, result)
 }
 
-func makeServiceCall(client *http.Client, request *http.Request, result interface{}) error {
+func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) error {
 	response, err := client.Do(request)
 	if err != nil {
 		return err
@@ -67,4 +68,16 @@ func makeServiceCall(client *http.Client, request *http.Request, result interfac
 	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	return err
+}
+
+// createRequest isolates duplicate code in creating http search request.
+func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
+	var buf bytes.Buffer
+	var request *http.Request
+	err := json.NewEncoder(&buf).Encode(&params)
+	if err != nil {
+		return request, err
+	}
+	request, err = http.NewRequest(method, path, &buf)
+	return request, err
 }
