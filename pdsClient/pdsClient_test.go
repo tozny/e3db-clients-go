@@ -272,3 +272,45 @@ func TestDeleteRecord(t *testing.T) {
 		t.Errorf("Error deleting written record %s\n", err)
 	}
 }
+func TestFindModifiedRecords(t *testing.T) {
+	// Create record to delete
+	startTime := time.Now()
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to get modified %s\n", err)
+	}
+	endTime := time.Now()
+
+	modifiedRecordRequest := InternalModifiedSearchRequest{
+		NextToken: 0,
+		Range: InternalModifiedRange{
+			After:  startTime,
+			Before: endTime,
+		},
+	}
+	modifiedResponse, err := validPDSUser.InternalModifiedSearch(ctx, modifiedRecordRequest)
+	if err != nil {
+		t.Errorf("Error getting modified records %s\n", err)
+	}
+	found := false
+	for _, record := range modifiedResponse.Records {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+		}
+	}
+	if found != true {
+		t.Error("Could not find modified we wrote record")
+	}
+
+}

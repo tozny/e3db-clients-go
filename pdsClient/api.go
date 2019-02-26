@@ -31,6 +31,24 @@ type AllowedRead struct {
 	ContentType string `json:"content_type"`
 }
 
+// InternalModifiedSearchRequest represents a valid request to internal records search for getting modified records
+type InternalModifiedSearchRequest struct {
+	NextToken int                   `json:"next_token"`
+	Range     InternalModifiedRange `json:"range"`
+}
+
+// InternalModifiedSearchResponse represents a response from calling the internal records search endpoint
+type InternalModifiedSearchResponse struct {
+	NextToken int      `json:"next_token"`
+	Records   []Record `json:"records"`
+}
+
+// InternalModifiedRange represents the range parameter for the internal modified search request
+type InternalModifiedRange struct {
+	After  time.Time `json:"modified_after"`
+	Before time.Time `json:"modified_before"`
+}
+
 // RegisterClientRequest represents a request to register a client.
 type RegisterClientRequest struct {
 	Email      string    `json:"email"`
