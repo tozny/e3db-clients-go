@@ -61,6 +61,9 @@ func MakeClientWriterForRecordType(pdsUser E3dbPDSClient, clientID string, recor
 		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
 	}
 	resp, err := pdsUser.PutAccessKey(ctx, putEAKParams)
+	if err != nil {
+		fmt.Printf("Error placing access key %s\n", err)
+	}
 	return resp.EncryptedAccessKey, err
 }
 
@@ -299,9 +302,9 @@ func TestFindModifiedRecords(t *testing.T) {
 			Before: endTime,
 		},
 	}
-	modifiedResponse, err := validPDSUser.InternalModifiedSearch(ctx, modifiedRecordRequest)
+	modifiedResponse, err := e3dbPDS.InternalModifiedSearch(ctx, modifiedRecordRequest)
 	if err != nil {
-		t.Errorf("Error getting modified records %s\n", err)
+		t.Fatalf("Error getting modified records %s\n", err)
 	}
 	found := false
 	for _, record := range modifiedResponse.Records {

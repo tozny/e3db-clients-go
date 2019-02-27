@@ -108,7 +108,7 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 // InternalModifiedSearch uses and internal endpoint to search for modified records within a time range
 func (c *E3dbPDSClient) InternalModifiedSearch(ctx context.Context, params InternalModifiedSearchRequest) (*InternalModifiedSearchResponse, error) {
 	var result *InternalModifiedSearchResponse
-	path := c.Host + "/internal/" + PDSServiceBasePath + "/records/search"
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/search"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
