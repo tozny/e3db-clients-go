@@ -105,6 +105,15 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	return result, err
 }
 
+// InternalModifiedSearch uses and internal endpoint to search for modified records within a time range
+func (c *E3dbPDSClient) InternalModifiedSearch(ctx context.Context, params InternalModifiedSearchRequest) (*InternalModifiedSearchResponse, error) {
+	var result *InternalModifiedSearchResponse
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/search"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // PutAccessKey attempts to set an access key that E3DB will enforce be used to write records of the specified type for the specified user, client, and writer, returning the response and error (if any).
 func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyRequest) (*PutAccessKeyResponse, error) {
 	var result *PutAccessKeyResponse
