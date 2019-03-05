@@ -12,11 +12,12 @@ make build
 will lint and build the projects source code.
 
 ## Test
-Export valid values for use by the integration tests:
+Export valid values for use by the integration tests
+
 ```
-export E3DB_API_URL=https://dev.e3db.com
-export E3DB_API_KEY_ID=6f159d70096cedd0cadc9fb8f9e2a5e15d48e432a3ebfa2458e7788bc0684a99
-export E3DB_API_KEY_SECRET=2acf80b5707db78f477670f70c06a8a8888a507cc10aadc0ee4122166bd5649a
+export E3DB_API_URL=http://local.e3db.com
+export E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c197538b
+export E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
 export E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
 export E3DB_SEARCH_INDEXER_HOST=http://localhost:9000
 ```
@@ -30,6 +31,8 @@ Then run:
 make test
 ```
 to execute integration tests using the code in this project to make API calls against the specified e3db instance.
+
+Sample values above will work against running local services from checked out [pds-service](https://github.com/tozny/pds-service) and [e3dbSearchService](https://github.com/tozny/e3dbSearchService) repos.
 
 ## Use
 

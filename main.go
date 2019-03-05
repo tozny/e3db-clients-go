@@ -37,7 +37,7 @@ func (err *HTTPError) Error() string {
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
-	return MakeRawServiceCall(client, request, result)
+	return MakeRawServiceCall(client, request.WithContext(ctx), result)
 }
 
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
