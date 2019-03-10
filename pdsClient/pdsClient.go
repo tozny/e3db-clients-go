@@ -21,9 +21,15 @@ type E3dbPDSClient struct {
 }
 
 // readPolicy wraps an e3db API object
-// for read access to records
+// for granting read access to records
 type readPolicy struct {
 	Read map[string]interface{} `json:"read"`
+}
+
+// authorizePolicy wraps an e3db API object
+// for granting share access for records of a given type
+type authorizePolicy struct {
+	Authorize map[string]interface{} `json:"authorizer"`
 }
 
 // allowReadPolicy wraps an e3db API object granting read access to records
@@ -31,39 +37,77 @@ type allowReadPolicy struct {
 	Allow []readPolicy `json:"allow"`
 }
 
-// / Share attempts to grants another e3db client permission to read records of the
-// specified record type, returning error (if any).
-func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsRequest) error {
-	// Get the current encrypted access key
-	// used to write records of this type by
-	// the client specified in params
-	getAccessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
-		WriterID:   params.WriterID,
+// allowAuthorizerPolicy wraps an e3db API object granting authorization to share
+// records of a specified type on behalf of the granting client
+type allowAuthorizerPolicy struct {
+	Allow []authorizePolicy `json:"allow"`
+}
+
+// AddAuthorizedSharer attempts to authorize another e3db client to share
+// records of the specified record type, returning error (if any).
+func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAuthorizedWriterRequest) error {
+	err := c.CreateSharingAccessKey(ctx, CreateSharingAccessKeyRequest{
 		UserID:     params.UserID,
-		ReaderID:   params.UserID,
-		RecordType: params.RecordType,
-	})
+		WriterID:   params.WriterID,
+		ReaderID:   params.AuthorizerID,
+		RecordType: params.RecordType})
 	if err != nil {
 		return err
 	}
-	encryptedAccessKey := getAccessKeyResponse.EAK
-	if encryptedAccessKey == "" {
-		return errors.New("no applicable records exist to share")
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.AuthorizerID + "/" + params.RecordType
+	// Create a policy to apply for the authorizer to be allowed to share records of type specified in params
+	authorizerPolicy := allowAuthorizerPolicy{
+		Allow: []authorizePolicy{
+			authorizePolicy{
+				Authorize: make(map[string]interface{}),
+			},
+		},
 	}
-	// TODO: Decrypt this key
-	// TODO: using the decrypted version of
-	// encryptedAccessKey and the public key of
-	// the reader specified in params,
-	// create an encrypted access key that
-	// the reader can decrypt
-	// Put the encrypted access key for the reader
-	_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
-		UserID:             params.UserID,
-		WriterID:           params.WriterID,
-		ReaderID:           params.ReaderID,
-		RecordType:         params.RecordType,
-		EncryptedAccessKey: encryptedAccessKey,
-	})
+	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+// Share attempts to grants another e3db client permission to read records of the
+// specified record type, returning error (if any).
+func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsRequest) error {
+	err := c.CreateSharingAccessKey(ctx, CreateSharingAccessKeyRequest{
+		UserID:     params.UserID,
+		WriterID:   params.WriterID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType})
+	if err != nil {
+		return err
+	}
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.ReaderID + "/" + params.RecordType
+	// Create a policy to apply for the reader to be allowed to read records of type specified in params
+	sharePolicy := allowReadPolicy{
+		Allow: []readPolicy{
+			readPolicy{
+				Read: make(map[string]interface{}),
+			},
+		},
+	}
+	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+// AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
+// specified record type the authorizer is authorized to share , returning error (if any).
+func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params AuthorizerShareRecordsRequest) error {
+	err := c.CreateAuthorizerSharingAccessKey(ctx, CreateAuthorizerSharingAccessKeyRequest{
+		UserID:       params.UserID,
+		WriterID:     params.WriterID,
+		ReaderID:     params.ReaderID,
+		AuthorizerID: params.AuthorizerID,
+		RecordType:   params.RecordType})
 	if err != nil {
 		return err
 	}
@@ -190,6 +234,76 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+// CreateSharingAccessKey attempts to create an access key for the specified reader to be able to decrypt records of the specified type, returning error (if any).
+func (c *E3dbPDSClient) CreateSharingAccessKey(ctx context.Context, params CreateSharingAccessKeyRequest) error {
+	// Get the current encrypted access key
+	// used to write records of this type by
+	// the client specified in params
+	getAccessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.UserID,
+		RecordType: params.RecordType,
+	})
+	if err != nil {
+		return err
+	}
+	encryptedAccessKey := getAccessKeyResponse.EAK
+	if encryptedAccessKey == "" {
+		return errors.New(fmt.Sprintf("no access key exists for records of type %s", params.RecordType))
+	}
+	// TODO: Decrypt this key
+	// TODO: using the decrypted version of
+	// encryptedAccessKey and the public key of
+	// the reader specified in params,
+	// create an encrypted access key that
+	// the reader can decrypt
+	// Put the encrypted access key for the reader
+	_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
+		UserID:             params.UserID,
+		WriterID:           params.WriterID,
+		ReaderID:           params.ReaderID,
+		RecordType:         params.RecordType,
+		EncryptedAccessKey: encryptedAccessKey,
+	})
+	return err
+}
+
+// CreateAuthorizerSharingAccessKey attempts to create an access key for the specified reader to be able to decrypt records of the specified type that the authorizer is authorized to share, returning error (if any).
+func (c *E3dbPDSClient) CreateAuthorizerSharingAccessKey(ctx context.Context, params CreateAuthorizerSharingAccessKeyRequest) error {
+	// Get the current encrypted access key
+	// used to write records of this type by
+	// the client specified in params
+	getAccessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.AuthorizerID,
+		RecordType: params.RecordType,
+	})
+	if err != nil {
+		return err
+	}
+	encryptedAccessKey := getAccessKeyResponse.EAK
+	if encryptedAccessKey == "" {
+		return errors.New(fmt.Sprintf("no access key exists for records of type %s", params.RecordType))
+	}
+	// TODO: Decrypt this key
+	// TODO: using the decrypted version of
+	// encryptedAccessKey and the public key of
+	// the reader specified in params,
+	// create an encrypted access key that
+	// the reader can decrypt
+	// Put the encrypted access key for the authorizer
+	_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
+		UserID:             params.UserID,
+		WriterID:           params.WriterID,
+		ReaderID:           params.ReaderID,
+		RecordType:         params.RecordType,
+		EncryptedAccessKey: encryptedAccessKey,
+	})
+	return err
 }
 
 // New returns a new E3dbPDSClient configured with the specified apiKey and apiSecret values.
