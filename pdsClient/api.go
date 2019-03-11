@@ -4,6 +4,26 @@ import (
 	"time"
 )
 
+// AddAuthorizedWriterRequest wraps the needed parameters
+// to authorize a client to share records of a specified type on behalf of another client
+type AddAuthorizedWriterRequest struct {
+	UserID       string
+	WriterID     string
+	AuthorizerID string
+	RecordType   string
+}
+
+// ShareRecordsRequest wraps the needed parameters
+// to share records of a specified type from one
+// user to another
+type AuthorizerShareRecordsRequest struct {
+	UserID       string
+	WriterID     string
+	AuthorizerID string
+	ReaderID     string
+	RecordType   string
+}
+
 // ShareRecordsRequest wraps the needed parameters
 // to share records of a specified type from one
 // user to another
@@ -76,6 +96,24 @@ type PutAccessKeyRequest struct {
 	ReaderID           string
 	RecordType         string
 	EncryptedAccessKey string `json:"eak"`
+}
+
+// CreateAccessKeyForRequest represents a request to create an access key for another client.
+type CreateSharingAccessKeyRequest struct {
+	WriterID   string
+	UserID     string
+	ReaderID   string
+	RecordType string
+}
+
+// CreateAccessKeyForRequest represents a request to create an access key for another client
+// for a record type the creator is authorized to share.
+type CreateAuthorizerSharingAccessKeyRequest struct {
+	WriterID     string
+	UserID       string
+	ReaderID     string
+	AuthorizerID string
+	RecordType   string
 }
 
 // PutAccessKeyResponse represents a response from trying to put an access key into e3db.
