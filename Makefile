@@ -1,15 +1,18 @@
 export GO111MODULE=on
 
-all: build test
+all: clean build test
 
-.PHONY: build test lint
+.PHONY: build test lint clean
 
 lint :
 	go vet ./...
-	go mod tidy
 
 build : lint
 	go build ./...
 
 test : lint
 	go test -count=1 -v -cover --race ./...
+
+clean :
+	go clean ./...
+	go mod tidy
