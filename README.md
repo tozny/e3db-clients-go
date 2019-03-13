@@ -20,12 +20,9 @@ export E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c
 export E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
 export E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
 export E3DB_SEARCH_INDEXER_HOST=http://localhost:9000
+export WEBHOOK_URL=https://en8781lpip6xb.x.pipedream.net/
+export E3DB_HOOK_SERVICE_HOST=http://localhost:10000
 ```
-* Recommend to use credentials and endpoint of dev
-* Go to http://console.dev.tozny.com
-* Click create account and fill in information
-* Once logged into the console, create a client and use the values of `api_secret` and `api_key_id`
-
 Then run:
 ```
 make test
@@ -43,7 +40,7 @@ package main
 
 import (
     "github.com/tozny/e3db-clients-go"
-    "github.com/tozny/e3db-clients-go/authClient"
+    "github.com/tozny/e3db-clients-go/hookClient"
     "context"
 )
 
@@ -53,14 +50,21 @@ func main() {
         APISecret: "E3DBAPIKEYSECRET",
         Host:      "https://api.e3db.com",
     }
-    e3dbAuth := authClient.New(config)
-    ctx := context.Background()
-    token, err := e3dbAuth.GetToken(ctx)
-    if err != nil {
-        panic(err)
+    client := hookClient.New(ValidClientConfig, config.Host)
+    createHookRequest := hookClient.CreateHookRequest{
+        WebhookURL: "https://en8781lpip6xb.x.pipedream.net/",
+        Triggers: []hookClient.HookTrigger{
+            hookClient.HookTrigger{
+                Enabled:  true,
+                APIEvent: "authorizer_added",
+            },
+        },
     }
-    //Use token to make authenticated calls to other
-    //e3db services, renewing as needed
+    ctx := context.TODO()
+    response, err := client.CreateHook(ctx, createHookRequest)
+    if err != nil {
+        t.Errorf("Error %s calling CreateHook with %+v\n", err, createHookRequest)
+    }
 }
 ```
 
