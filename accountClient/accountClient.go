@@ -43,6 +43,28 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 	return result, err
 }
 
+// ServiceCall will make a call to a path based on the service root, using the method and params sent.
+func (c *E3dbAccountClient) ServiceCall(ctx context.Context, path, method string, params interface{}, result interface{}) error {
+	internalPath := c.Host + "/" + AccountServiceBasePath + path
+	request, err := e3dbClients.CreateRequest(method, internalPath, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return err
+}
+
+// InternalServiceCall will make a call to a path based on the internal service root, using the method and params sent.
+func (c *E3dbAccountClient) InternalServiceCall(ctx context.Context, path, method string, params interface{}, result interface{}) error {
+	internalPath := c.Host + "/internal/" + AccountServiceBasePath + path
+	request, err := e3dbClients.CreateRequest(method, internalPath, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return err
+}
+
 // New returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbAccountClient {
 	authService := authClient.New(config)
