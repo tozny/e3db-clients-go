@@ -25,10 +25,7 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 	path := c.Host + "/" + AccountServiceBasePath + "/profile"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
-		return result, &e3dbClients.RequestError {
-			URL: path,
-			message: err.Error()
-		}
+		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	err = e3dbClients.MakeRawServiceCall(&http.Client{}, request, &result)
 	return result, err
@@ -40,10 +37,7 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/clients/" + clientID
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
-		return result, &e3dbClients.RequestError {
-			URL: path,
-			message: err.Error()
-		}
+		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err

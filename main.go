@@ -34,6 +34,11 @@ func (err *RequestError) Error() string {
 	return err.message
 }
 
+// NewError creates a new RequestError
+func NewError(message, url string, statusCode int) *RequestError {
+	return &RequestError{message, url, statusCode}
+}
+
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) *RequestError {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
