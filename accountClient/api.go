@@ -80,15 +80,15 @@ type ValidateTokenResponse struct {
 	Valid     bool   `json:"valid"`      //Whether the token was valid
 }
 
-// TokenInfo is the return from the token endpoint on a valid request
-type RegistrationInfo struct {
+// RegTokenInfo is the return from the token endpoint on a valid request
+type RegTokenInfo struct {
 	Token       string
 	AccountID   uuid.UUID `json:"account_id"`
-	Permissions RegistrationPermissions
+	Permissions RegTokenPermissions
 }
 
-// TokenPermissions decodes needed token permissions
-type RegistrationPermissions struct {
+// RegTokenPermissions decodes needed token permissions
+type RegTokenPermissions struct {
 	Enabled      bool
 	AllowedTypes []string `json:"allowed_types"`
 }

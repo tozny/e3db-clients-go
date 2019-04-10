@@ -46,9 +46,9 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 }
 
 // RegistrationToken validates a registration token with the account service and fetches its permissions
-func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegistrationInfo, error) {
-	result := RegistrationInfo{
-		Permissions: RegistrationPermissions{
+func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegTokenInfo, error) {
+	result := RegTokenInfo{
+		Permissions: RegTokenPermissions{
 			Enabled:      true,
 			AllowedTypes: []string{"general"},
 		},
