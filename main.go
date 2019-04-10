@@ -38,7 +38,7 @@ func (err *RequestError) Error() string {
 }
 
 // NewError creates a new RequestError
-func NewError(message, url string, statusCode int) *RequestError {
+func NewError(message, url string, statusCode int) error {
 	return &RequestError{message, url, statusCode}
 }
 
@@ -53,21 +53,29 @@ func FlatMapInternalError(internalError RequestError) error {
 }
 
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
-func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) *RequestError {
+func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
 	err := MakeRawServiceCall(client, request.WithContext(ctx), result)
 	return &err
 }
 
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
+<<<<<<< HEAD
 func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) RequestError {
+=======
+func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
+>>>>>>> a66e449... Update to generic erro handling, first pass a account features
 	client := &http.Client{}
 	request.Header.Add("Authorization", "Bearer "+userAuthToken)
 	return MakeRawServiceCall(client, request, result)
 }
 
 // MakeRawServiceCall sends a request, auto decoding the response to the result interface if sent.
+<<<<<<< HEAD
 func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) RequestError {
+=======
+func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) error {
+>>>>>>> a66e449... Update to generic erro handling, first pass a account features
 	response, err := client.Do(request)
 	if err != nil {
 		return RequestError{
@@ -100,15 +108,12 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 }
 
 // CreateRequest isolates duplicate code in creating http search request.
-func CreateRequest(method string, path string, params interface{}) (*http.Request, *RequestError) {
+func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
 	var buf bytes.Buffer
 	var request *http.Request
 	err := json.NewEncoder(&buf).Encode(&params)
 	if err != nil {
-		return request, &RequestError{
-			URL:     path,
-			message: err.Error(),
-		}
+		return request, err
 	}
 	request, err = http.NewRequest(method, path, &buf)
 	if err != nil {

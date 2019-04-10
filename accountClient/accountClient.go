@@ -1,7 +1,9 @@
 package accountClient
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 	"net/http"
@@ -20,7 +22,7 @@ type E3dbAccountClient struct {
 }
 
 // CreateAccount attempts to create an e3db account using the provided params, returning created account and error (if any).
-func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAccountRequest) (*CreateAccountResponse, *e3dbClients.RequestError) {
+func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAccountRequest) (*CreateAccountResponse, error) {
 	var result *CreateAccountResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/profile"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
@@ -32,7 +34,7 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 }
 
 // InternalGetClientAccount attempts to get the account id and other account information for the specified client id
-func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, *e3dbClients.RequestError) {
+func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, error) {
 	var result *InternalGetClientAccountResponse
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/clients/" + clientID
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
@@ -43,26 +45,37 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 	return result, err
 }
 
-// ServiceCall will make a call to a path based on the service root, using the method and params sent.
-func (c *E3dbAccountClient) ServiceCall(ctx context.Context, path, method string, params interface{}, result interface{}) *e3dbClients.RequestError {
-	internalPath := c.Host + "/" + AccountServiceBasePath + path
-	request, err := e3dbClients.CreateRequest(method, internalPath, params)
+// RegistrationToken validates a registration token with the account service and fetches its permissions
+func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegistrationInfo, error) {
+	result := RegistrationInfo{
+		Permissions: RegistrationPermissions{
+			Enabled:      true,
+			AllowedTypes: []string{"general"},
+		},
+	}
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/token"
+	request, err := e3dbClients.CreateRequest("POST", path, map[string]string{"token": token})
 	if err != nil {
-		return err
+		return &result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return err
+	return &result, err
 }
 
-// InternalServiceCall will make a call to a path based on the internal service root, using the method and params sent.
-func (c *E3dbAccountClient) InternalServiceCall(ctx context.Context, path, method string, params interface{}, result interface{}) *e3dbClients.RequestError {
-	internalPath := c.Host + "/internal/" + AccountServiceBasePath + path
-	request, err := e3dbClients.CreateRequest(method, internalPath, params)
+// ValidateAuthToken validates a bearer token issued by the account service
+func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params ValidateTokenRequest) (*ValidateTokenResponse, error) {
+	var result *ValidateTokenResponse
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(&params)
 	if err != nil {
-		return err
+		return result, err
+	}
+	request, err := http.NewRequest("POST", c.Host+"/"+AccountServiceBasePath+"/auth/validate", &buf)
+	if err != nil {
+		return result, err
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return err
+	return result, err
 }
 
 // New returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
