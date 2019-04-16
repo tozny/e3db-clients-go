@@ -83,14 +83,16 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	}
 	// Create an account and client for that account using the specified params
 	ctx := context.TODO()
-	response, err := accounter.CreateAccount(ctx, createAccountParams)
+	response, internalError := accounter.CreateAccount(ctx, createAccountParams)
+	err = e3dbClients.FlatMapInternalError(*internalError)
 	if err != nil {
 		t.Errorf("Error %s creating account with params %+v\n", err, createAccountParams)
 	}
 	accountID := response.Profile.AccountID
 	clientID := response.Account.Client.ClientID
 	// Make request to lookup the account for this account's client
-	account, err := accounter.InternalGetClientAccount(ctx, clientID)
+	account, internalError := accounter.InternalGetClientAccount(ctx, clientID)
+	err = e3dbClients.FlatMapInternalError(*internalError)
 	if err != nil {
 		t.Errorf("Error %s trying to get account info for client %+v\n", err, accounter)
 	}

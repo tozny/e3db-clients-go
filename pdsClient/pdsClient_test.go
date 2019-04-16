@@ -402,3 +402,11 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
 	}
 }
+
+func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
+	ctx := context.TODO()
+	err := validPDSUser.HealthCheck(ctx)
+	if err != nil {
+		t.Errorf("Expected pds health check to return no error, got %s", err)
+	}
+}

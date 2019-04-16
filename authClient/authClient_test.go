@@ -71,7 +71,7 @@ func TestValidateTokenReturnsValidResultsForValidToken(t *testing.T) {
     validateTokenRequestParams := ValidateTokenRequest{Token: validToken.AccessToken}
     response, err := e3dbAuth.ValidateToken(ctx, validateTokenRequestParams)
     if err != nil {
-        t.Errorf("Error: %s calling ValidateToken", err)
+        t.Errorf("Error: %s calling ValidateToken %+v", err, response)
     }
     if response.Valid != true {
         t.Errorf("Expected token %v to be valid, got %v", validToken, response)
