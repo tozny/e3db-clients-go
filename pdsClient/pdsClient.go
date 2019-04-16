@@ -149,6 +149,18 @@ func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID strin
 	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
+// InternalAllowedReadsForAccessPolicy attempts to retrieve the list of allowed readers given an access policy.
+func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context, params InternalAllowedReadersForPolicyRequest) (*InternalAllowedReadersForPolicyResponse, error) {
+	var result *InternalAllowedReadersForPolicyResponse
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_readers"
+	request, internalError := e3dbClients.CreateRequest("POST", path, params)
+	if internalError != nil {
+		return result, e3dbClients.FlatMapInternalError(*internalError)
+	}
+	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
+}
+
 // InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
 func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params RegisterClientRequest) (*RegisterClientResponse, error) {
 	var result *RegisterClientResponse
