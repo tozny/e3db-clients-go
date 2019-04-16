@@ -96,7 +96,9 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 		return err
 	}
 	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	fmt.Printf("ShareRecords %+v", internalError)
+	panic("wtf")
+	// return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
