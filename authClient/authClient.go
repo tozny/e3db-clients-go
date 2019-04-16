@@ -43,8 +43,8 @@ func (c *E3dbAuthClient) ValidateToken(ctx context.Context, params ValidateToken
     if err != nil {
         return result, err
     }
-    err = e3dbClients.MakeE3DBServiceCall(c, ctx, request, &result)
-    return result, err
+    internalError := e3dbClients.MakeE3DBServiceCall(c, ctx, request, &result)
+    return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // AuthHTTPClient returns an http client that can be used for

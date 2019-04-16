@@ -67,8 +67,8 @@ func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAutho
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // Share attempts to grants another e3db client permission to read records of the
@@ -95,8 +95,8 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
@@ -124,8 +124,8 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // InternalAllowedReads attempts to retrieve the list of AllowedRead policies for other users records for the given reader using an internal only e3db endpoint, returning InternalAllowedReadsResponse(which may or may not be empty of AllowedRead policies) and error (if any).
@@ -136,8 +136,8 @@ func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID strin
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
@@ -145,8 +145,11 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	var result *RegisterClientResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/clients"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // InternalModifiedSearch uses and internal endpoint to search for modified records within a time range
@@ -154,8 +157,11 @@ func (c *E3dbPDSClient) InternalModifiedSearch(ctx context.Context, params Inter
 	var result *InternalModifiedSearchResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/search"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // PutAccessKey attempts to set an access key that E3DB will enforce be used to write records of the specified type for the specified user, client, and writer, returning the response and error (if any).
@@ -163,8 +169,11 @@ func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyReq
 	var result *PutAccessKeyResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
 	request, err := e3dbClients.CreateRequest("PUT", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // GetAccessKey attempts to get an access key stored in E3DB returning the response and error (if any).
@@ -172,8 +181,11 @@ func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyReq
 	var result *GetAccessKeyResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
 	request, err := e3dbClients.CreateRequest("GET", path, params)
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // WriteRecord attempts to store a record in e3db, returning stored record and error (if any).
@@ -185,8 +197,8 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
@@ -196,8 +208,8 @@ func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordReq
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // ListRecords returns a list of records using any filters provided as params, and error (if any).
@@ -208,8 +220,8 @@ func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsReque
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // ProxyListRecords returns a list of records using any filters provided as params, and error (if any).
@@ -220,8 +232,8 @@ func (c *E3dbPDSClient) ProxyListRecords(ctx context.Context, authToken string, 
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
-	return result, err
+	internalError := e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	return result, e3dbClients.FlatMapInternalError(internalError)
 }
 
 // InternalGetRecord attempts to get a record using an internal only e3db endpoint, returning fetched record and error (if any).
@@ -232,8 +244,20 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
+}
+
+// HealthCheck checks whether the storage service is up,
+// returning error if unable to connect to the search service.
+func (c *E3dbPDSClient) HealthCheck(ctx context.Context) error {
+	path := c.Host + "/" + PDSServiceBasePath + "/servicecheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // CreateSharingAccessKey attempts to create an access key for the specified reader to be able to decrypt records of the specified type, returning error (if any).

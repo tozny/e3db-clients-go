@@ -50,7 +50,7 @@ func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID str
 func TestCreateWebHook(t *testing.T) {
 	clientConfig, _, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String())
 	if err != nil {
-		t.Errorf("Unable to create authorizing client using %+v", e3dbAccountService)
+		t.Errorf("error %s unable to create authorizing client using %+v", err, e3dbAccountService)
 	}
 	client := New(clientConfig, hookServiceHost)
 	createHookRequest := CreateHookRequest{
