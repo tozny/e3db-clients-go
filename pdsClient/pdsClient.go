@@ -63,11 +63,14 @@ func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAutho
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	request, internalError := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	if internalError != nil {
+		err = e3dbClients.FlatMapInternalError(*internalError)
+	}
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
 	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
@@ -91,14 +94,15 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	request, internalError := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	if internalError != nil {
+		err = e3dbClients.FlatMapInternalError(*internalError)
+	}
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	fmt.Printf("ShareRecords %+v", internalError)
-	panic("wtf")
-	// return e3dbClients.FlatMapInternalError(*internalError)
+	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return e3dbClients.FlatMapInternalError(*internalError)
 }
 
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
@@ -122,11 +126,14 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	request, internalError := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	if internalError != nil {
+		err = e3dbClients.FlatMapInternalError(*internalError)
+	}
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
 	return e3dbClients.FlatMapInternalError(*internalError)
 }
 

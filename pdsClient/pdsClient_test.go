@@ -232,7 +232,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %swith client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
 	listResponse, err := sharee.ListRecords(ctx, ListRecordsRequest{
