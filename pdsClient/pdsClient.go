@@ -245,6 +245,33 @@ func (c *E3dbPDSClient) ProxyListRecords(ctx context.Context, authToken string, 
 	return result, e3dbClients.FlatMapInternalError(internalError)
 }
 
+// BatchGetRecords makes a call to batch get the records in params,
+// returning the records (if they exist) and error (if any).
+func (c *E3dbPDSClient) BatchGetRecords(ctx context.Context, params BatchGetRecordsRequest) (*BatchGetRecordsResult, error) {
+	var result *BatchGetRecordsResult
+	path := c.Host + "/" + PDSServiceBasePath + "/records"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
+}
+
+// BatchGetRecords makes a call to batch get the records in params,
+// on behalf of the user with the specified authToken,
+// returning the records (if they exist) and error (if any).
+func (c *E3dbPDSClient) ProxyBatchGetRecords(ctx context.Context, authToken string, params BatchGetRecordsRequest) (*BatchGetRecordsResult, error) {
+	var result *BatchGetRecordsResult
+	path := c.Host + "/" + PDSServiceBasePath + "/records"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	return result, e3dbClients.FlatMapInternalError(internalError)
+}
+
 // InternalGetRecord attempts to get a record using an internal only e3db endpoint, returning fetched record and error (if any).
 func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) (*InternalGetRecordResponse, error) {
 	var result *InternalGetRecordResponse
