@@ -44,6 +44,17 @@ type InternalAllowedReadsResponse struct {
 	AllowedReads []AllowedRead `json:"allowed_reads"`
 }
 
+// InternalAllowedReadersForPolicyRequest a valid request to internal endpoint for allowed readers of a record type and writer id (access policy).
+type InternalAllowedReadersForPolicyRequest struct {
+	WriterID    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
+// InternalAllowedReadersForPolicyResponse represents a response to allowed readers for policy endpoint, returning allowed clientIDs that can read the specified records.
+type InternalAllowedReadersForPolicyResponse struct {
+	ReaderIDs []string `json:"reader_ids"`
+}
+
 // AllowedRead represents an access policy that allows an e3db user to read records of a specified type written and owned by specified users.
 type AllowedRead struct {
 	UserID      string `json:"user_id"`

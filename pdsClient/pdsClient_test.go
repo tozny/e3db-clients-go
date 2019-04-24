@@ -254,6 +254,59 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	}
 }
 
+func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Share records of type created with sharee client
+	ctx := context.TODO()
+	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Create records to share with this client
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	_, err = validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+
+	allowedReadsRequest := InternalAllowedReadersForPolicyRequest{
+		WriterID:    validPDSUserID,
+		ContentType: defaultPDSUserRecordType,
+	}
+	resp, err := e3dbPDS.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
+	if err != nil {
+		t.Errorf("Error trying to call PDS for allowed readers %s\n", err)
+	}
+	var foundSharee bool
+	for _, readerID := range resp.ReaderIDs {
+		if readerID == shareeID {
+			foundSharee = true
+			break
+		}
+	}
+	if !foundSharee {
+		t.Errorf("Could not find sharee id in list of allowed readers for record\n")
+	}
+}
+
 func TestDeleteRecord(t *testing.T) {
 	// Create record to delete
 	ctx := context.TODO()
