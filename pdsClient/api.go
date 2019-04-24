@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+const BatchReadRecordLimit = 1000
+
 // AddAuthorizedWriterRequest wraps the needed parameters
 // to authorize a client to share records of a specified type on behalf of another client
 type AddAuthorizedWriterRequest struct {
@@ -227,4 +229,13 @@ type InternalGetRecordResponse struct {
 type ListRecordsResult struct {
 	Results   []ListedRecord `json:"results"`
 	LastIndex int            `json:"last_index"`
+}
+
+type BatchGetRecordsRequest struct {
+	RecordIDs   []string `json:"record_ids"`
+	IncludeData bool     `json:"include_data"`
+}
+
+type BatchGetRecordsResult struct {
+	Records []ListedRecord `json:"records"`
 }

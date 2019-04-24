@@ -73,6 +73,273 @@ func MakeClientWriterForRecordType(pdsUser E3dbPDSClient, clientID string, recor
 
 var validPDSEncryptedAccessKey, _ = MakeClientWriterForRecordType(validPDSUser, validPDSUserID, defaultPDSUserRecordType)
 
+func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
+	var createdRecordIDs []string
+	ctx := context.TODO()
+	// Create two records with the default client
+	for i := 0; i < 2; i++ {
+		data := map[string]string{"data": "unencrypted"}
+		recordToWrite := WriteRecordRequest{
+			Data: data,
+			Metadata: Meta{
+				Type:     defaultPDSUserRecordType,
+				WriterID: validPDSUserID,
+				UserID:   validPDSUserID,
+				Plain:    map[string]string{"key": "value"},
+			},
+		}
+		record, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+		if err != nil {
+			t.Error(err)
+		}
+		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
+	}
+	// Batch get records and verify the created records are returned
+	params := BatchGetRecordsRequest{
+		RecordIDs: createdRecordIDs,
+	}
+	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	for _, id := range createdRecordIDs {
+		var match bool
+		for _, batchRecord := range batchRecords.Records {
+			if id == batchRecord.Metadata.RecordID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			t.Errorf("Failed to find created record with id %s in response %v\n", id, batchRecords)
+		}
+	}
+}
+
+func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
+	var createdRecordIDs []string
+	ctx := context.TODO()
+	// Create two records with the default client
+	for i := 0; i < 2; i++ {
+		data := map[string]string{"data": "unencrypted"}
+		recordToWrite := WriteRecordRequest{
+			Data: data,
+			Metadata: Meta{
+				Type:     defaultPDSUserRecordType,
+				WriterID: validPDSUserID,
+				UserID:   validPDSUserID,
+				Plain:    map[string]string{"key": "value"},
+			},
+		}
+		record, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+		if err != nil {
+			t.Error(err)
+		}
+		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
+	}
+	// Batch get records and verify the created records are returned
+	params := BatchGetRecordsRequest{
+		RecordIDs: createdRecordIDs,
+	}
+	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	for _, id := range createdRecordIDs {
+		var match bool
+		for _, batchRecord := range batchRecords.Records {
+			if id == batchRecord.Metadata.RecordID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			t.Errorf("Failed to find created record with id %s in response %v\n", id, batchRecords)
+		}
+	}
+	// Delete the first record
+	recordIDToDelete := createdRecordIDs[0]
+	deleteParams := DeleteRecordRequest{RecordID: recordIDToDelete}
+	err = validPDSUser.DeleteRecord(ctx, deleteParams)
+	if err != nil {
+		t.Errorf("err %s making DeleteRecord call %+v\n", err, deleteParams)
+	}
+	// Verify it isn't batch get able anymore
+	batchRecords, err = validPDSUser.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	var listed bool
+	for _, batchRecord := range batchRecords.Records {
+		if recordIDToDelete == batchRecord.Metadata.RecordID {
+			listed = true
+			break
+		}
+	}
+	if listed {
+		t.Errorf("Expected deleted record %s in to not be returned in batch get response %v\n", recordIDToDelete, batchRecords)
+	}
+}
+
+func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
+	batchRecordRequestCount := BatchReadRecordLimit + 1
+	recordIDs := make([]string, batchRecordRequestCount)
+	for index := range recordIDs {
+		recordIDs[index] = uuid.New().String()
+	}
+	ctx := context.TODO()
+
+	// Batch get records and verify the created records are returned
+	params := BatchGetRecordsRequest{
+		RecordIDs: recordIDs,
+	}
+	_, err := validPDSUser.BatchGetRecords(ctx, params)
+	if err == nil {
+		t.Errorf("expected err making BatchGetRecords call for records %d\n", batchRecordRequestCount)
+	}
+}
+
+func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this client
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Share records of type created with sharee client
+	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify sharee can fetch records of type shared
+	params := BatchGetRecordsRequest{
+		RecordIDs: []string{createdRecord.Metadata.RecordID},
+	}
+	batchRecords, err := sharee.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	var found bool
+	for _, record := range batchRecords.Records {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Failed to find shared records in batch get records results %+v\n", batchRecords)
+	}
+}
+
+func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
+	// Create a client to share records with
+	sharee, _, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this client
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Verify sharee can not fetch unshared record
+	params := BatchGetRecordsRequest{
+		RecordIDs: []string{createdRecord.Metadata.RecordID},
+	}
+	batchRecords, err := sharee.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	var found bool
+	for _, record := range batchRecords.Records {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if found {
+		t.Errorf("Found unshared record in batch get records results %+v\n", batchRecords)
+	}
+}
+
+func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
+	var createdRecordIDs []string
+	ctx := context.TODO()
+	// Create two records with the default client
+	for i := 0; i < 2; i++ {
+		data := map[string]string{"data": "unencrypted"}
+		recordToWrite := WriteRecordRequest{
+			Data: data,
+			Metadata: Meta{
+				Type:     defaultPDSUserRecordType,
+				WriterID: validPDSUserID,
+				UserID:   validPDSUserID,
+				Plain:    map[string]string{"key": "value"},
+			},
+		}
+		record, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+		if err != nil {
+			t.Error(err)
+		}
+		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
+	}
+	// Batch get records and verify the created records are returned
+	params := BatchGetRecordsRequest{
+		RecordIDs: createdRecordIDs,
+	}
+	usersToken, err := validPDSUser.GetToken(ctx)
+	if err != nil {
+		t.Errorf("err %s making GetToken call for user %+v\n", err, validPDSUser)
+	}
+	proxyBatchRecords, err := e3dbPDS.ProxyBatchGetRecords(ctx, usersToken.AccessToken, params)
+	if err != nil {
+		t.Errorf("err %s making ProxyBatchGetRecords call %+v\n on with user token %+v\n", err, usersToken, params)
+	}
+	for _, id := range createdRecordIDs {
+		var match bool
+		for _, batchRecord := range proxyBatchRecords.Records {
+			if id == batchRecord.Metadata.RecordID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			t.Errorf("Failed to find created record with id %s in response %v\n", id, proxyBatchRecords)
+		}
+	}
+}
+
 func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 	var createdRecordIDs []string
 	ctx := context.TODO()
@@ -440,7 +707,8 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	// Verify sharee can retrieve shared record
 	listRecordsResponse, err := shareeClient.ListRecords(ctx, ListRecordsRequest{
 		ContentTypes:      []string{defaultPDSUserRecordType},
-		IncludeAllWriters: true})
+		IncludeAllWriters: true,
+		IncludeData:       true})
 	if err != nil {
 		t.Errorf("Error %s listing records for %+v", err, shareeClient)
 	}
