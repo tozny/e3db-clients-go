@@ -76,6 +76,16 @@ type InternalModifiedSearchResponse struct {
 	Records   []Record `json:"records"`
 }
 
+// InternalSearchAllowedReadsRequest represents a valid request to internal allowed reads search
+// for getting a list of allowed reads that match the request parameters.
+type InternalSearchAllowedReadsRequest = InternalModifiedSearchRequest
+
+// InternalSearchAllowedReadsResponse represents a response from calling the internal allowed reads search endpoint
+type InternalSearchAllowedReadsResponse struct {
+	NextToken    int           `json:"next_token"`
+	AllowedReads []AllowedRead `json:"allowed_reads"`
+}
+
 // InternalModifiedRange represents the range parameter for the internal modified search request
 type InternalModifiedRange struct {
 	After  time.Time `json:"modified_after"`

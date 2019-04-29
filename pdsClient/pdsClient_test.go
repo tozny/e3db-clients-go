@@ -731,3 +731,46 @@ func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 		t.Errorf("Expected pds health check to return no error, got %s", err)
 	}
 }
+
+func TestInternalSearchAllowedReads(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Share records of type created with sharee client
+	ctx := context.TODO()
+	startTime := time.Now().UTC()
+	share := ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	}
+	err = validPDSUser.ShareRecords(ctx, share)
+	endTime := time.Now().UTC()
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify the new allowed_read is visible to the internal client
+	searchAllowedReadsRequest := InternalSearchAllowedReadsRequest{
+		NextToken: 0,
+		Range: InternalModifiedRange{
+			After:  startTime,
+			Before: endTime,
+		},
+	}
+	searchResponse, err := e3dbPDS.InternalSearchAllowedReads(ctx, searchAllowedReadsRequest)
+	if err != nil {
+		t.Fatalf("Error searching allowed_reads %s\n", err)
+	}
+	found := false
+	for _, allowedRead := range searchResponse.AllowedReads {
+		if allowedRead.UserID == share.UserID && allowedRead.WriterID == share.WriterID && allowedRead.ContentType == share.RecordType {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record", share, searchResponse.AllowedReads)
+	}
+}
