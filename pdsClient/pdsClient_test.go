@@ -619,14 +619,14 @@ func TestFindModifiedRecords(t *testing.T) {
 	}
 	endTime := time.Now()
 
-	modifiedRecordRequest := InternalModifiedSearchRequest{
+	modifiedRecordRequest := InternalSearchRequest{
 		NextToken: 0,
-		Range: InternalModifiedRange{
+		Range: &InternalModifiedRange{
 			After:  startTime,
 			Before: endTime,
 		},
 	}
-	modifiedResponse, err := e3dbPDS.InternalModifiedSearch(ctx, modifiedRecordRequest)
+	modifiedResponse, err := e3dbPDS.InternalSearch(ctx, modifiedRecordRequest)
 	if err != nil {
 		t.Fatalf("Error getting modified records %s\n", err)
 	}
@@ -755,7 +755,7 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 	// Verify the new allowed_read is visible to the internal client
 	searchAllowedReadsRequest := InternalSearchAllowedReadsRequest{
 		NextToken: 0,
-		Range: InternalModifiedRange{
+		Range: &InternalModifiedRange{
 			After:  startTime,
 			Before: endTime,
 		},
@@ -772,5 +772,47 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record", share, searchResponse.AllowedReads)
+	}
+}
+
+func TestInternalSearchUsingRecordType(t *testing.T) {
+	// Create record to with an external client
+	recordType := "TestInternalSearchUsingRecordType"
+	_, err := MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
+	if err != nil {
+		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
+	}
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     recordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	ctx := context.TODO()
+	wroteRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
+	}
+	// Verify we can do an internal search based off the record type
+	searchRequest := InternalSearchRequest{
+		ContentTypes: []string{recordType},
+	}
+	searchResponse, err := e3dbPDS.InternalSearch(ctx, searchRequest)
+	if err != nil {
+		t.Errorf("Error %s searching records\n", err)
+	}
+	var found bool
+	for _, record := range searchResponse.Records {
+		if record.Metadata.RecordID == wroteRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
 	}
 }
