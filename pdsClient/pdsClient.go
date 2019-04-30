@@ -173,7 +173,7 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
-// InternalSearch returns records macthing the provided params,
+// InternalSearch returns records matching the provided params,
 // returning the list of records and error (if any).
 func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearchRequest) (*InternalSearchResponse, error) {
 	var result *InternalSearchResponse

@@ -792,7 +792,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 			Plain:    map[string]string{"key": "value"},
 		},
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	wroteRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
 		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
@@ -800,6 +800,48 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 	// Verify we can do an internal search based off the record type
 	searchRequest := InternalSearchRequest{
 		ContentTypes: []string{recordType},
+	}
+	searchResponse, err := e3dbPDS.InternalSearch(ctx, searchRequest)
+	if err != nil {
+		t.Errorf("Error %s searching records\n", err)
+	}
+	var found bool
+	for _, record := range searchResponse.Records {
+		if record.Metadata.RecordID == wroteRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
+	}
+}
+
+func TestInternalSearchByWriterId(t *testing.T) {
+	// Create record to with an external client
+	recordType := "TestInternalSearchUsingUUID"
+	_, err := MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
+	if err != nil {
+		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
+	}
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := WriteRecordRequest{
+		Data: data,
+		Metadata: Meta{
+			Type:     recordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	ctx := context.Background()
+	wroteRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
+	}
+	// Verify we can do an internal search based off the record type
+	searchRequest := InternalSearchRequest{
+		WriterIDs: []string{validPDSUserID},
 	}
 	searchResponse, err := e3dbPDS.InternalSearch(ctx, searchRequest)
 	if err != nil {
