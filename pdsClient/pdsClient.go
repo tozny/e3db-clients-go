@@ -173,10 +173,24 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	return result, e3dbClients.FlatMapInternalError(*internalError)
 }
 
-// InternalModifiedSearch uses and internal endpoint to search for modified records within a time range
-func (c *E3dbPDSClient) InternalModifiedSearch(ctx context.Context, params InternalModifiedSearchRequest) (*InternalModifiedSearchResponse, error) {
-	var result *InternalModifiedSearchResponse
+// InternalSearch returns records matching the provided params,
+// returning the list of records and error (if any).
+func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearchRequest) (*InternalSearchResponse, error) {
+	var result *InternalSearchResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/search"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, e3dbClients.FlatMapInternalError(*internalError)
+}
+
+// InternalSearchAllowedReads returns the allowed reads that match the
+// provided params, returning a paginated list of allowed reads and error (if any).
+func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params InternalSearchAllowedReadsRequest) (*InternalSearchAllowedReadsResponse, error) {
+	var result *InternalSearchAllowedReadsResponse
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_reads"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
