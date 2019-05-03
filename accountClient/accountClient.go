@@ -30,7 +30,7 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	internalErr := e3dbClients.MakeRawServiceCall(&http.Client{}, request, &result)
-	return result, &internalErr
+	return result, internalErr
 }
 
 // InternalGetClientAccount attempts to get the account id and other account information for the specified client id
