@@ -14,19 +14,28 @@ import (
 )
 
 var (
-	e3dbBaseURL       = os.Getenv("E3DB_API_URL")
-	e3dbAPIKey        = os.Getenv("E3DB_API_KEY_ID")
-	e3dbAPISecret     = os.Getenv("E3DB_API_KEY_SECRET")
-	e3dbClientID      = os.Getenv("E3DB_CLIENT_ID")
-	hookServiceHost   = os.Getenv("E3DB_HOOK_SERVICE_HOST")
-	webhookURL        = os.Getenv("WEBHOOK_URL")
-	ValidClientConfig = e3dbClients.ClientConfig{
+	e3dbStorageHost      = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
+	e3dbAuthHost         = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost      = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey           = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret        = os.Getenv("E3DB_API_KEY_SECRET")
+	e3dbClientID         = os.Getenv("E3DB_CLIENT_ID")
+	hookServiceHost      = os.Getenv("E3DB_HOOK_SERVICE_HOST")
+	webhookURL           = os.Getenv("WEBHOOK_URL")
+	ValidPDSClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
-		Host:      e3dbBaseURL,
+		Host:      e3dbStorageHost,
+		AuthNHost: e3dbAuthHost,
 	}
-	e3dbPDS                  = pdsClient.New(ValidClientConfig)
-	e3dbAccountService       = accountClient.New(ValidClientConfig)
+	e3dbPDS                  = pdsClient.New(ValidPDSClientConfig)
+	ValidAccountClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbAccountHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	e3dbAccountService       = accountClient.New(ValidAccountClientConfig)
 	defaultPDSUserRecordType = "hook-client-integration-tests"
 )
 
@@ -48,7 +57,7 @@ func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID str
 }
 
 func TestCreateWebHook(t *testing.T) {
-	clientConfig, _, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String())
+	clientConfig, _, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("error %s unable to create authorizing client using %+v", err, e3dbAccountService)
 	}
