@@ -7,18 +7,21 @@ import (
 	"testing"
 )
 
-var e3dbBaseURL = os.Getenv("E3DB_API_URL")
-var e3dbAPIKey = os.Getenv("E3DB_API_KEY_ID")
-var e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
-var e3dbSearchIndexerHost = os.Getenv("E3DB_SEARCH_INDEXER_HOST")
-var ValidClientConfig = e3dbClients.ClientConfig{
-	APIKey:    e3dbAPIKey,
-	APISecret: e3dbAPISecret,
-	Host:      e3dbBaseURL,
-}
+var (
+	e3dbAuthHost          = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbSearchIndexerHost = os.Getenv("E3DB_SEARCH_INDEXER_HOST")
+	e3dbAPIKey            = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret         = os.Getenv("E3DB_API_KEY_SECRET")
+	ValidClientConfig     = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbSearchIndexerHost,
+		AuthNHost: e3dbAuthHost,
+	}
+)
 
 func TestIndexRecordSucceedsWithValidInput(t *testing.T) {
-	indexer := New(ValidClientConfig, e3dbSearchIndexerHost)
+	indexer := New(ValidClientConfig)
 	params := IndexRecordRequest{RecordId: "8344742e-2789-457b-bbc8-2ce070bca6ae"}
 	ctx := context.TODO()
 	_, err := indexer.IndexRecord(ctx, params)
@@ -28,7 +31,7 @@ func TestIndexRecordSucceedsWithValidInput(t *testing.T) {
 }
 
 func TestBatchIndexRecordSucceedsWithValidInput(t *testing.T) {
-	indexer := New(ValidClientConfig, e3dbSearchIndexerHost)
+	indexer := New(ValidClientConfig)
 	params := BatchIndexRecordRequest{
 		RecordIds: []string{
 			"82db1d11-2145-488b-b271-2227def2e68d",

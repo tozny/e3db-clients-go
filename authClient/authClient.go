@@ -61,11 +61,11 @@ func New(config e3dbClients.ClientConfig) E3dbAuthClient {
     return E3dbAuthClient{
         APIKey:    config.APIKey,
         APISecret: config.APISecret,
-        Host:      config.Host,
+        Host:      config.AuthNHost,
         oauth2Helper: clientcredentials.Config{
             ClientID:     config.APIKey,
             ClientSecret: config.APISecret,
-            TokenURL:     fmt.Sprintf("%s/%s/token", config.Host, AuthServiceBasePath),
+            TokenURL:     fmt.Sprintf("%s/%s/token", config.AuthNHost, AuthServiceBasePath),
         },
     }
 }

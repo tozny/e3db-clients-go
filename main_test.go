@@ -12,20 +12,23 @@ import (
     "time"
 )
 
-var e3dbBaseURL = os.Getenv("E3DB_API_URL")
-var e3dbAPIKey = os.Getenv("E3DB_API_KEY_ID")
-var e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
-
-var ValidClientConfig = e3dbClients.ClientConfig{
-    APIKey:    e3dbAPIKey,
-    APISecret: e3dbAPISecret,
-    Host:      e3dbBaseURL,
-}
+var (
+    e3dbStorageHost      = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
+    e3dbAuthHost         = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+    e3dbAPIKey           = os.Getenv("E3DB_API_KEY_ID")
+    e3dbAPISecret        = os.Getenv("E3DB_API_KEY_SECRET")
+    ValidPDSClientConfig = e3dbClients.ClientConfig{
+        APIKey:    e3dbAPIKey,
+        APISecret: e3dbAPISecret,
+        Host:      e3dbStorageHost,
+        AuthNHost: e3dbAuthHost,
+    }
+)
 
 func RegisterClient(email string) (pdsClient.E3dbPDSClient, authClient.E3dbAuthClient, string, error) {
     var user pdsClient.E3dbPDSClient
     var auth authClient.E3dbAuthClient
-    e3dbPDS := pdsClient.New(ValidClientConfig)
+    e3dbPDS := pdsClient.New(ValidPDSClientConfig)
     publicKey, privateKey, err := e3db.GenerateKeyPair()
     if err != nil {
         return user, auth, "", err
@@ -43,12 +46,14 @@ func RegisterClient(email string) (pdsClient.E3dbPDSClient, authClient.E3dbAuthC
     user = pdsClient.New(e3dbClients.ClientConfig{
         APIKey:    resp.APIKeyID,
         APISecret: resp.APISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbStorageHost,
+        AuthNHost: e3dbAuthHost,
     })
     auth = authClient.New(e3dbClients.ClientConfig{
         APIKey:    resp.APIKeyID,
         APISecret: resp.APISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbStorageHost,
+        AuthNHost: e3dbAuthHost,
     })
     return user, auth, resp.ClientID, err
 }
@@ -59,7 +64,8 @@ func TestValidateTokenReturnsValidResultsForValidExternalClientToken(t *testing.
     config := e3dbClients.ClientConfig{
         APIKey:    e3dbAPIKey,
         APISecret: e3dbAPISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbStorageHost,
+        AuthNHost: e3dbAuthHost,
     }
     e3dbAuth := authClient.New(config)
     ctx := context.TODO()

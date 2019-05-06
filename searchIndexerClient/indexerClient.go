@@ -54,12 +54,12 @@ func (c *E3dbSearchIndexerClient) BatchIndexRecord(ctx context.Context, params B
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
-func New(authConfig e3dbClients.ClientConfig, indexerHost string) E3dbSearchIndexerClient {
-	authService := authClient.New(authConfig)
+func New(config e3dbClients.ClientConfig) E3dbSearchIndexerClient {
+	authService := authClient.New(config)
 	return E3dbSearchIndexerClient{
-		authConfig.APIKey,
-		authConfig.APISecret,
-		indexerHost,
+		config.APIKey,
+		config.APISecret,
+		config.Host,
 		&authService,
 	}
 }

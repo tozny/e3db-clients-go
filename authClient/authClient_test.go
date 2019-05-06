@@ -21,13 +21,14 @@ func TestNewReturnsE3dbAuthClientWithSpecifiedConfiguration(t *testing.T) {
     }
 }
 
-var e3dbBaseURL = os.Getenv("E3DB_API_URL")
+var e3dbAuthHost = os.Getenv("E3DB_AUTH_SERVICE_HOST")
 
 func TestGetTokenFailsWhenClientCredentialsAreBogus(t *testing.T) {
     config := e3dbClients.ClientConfig{
         APIKey:    "FAKE",
         APISecret: "FAKE",
-        Host:      e3dbBaseURL,
+        Host:      e3dbAuthHost,
+        AuthNHost: e3dbAuthHost,
     }
     e3dbAuth := New(config)
     ctx := context.TODO()
@@ -44,7 +45,8 @@ func TestGetTokenSucceedsWhenClientCredentialsAreValid(t *testing.T) {
     config := e3dbClients.ClientConfig{
         APIKey:    e3dbAPIKey,
         APISecret: e3dbAPISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbAuthHost,
+        AuthNHost: e3dbAuthHost,
     }
     e3dbAuth := New(config)
     ctx := context.TODO()
@@ -60,7 +62,8 @@ func TestValidateTokenReturnsValidResultsForValidToken(t *testing.T) {
     config := e3dbClients.ClientConfig{
         APIKey:    e3dbAPIKey,
         APISecret: e3dbAPISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbAuthHost,
+        AuthNHost: e3dbAuthHost,
     }
     e3dbAuth := New(config)
     ctx := context.TODO()
@@ -86,7 +89,8 @@ func TestValidateTokenReturnsValidResultsForInvalidToken(t *testing.T) {
     config := e3dbClients.ClientConfig{
         APIKey:    e3dbAPIKey,
         APISecret: e3dbAPISecret,
-        Host:      e3dbBaseURL,
+        Host:      e3dbAuthHost,
+        AuthNHost: e3dbAuthHost,
     }
     e3dbAuth := New(config)
     ctx := context.TODO()

@@ -13,15 +13,19 @@ import (
 	"testing"
 )
 
-var e3dbBaseURL = os.Getenv("E3DB_API_URL")
-var e3dbAPIKey = os.Getenv("E3DB_API_KEY_ID")
-var e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
-var e3dbClientID = os.Getenv("E3DB_CLIENT_ID")
-var ValidClientConfig = e3dbClients.ClientConfig{
-	APIKey:    e3dbAPIKey,
-	APISecret: e3dbAPISecret,
-	Host:      e3dbBaseURL,
-}
+var (
+	e3dbAuthHost      = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost   = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey        = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret     = os.Getenv("E3DB_API_KEY_SECRET")
+	e3dbClientID      = os.Getenv("E3DB_CLIENT_ID")
+	ValidClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbAccountHost,
+		AuthNHost: e3dbAuthHost,
+	}
+)
 
 func TestInternalGetClientAccountReturns404ForClientsWithNoAccount(t *testing.T) {
 	// Create internal account client

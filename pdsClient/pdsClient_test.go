@@ -13,19 +13,27 @@ import (
 	"time"
 )
 
-var e3dbBaseURL = os.Getenv("E3DB_API_URL")
-var e3dbAPIKey = os.Getenv("E3DB_API_KEY_ID")
-var e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
-
-var ValidClientConfig = e3dbClients.ClientConfig{
-	APIKey:    e3dbAPIKey,
-	APISecret: e3dbAPISecret,
-	Host:      e3dbBaseURL,
-}
-
-var e3dbPDS = New(ValidClientConfig)
-
-var e3dbAccountService = accountClient.New(ValidClientConfig)
+var (
+	e3dbStorageHost      = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
+	e3dbAuthHost         = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost      = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey           = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret        = os.Getenv("E3DB_API_KEY_SECRET")
+	ValidPDSClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbStorageHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	e3dbPDS                  = New(ValidPDSClientConfig)
+	ValidAccountClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbAccountHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	e3dbAccountService = accountClient.New(ValidAccountClientConfig)
+)
 
 func RegisterClient(email string) (E3dbPDSClient, string, error) {
 	var user E3dbPDSClient
@@ -46,7 +54,8 @@ func RegisterClient(email string) (E3dbPDSClient, string, error) {
 	user = New(e3dbClients.ClientConfig{
 		APIKey:    resp.APIKeyID,
 		APISecret: resp.APISecret,
-		Host:      e3dbBaseURL,
+		Host:      e3dbStorageHost,
+		AuthNHost: e3dbAuthHost,
 	})
 	return user, resp.ClientID, err
 }
@@ -410,7 +419,7 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetch that record with e3db internal client
-	e3dbPDS := New(ValidClientConfig)
+	e3dbPDS := New(ValidPDSClientConfig)
 
 	resp, err := e3dbPDS.InternalGetRecord(ctx, createdRecord.Metadata.RecordID)
 	if err != nil {
@@ -644,7 +653,7 @@ func TestFindModifiedRecords(t *testing.T) {
 
 func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T) {
 	// Create authorizing account and client
-	clientConfig, authorizingAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String())
+	clientConfig, authorizingAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizing client using %+v", e3dbAccountService)
 	}
@@ -669,14 +678,14 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
-	clientConfig, authorizerAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String())
+	clientConfig, authorizerAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
 	}
 	authorizerClient := New(clientConfig)
 	authorizerClientID := authorizerAccount.Account.Client.ClientID
 	// Create account and client for authorizer to share records with
-	clientConfig, shareeAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String())
+	clientConfig, shareeAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
 	}
