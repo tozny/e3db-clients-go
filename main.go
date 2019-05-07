@@ -77,7 +77,7 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 	// If no result is expected, don't attempt to decode a potentially
 	// empty response stream and avoid incurring EOF errors
 	if result == nil {
-		return &RequestError{}
+		return nil
 	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
@@ -86,7 +86,7 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 			message: err.Error(),
 		}
 	}
-	return &RequestError{}
+	return nil
 }
 
 // CreateRequest isolates duplicate code in creating http search request.
