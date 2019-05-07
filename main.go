@@ -42,16 +42,6 @@ func NewError(message, url string, statusCode int) error {
 	return &RequestError{message, url, statusCode}
 }
 
-// FlatMapInternalError returns either a non nil internal error
-// or nil error.
-func FlatMapInternalError(internalError RequestError) error {
-	var err error
-	if internalError.StatusCode != 0 || internalError.Error() != "" {
-		err = &internalError
-	}
-	return err
-}
-
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
 	client := httpAuthorizer.AuthHTTPClient(ctx)
