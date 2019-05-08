@@ -10,7 +10,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-	helper "github.com/tozny/utils-go/test"
+	clientHelper "github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -57,7 +57,7 @@ func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID str
 }
 
 func TestCreateWebHook(t *testing.T) {
-	clientConfig, _, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, _, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("error %s unable to create authorizing client using %+v", err, e3dbAccountService)
 	}
