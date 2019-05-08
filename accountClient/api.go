@@ -1,6 +1,8 @@
 package accountClient
 
-import ()
+import (
+	"github.com/google/uuid"
+)
 
 // ClientKey contains a cryptographic key for use in client level resource encryption operations(e.g. encrypting and decrypting record data).
 type EncryptionKey struct {
@@ -53,7 +55,7 @@ type CreateAccountRequest struct {
 	Account Account `json:"account"`
 }
 
-// CreateAccountRequest represents a response from making a
+// CreateAccountResponse represents a response from making a
 // create account request to the e3db account service.
 type CreateAccountResponse struct {
 	RegistrationToken string  `json:"token"`
@@ -65,4 +67,28 @@ type CreateAccountResponse struct {
 // from calling the Account /client endpoint
 type InternalGetClientAccountResponse struct {
 	AccountID string `json:"account_id"`
+}
+
+// ValidateTokenRequest represents a valid request to the account service's auth/validate endpoint.
+type ValidateTokenRequest struct {
+	Token string `json:"token"` //The token to validate
+}
+
+// ValidateTokenResponse represents the result of calling the account service's auth/validate endpoint.
+type ValidateTokenResponse struct {
+	AccountID string `json:"account_id"` //The account ID associated with this token
+	Valid     bool   `json:"valid"`      //Whether the token was valid
+}
+
+// RegTokenInfo is the return from the token endpoint on a valid request
+type RegTokenInfo struct {
+	Token       string
+	AccountID   uuid.UUID `json:"account_id"`
+	Permissions RegTokenPermissions
+}
+
+// RegTokenPermissions decodes needed token permissions
+type RegTokenPermissions struct {
+	Enabled      bool
+	AllowedTypes []string `json:"allowed_types"`
 }

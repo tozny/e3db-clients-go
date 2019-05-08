@@ -28,8 +28,8 @@ func (c *E3dbHookClient) CreateHook(ctx context.Context, params CreateHookReques
 	if err != nil {
 		return createHookResponse, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &createHookResponse)
-	return createHookResponse, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &createHookResponse)
+	return createHookResponse, err
 }
 
 // ListHooks lists all hooks for the calling clients account,
@@ -41,8 +41,8 @@ func (c *E3dbHookClient) ListHooks(ctx context.Context) (*ListHooksResponse, err
 	if err != nil {
 		return listHooksResponse, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &listHooksResponse)
-	return listHooksResponse, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &listHooksResponse)
+	return listHooksResponse, err
 }
 
 // DeleteHook deletes the hook with the given id, returning error (if any).
@@ -52,8 +52,8 @@ func (c *E3dbHookClient) DeleteHook(ctx context.Context, hookID int) error {
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // New returns a new E3dbHookClient configured with the specified apiKey and apiSecret values.

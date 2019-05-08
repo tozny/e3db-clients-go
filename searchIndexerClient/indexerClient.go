@@ -33,8 +33,8 @@ func (c *E3dbSearchIndexerClient) IndexRecord(ctx context.Context, params IndexR
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // BatchIndexRecord attempts to index the provided records by calling the indexer index batch endpoint.
@@ -49,8 +49,8 @@ func (c *E3dbSearchIndexerClient) BatchIndexRecord(ctx context.Context, params B
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.

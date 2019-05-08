@@ -38,39 +38,29 @@ func (err *RequestError) Error() string {
 }
 
 // NewError creates a new RequestError
-func NewError(message, url string, statusCode int) *RequestError {
+func NewError(message, url string, statusCode int) error {
 	return &RequestError{message, url, statusCode}
 }
 
-// FlatMapInternalError returns either a non nil internal error
-// or nil error.
-func FlatMapInternalError(internalError RequestError) error {
-	var err error
-	if internalError.StatusCode != 0 || internalError.Error() != "" {
-		err = &internalError
-	}
+// MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
+func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
+	client := httpAuthorizer.AuthHTTPClient(ctx)
+	err := MakeRawServiceCall(client, request.WithContext(ctx), result)
 	return err
 }
 
-// MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
-func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) *RequestError {
-	client := httpAuthorizer.AuthHTTPClient(ctx)
-	err := MakeRawServiceCall(client, request.WithContext(ctx), result)
-	return &err
-}
-
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
-func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) RequestError {
+func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
 	client := &http.Client{}
 	request.Header.Add("Authorization", "Bearer "+userAuthToken)
 	return MakeRawServiceCall(client, request, result)
 }
 
 // MakeRawServiceCall sends a request, auto decoding the response to the result interface if sent.
-func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) RequestError {
+func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) error {
 	response, err := client.Do(request)
 	if err != nil {
-		return RequestError{
+		return &RequestError{
 			URL:     request.URL.String(),
 			message: err.Error(),
 		}
@@ -78,7 +68,7 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 	defer response.Body.Close()
 	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
 		requestURL := request.URL.String()
-		return RequestError{
+		return &RequestError{
 			StatusCode: response.StatusCode,
 			URL:        requestURL,
 			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
@@ -87,28 +77,25 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 	// If no result is expected, don't attempt to decode a potentially
 	// empty response stream and avoid incurring EOF errors
 	if result == nil {
-		return RequestError{}
+		return nil
 	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return RequestError{
+		return &RequestError{
 			URL:     request.URL.String(),
 			message: err.Error(),
 		}
 	}
-	return RequestError{}
+	return nil
 }
 
 // CreateRequest isolates duplicate code in creating http search request.
-func CreateRequest(method string, path string, params interface{}) (*http.Request, *RequestError) {
+func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
 	var buf bytes.Buffer
 	var request *http.Request
 	err := json.NewEncoder(&buf).Encode(&params)
 	if err != nil {
-		return request, &RequestError{
-			URL:     path,
-			message: err.Error(),
-		}
+		return request, err
 	}
 	request, err = http.NewRequest(method, path, &buf)
 	if err != nil {

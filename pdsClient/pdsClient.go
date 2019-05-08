@@ -63,15 +63,12 @@ func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAutho
 			},
 		},
 	}
-	request, internalError := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
-	if internalError != nil {
-		err = e3dbClients.FlatMapInternalError(*internalError)
-	}
+	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
 	if err != nil {
 		return err
 	}
-	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // Share attempts to grants another e3db client permission to read records of the
@@ -94,15 +91,12 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 			},
 		},
 	}
-	request, internalError := e3dbClients.CreateRequest("PUT", path, sharePolicy)
-	if internalError != nil {
-		err = e3dbClients.FlatMapInternalError(*internalError)
-	}
+	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
 	if err != nil {
 		return err
 	}
-	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
@@ -126,15 +120,12 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 			},
 		},
 	}
-	request, internalError := e3dbClients.CreateRequest("PUT", path, sharePolicy)
-	if internalError != nil {
-		err = e3dbClients.FlatMapInternalError(*internalError)
-	}
+	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
 	if err != nil {
 		return err
 	}
-	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // InternalAllowedReads attempts to retrieve the list of AllowedRead policies for other users records for the given reader using an internal only e3db endpoint, returning InternalAllowedReadsResponse(which may or may not be empty of AllowedRead policies) and error (if any).
@@ -145,20 +136,20 @@ func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID strin
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // InternalAllowedReadsForAccessPolicy attempts to retrieve the list of allowed readers given an access policy.
 func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context, params InternalAllowedReadersForPolicyRequest) (*InternalAllowedReadersForPolicyResponse, error) {
 	var result *InternalAllowedReadersForPolicyResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_readers"
-	request, internalError := e3dbClients.CreateRequest("POST", path, params)
-	if internalError != nil {
-		return result, e3dbClients.FlatMapInternalError(*internalError)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
 	}
-	internalError = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
@@ -169,8 +160,8 @@ func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params Regis
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // InternalSearch returns records matching the provided params,
@@ -182,8 +173,8 @@ func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearc
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // InternalSearchAllowedReads returns the allowed reads that match the
@@ -195,8 +186,8 @@ func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params I
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // PutAccessKey attempts to set an access key that E3DB will enforce be used to write records of the specified type for the specified user, client, and writer, returning the response and error (if any).
@@ -207,8 +198,8 @@ func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyReq
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // GetAccessKey attempts to get an access key stored in E3DB returning the response and error (if any).
@@ -219,8 +210,8 @@ func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyReq
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // WriteRecord attempts to store a record in e3db, returning stored record and error (if any).
@@ -232,8 +223,8 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
@@ -243,8 +234,8 @@ func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordReq
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // ListRecords returns a list of records using any filters provided as params, and error (if any).
@@ -255,8 +246,8 @@ func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsReque
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // ProxyListRecords returns a list of records using any filters provided as params, and error (if any).
@@ -267,8 +258,8 @@ func (c *E3dbPDSClient) ProxyListRecords(ctx context.Context, authToken string, 
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
-	return result, e3dbClients.FlatMapInternalError(internalError)
+	err = e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	return result, err
 }
 
 // BatchGetRecords makes a call to batch get the records in params,
@@ -280,8 +271,8 @@ func (c *E3dbPDSClient) BatchGetRecords(ctx context.Context, params BatchGetReco
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // BatchGetRecords makes a call to batch get the records in params,
@@ -294,8 +285,8 @@ func (c *E3dbPDSClient) ProxyBatchGetRecords(ctx context.Context, authToken stri
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
-	return result, e3dbClients.FlatMapInternalError(internalError)
+	err = e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	return result, err
 }
 
 // InternalGetRecord attempts to get a record using an internal only e3db endpoint, returning fetched record and error (if any).
@@ -306,8 +297,8 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
 }
 
 // HealthCheck checks whether the storage service is up,
@@ -318,8 +309,8 @@ func (c *E3dbPDSClient) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
-	return e3dbClients.FlatMapInternalError(*internalError)
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // CreateSharingAccessKey attempts to create an access key for the specified reader to be able to decrypt records of the specified type, returning error (if any).
