@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
+	clientHelper "github.com/tozny/e3db-clients-go/test"
 	"github.com/tozny/e3db-go/v2"
-	helper "github.com/tozny/utils-go/test"
 	"os"
 	"testing"
 	"time"
@@ -653,7 +653,7 @@ func TestFindModifiedRecords(t *testing.T) {
 
 func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T) {
 	// Create authorizing account and client
-	clientConfig, authorizingAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, authorizingAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizing client using %+v", e3dbAccountService)
 	}
@@ -678,14 +678,14 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
-	clientConfig, authorizerAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, authorizerAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
 	}
 	authorizerClient := New(clientConfig)
 	authorizerClientID := authorizerAccount.Account.Client.ClientID
 	// Create account and client for authorizer to share records with
-	clientConfig, shareeAccount, err := helper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, shareeAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
 	}
