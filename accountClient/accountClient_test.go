@@ -5,12 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-go/v2"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
+	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-go/v2"
 )
 
 var (
@@ -45,7 +46,63 @@ func TestInternalGetClientAccountReturns404ForClientsWithNoAccount(t *testing.T)
 func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	// Create internal account client
 	accounter := New(ValidClientConfig)
-	// Generate info for creating a new account
+	ctx := context.TODO()
+	response, err := makeNewAccount(t, ctx, accounter)
+	if err != nil {
+		t.Errorf("Failure Creating New Account\n")
+		return
+	}
+	accountID := response.Profile.AccountID
+	clientID := response.Account.Client.ClientID
+	// Make request to lookup the account for this account's client
+	account, err := accounter.InternalGetClientAccount(ctx, clientID)
+	if err != nil {
+		t.Errorf("Error %s trying to get account info for client %+v\n", err, accounter)
+	}
+	// Verify correct account id for this client is returned
+	if account.AccountID != accountID {
+		t.Errorf("Expected account id to be %s, got %s", accountID, account.AccountID)
+	}
+}
+
+func TestInternalGetAccountInfoForAccount(t *testing.T) {
+	// Create internal account client
+	accounter := New(ValidClientConfig)
+	// Create new account with stripe id
+	ctx := context.TODO()
+	response, err := makeNewAccount(t, ctx, accounter)
+	if err != nil {
+		t.Errorf("Failure Creating New Account\n")
+		return
+	}
+	accountID := response.Profile.AccountID
+	// Make request to lookup the account for this account's client
+	stripeResponse, err := accounter.InternalGetAccountInfo(ctx, accountID)
+	if err != nil {
+		t.Errorf("Error %s trying to get stripe id for account %+v\n", err, accounter)
+	}
+	// Verify a string that looks like a stripe id is returned
+	if !strings.HasPrefix(stripeResponse.StripeID, "cus_") {
+		t.Errorf("Expected stripe ID to look like a stripe id, but was \"%v\" <- in quotes", stripeResponse.StripeID)
+	}
+}
+
+func TestInternalGetStripeIDReturns404ForAccountsWithoutStripeID(t *testing.T) {
+	// Create internal account client
+	accounter := New(ValidClientConfig)
+	// Make request to get the account for a random accountID
+	ctx := context.TODO()
+	_, err := accounter.InternalGetAccountInfo(ctx, uuid.New().String())
+	if err == nil {
+		t.Errorf("Expected error %s trying to get account info for client with no account %+v\n", err, accounter)
+	}
+	// Verify error is 404/not found
+	if !strings.Contains(err.Error(), "http error 404") {
+		t.Errorf("Expected 404 response, got %s", err)
+	}
+}
+
+func makeNewAccount(t *testing.T, ctx context.Context, accounter E3dbAccountClient) (*CreateAccountResponse, error) {
 	const saltSize = 16
 	saltSeed := [saltSize]byte{}
 	_, err := rand.Read(saltSeed[:])
@@ -86,20 +143,9 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 		},
 	}
 	// Create an account and client for that account using the specified params
-	ctx := context.TODO()
 	response, err := accounter.CreateAccount(ctx, createAccountParams)
 	if err != nil {
 		t.Errorf("Error %s creating account with params %+v\n", err, createAccountParams)
 	}
-	accountID := response.Profile.AccountID
-	clientID := response.Account.Client.ClientID
-	// Make request to lookup the account for this account's client
-	account, err := accounter.InternalGetClientAccount(ctx, clientID)
-	if err != nil {
-		t.Errorf("Error %s trying to get account info for client %+v\n", err, accounter)
-	}
-	// Verify correct account id for this client is returned
-	if account.AccountID != accountID {
-		t.Errorf("Expected account id to be %s, got %s", accountID, account.AccountID)
-	}
+	return response, err
 }

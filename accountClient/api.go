@@ -92,3 +92,10 @@ type RegTokenPermissions struct {
 	Enabled      bool
 	AllowedTypes []string `json:"allowed_types"`
 }
+
+// InternalGetAccountInfoResponse represents a response from calling the account service
+// internal/v1/account/account-info/{account-id} endpoint
+type InternalGetAccountInfoResponse struct {
+	StripeID       string `json:"stripe_id"`
+	SubscriptionID string `json:"stripe_subscription_id"`
+}

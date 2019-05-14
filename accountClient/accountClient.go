@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/authClient"
 	"net/http"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/authClient"
 )
 
 const (
@@ -73,6 +74,18 @@ func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params Valida
 	request, err := http.NewRequest("POST", c.Host+"/"+AccountServiceBasePath+"/auth/validate", &buf)
 	if err != nil {
 		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
+// InternalGetStripeID attempts to get account information for the specified account ID. Currently the only account information that is returned is the stripeID
+func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountID string) (*InternalGetAccountInfoResponse, error) {
+	var result *InternalGetAccountInfoResponse
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/account-info/" + accountID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
