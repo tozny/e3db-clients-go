@@ -34,7 +34,7 @@ type QueryRange struct {
 type APIMetricsRequest struct {
 	NextToken   int         `json:"next_token"`   // Provided when paginating through query results
 	Limit       int         `json:"limit"`        // The max number of results to return.
-	ExcludeLogs bool        `json:"include_logs"` // Whether to return just counts of requests or the full request
+	ExcludeLogs bool        `json:"exclude_logs"` // Whether to return just counts of requests or the full request, defaults to false.
 	AccountID   string      `json:"account_id"`   // AccountID that owns the relevant APIMetrics
 	Match       QueryParams `json:"match"`        // Params to match on
 	Exclude     QueryParams `json:"exclude"`      // Params to exclude on
