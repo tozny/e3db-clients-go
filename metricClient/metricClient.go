@@ -18,10 +18,10 @@ type MetricClient struct {
 	*authClient.E3dbAuthClient
 }
 
-// Aggregations gets the aggregation from the metrics service.
+// Aggregations gets the requests aggregation from the metrics service.
 func (c *MetricClient) Aggregations(ctx context.Context, params APIAggregateRequest) (*APIAggregateResponse, error) {
 	var result *APIAggregateResponse
-	path := c.Host + "/" + MetricServiceBasePath + "aggregations"
+	path := c.Host + "/" + MetricServiceBasePath + "requests/aggregations"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
@@ -30,10 +30,10 @@ func (c *MetricClient) Aggregations(ctx context.Context, params APIAggregateRequ
 	return result, err
 }
 
-// APIMetrics queries elastic search for API Metrics matching params provided
-func (c *MetricClient) APIMetrics(ctx context.Context, params APIMetricsRequest) (*APIMetricsResponse, error) {
+// RequestsMetrics queries elastic search for API Metrics matching params provided
+func (c *MetricClient) RequestsMetrics(ctx context.Context, params APIMetricsRequest) (*APIMetricsResponse, error) {
 	var result *APIMetricsResponse
-	path := c.Host + "/" + MetricServiceBasePath
+	path := c.Host + "/" + MetricServiceBasePath + "requests"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
