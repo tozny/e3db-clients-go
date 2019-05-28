@@ -92,8 +92,21 @@ func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountI
 }
 
 // ServiceCheck checks whether the account service is up and working.
+// returning error if unable to connect service
 func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {
 	path := c.Host + "/" + AccountServiceBasePath + "/servicecheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+// HealthCheck checks whether the account service is up,
+// returning error if unable to connect to the service.
+func (c *E3dbAccountClient) HealthCheck(ctx context.Context) error {
+	path := c.Host + "/" + AccountServiceBasePath + "/healthcheck"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return err
