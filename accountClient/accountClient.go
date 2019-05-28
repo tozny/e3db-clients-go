@@ -91,6 +91,17 @@ func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountI
 	return result, err
 }
 
+// ServiceCheck checks whether the account service is up and working.
+func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {
+	path := c.Host + "/" + AccountServiceBasePath + "/servicecheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // New returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbAccountClient {
 	authService := authClient.New(config)
