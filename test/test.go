@@ -5,10 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-go/v2"
-	"testing"
 )
 
 // MakeE3DBAccount attempts to create a valid e3db account returning the root client config for the created account and error (if any).
@@ -37,6 +38,11 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 		t.Errorf("Failed generating key pair %s", err)
 		return accountClientConfig, accountResponse, err
 	}
+	backupSigningKey, _, err := e3db.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating key pair %s", err)
+		return accountClientConfig, accountResponse, err
+	}
 	createAccountParams := accountClient.CreateAccountRequest{
 		Profile: accountClient.Profile{
 			Name:               accountTag,
@@ -57,6 +63,9 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 			Plan:    "free0",
 			PublicKey: accountClient.ClientKey{
 				Curve25519: backupPublicKey,
+			},
+			SigningKey: accountClient.EncryptionKey{
+				Ed25519: backupSigningKey,
 			},
 		},
 	}
