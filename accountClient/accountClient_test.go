@@ -68,7 +68,7 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 func TestInternalSigClientInfoReturnsInfo(t *testing.T) {
 	// Create internal account client
 	accounter := New(ValidClientConfig)
-	ctx := context.TODO()
+	ctx := context.Background()
 	response, err := makeNewAccount(t, ctx, accounter)
 	if err != nil {
 		t.Errorf("Failure Creating New Account\n")
