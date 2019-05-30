@@ -17,21 +17,22 @@ type ClientKey struct {
 
 // Account represents an e3db account.
 type Account struct {
-	Company   string    `json:"company"`
-	Plan      string    `json:"plan"`
-	PublicKey ClientKey `json:"public_key"`
-	Client    *Client   `json:"client,omitempty"`
+	Company    string        `json:"company"`
+	Plan       string        `json:"plan"`
+	PublicKey  ClientKey     `json:"public_key"`
+	SigningKey EncryptionKey `json:"signing_key",omitempty`
+	Client     *Client       `json:"client,omitempty"`
 }
 
 // Client represents an e3db client.
 type Client struct {
-	ClientID     string    `json:"client_id"`
-	Name         string    `json:"name"`
-	PublicKey    ClientKey `json:"public_key"`
-	APIKeyID     string    `json:"api_key_id"`
-	APISecretKey string    `json:"api_secret"`
-	SigningKey   string    `json:"signing_key"`
-	Enabled      bool      `json:"enabled"`
+	ClientID     string        `json:"client_id"`
+	Name         string        `json:"name"`
+	PublicKey    ClientKey     `json:"public_key"`
+	APIKeyID     string        `json:"api_key_id"`
+	APISecretKey string        `json:"api_secret"`
+	SigningKey   EncryptionKey `json:"signing_key"`
+	Enabled      bool          `json:"enabled"`
 }
 
 // Profile wraps profile configuration for an e3db account.
@@ -98,4 +99,14 @@ type RegTokenPermissions struct {
 type InternalGetAccountInfoResponse struct {
 	StripeID       string `json:"stripe_id"`
 	SubscriptionID string `json:"stripe_subscription_id"`
+}
+
+// InternalSigClientInfoResponse wraps the data returned from the
+// /internal/v1/account/validate-signature-client endpoint
+type InternalSigClientInfoResponse struct {
+	Name       string    `json:"name"`
+	ClientID   uuid.UUID `json:"client_id"`
+	AccountID  uuid.UUID `json:"account_id"`
+	PublicKey  string    `json:"public_key"`
+	SigningKey string    `json:"signing_key"`
 }

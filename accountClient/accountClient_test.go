@@ -65,6 +65,40 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	}
 }
 
+func TestInternalSigClientInfoReturnsInfo(t *testing.T) {
+	// Create internal account client
+	accounter := New(ValidClientConfig)
+	ctx := context.Background()
+	response, err := makeNewAccount(t, ctx, accounter)
+	if err != nil {
+		t.Errorf("Failure Creating New Account\n")
+		return
+	}
+	clientID := response.Account.Client.ClientID
+	sigKey := response.Account.Client.SigningKey.Ed25519
+	// Make request to lookup the client in this account
+	sigClientInfo, err := accounter.InternalSigClientInfo(ctx, clientID, sigKey)
+	if err != nil {
+		t.Errorf("Error %s trying to get account info for client %+v\n", err, accounter)
+	}
+	// Verify correct info for this client is returned
+	if sigClientInfo.Name != response.Account.Client.Name {
+		t.Errorf("Expected client name to be %q, got %q", sigClientInfo.Name, response.Account.Client.Name)
+	}
+	if sigClientInfo.ClientID.String() != clientID {
+		t.Errorf("Expected client ID to be %q, got %q", sigClientInfo.ClientID, clientID)
+	}
+	if sigClientInfo.AccountID.String() != response.Profile.AccountID {
+		t.Errorf("Expected client account ID to be %q, got %q", sigClientInfo.AccountID, response.Profile.AccountID)
+	}
+	if sigClientInfo.PublicKey != response.Account.Client.PublicKey.Curve25519 {
+		t.Errorf("Expected client public key to be %q, got %q", sigClientInfo.PublicKey, response.Account.Client.PublicKey.Curve25519)
+	}
+	if sigClientInfo.SigningKey != response.Account.Client.SigningKey.Ed25519 {
+		t.Errorf("Expected client public key to be %q, got %q", sigClientInfo.SigningKey, response.Account.Client.SigningKey.Ed25519)
+	}
+}
+
 func TestInternalGetAccountInfoForAccount(t *testing.T) {
 	// Create internal account client
 	accounter := New(ValidClientConfig)
@@ -118,6 +152,10 @@ func makeNewAccount(t *testing.T, ctx context.Context, accounter E3dbAccountClie
 	if err != nil {
 		t.Errorf("Failed generating key pair %s", err)
 	}
+	backupSigningKey, _, err := e3db.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating key pair %s", err)
+	}
 	accountTag := uuid.New().String()
 	createAccountParams := CreateAccountRequest{
 		Profile: Profile{
@@ -139,6 +177,9 @@ func makeNewAccount(t *testing.T, ctx context.Context, accounter E3dbAccountClie
 			Plan:    "free0",
 			PublicKey: ClientKey{
 				Curve25519: backupPublicKey,
+			},
+			SigningKey: EncryptionKey{
+				Ed25519: backupSigningKey,
 			},
 		},
 	}
