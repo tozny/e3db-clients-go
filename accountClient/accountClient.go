@@ -46,6 +46,35 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 	return result, err
 }
 
+func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientRegistrationRequest) (*ClientRegistrationResponse, error) {
+	var result *ClientRegistrationResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/e3db/clients/register"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	resp, err := e3dbClients.ReturnE3dbServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	backupClient := resp.Header.Get("X-Backup-Client")
+	result.RootClientID = backupClient
+	return result, err
+}
+
+func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, accountServiceJWT string, params CreateRegTokenRequest) (*CreateRegTokenResponse, error) {
+	var result *CreateRegTokenResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	// TODO: Not actually a `proxied user call` but account service serves it's own auth...
+	// Consider a renaming of MakeProxiedUserCall
+	err = e3dbClients.MakeProxiedUserCall(ctx, accountServiceJWT, request, &result)
+	return result, err
+}
+
 // RegistrationToken validates a registration token with the account service and fetches its permissions
 func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegTokenInfo, error) {
 	result := RegTokenInfo{

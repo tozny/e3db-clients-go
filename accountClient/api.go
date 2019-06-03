@@ -59,9 +59,29 @@ type CreateAccountRequest struct {
 // CreateAccountResponse represents a response from making a
 // create account request to the e3db account service.
 type CreateAccountResponse struct {
-	RegistrationToken string  `json:"token"`
-	Profile           Profile `json:"profile"`
-	Account           Account `json:"account"`
+	AccountServiceToken string  `json:"token"` // JWT token for subsequent requests to the account service.
+	Profile             Profile `json:"profile"`
+	Account             Account `json:"account"`
+}
+
+type ClientRegistrationRequest struct {
+	Token  string                 `json:"token"`
+	Client ClientRegistrationInfo `json:"client"`
+}
+
+// ClientRegistrationResponse contains information about a newly-registered E3DB client
+type ClientRegistrationResponse struct {
+	ClientID     string    `json:"client_id"`
+	APIKeyID     string    `json:"api_key_id"`
+	APISecret    string    `json:"api_secret"`
+	PublicKey    ClientKey `json:"public_key"`
+	Name         string    `json:"name"`
+	RootClientID string
+}
+
+type ClientRegistrationInfo struct {
+	Name      string    `json:"name"`
+	PublicKey ClientKey `json:"public_key"`
 }
 
 // InternalGetClientAccountResponse represents a response
@@ -79,6 +99,24 @@ type ValidateTokenRequest struct {
 type ValidateTokenResponse struct {
 	AccountID string `json:"account_id"` //The account ID associated with this token
 	Valid     bool   `json:"valid"`      //Whether the token was valid
+}
+
+// CreateRegTokenRequest represents a valid request to the account service's /tokens endpoint POST.
+type CreateRegTokenRequest struct {
+	TokenPermissions
+}
+
+// CreateRegTokenResponse  represents the result of calling the account service's /tokens POST endpoint.
+type CreateRegTokenResponse struct {
+	Token       string           `json:"token"`
+	Permissions TokenPermissions `json:"permissions"`
+}
+
+// TokenPermissions permissions associated with a registration token.
+// called ClientPermissions in the account service spec
+type TokenPermissions struct {
+	Enabled bool `json:"enabled"`  // Flag a newly created client as enabled even if the default behavior is creating disabled clients
+	OneTime bool `json:"one-time"` // Automatically delete the token after it's been used to register a client
 }
 
 // RegTokenInfo is the return from the token endpoint on a valid request
