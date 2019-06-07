@@ -14,6 +14,31 @@ type AdminListResponse struct {
 	NextToken int64    `json:"next_token"`
 }
 
+type AdminGetResponse struct {
+	Client
+}
+
+type ClientGetResponse struct {
+	Client
+}
+
+// ClientRegisterRequest captures the information sent to create a client.
+type ClientRegisterRequest struct {
+	RegistrationToken string `json:"token"`
+	Client            struct {
+		Name       string            `json:"name"`
+		Type       string            `json:"type"`
+		PublicKey  map[string]string `json:"public_key"`
+		SigningKey map[string]string `json:"signing_key,omitemtpy"`
+	} `json:"client"`
+}
+
+// ClientRegisterResponse sends back the JSON information of a client.
+type ClientRegisterResponse struct {
+	Client
+	APISecret string `json:"api_secret"`
+}
+
 // Client is all the information the user gets to see about their client.
 type Client struct {
 	ClientID    uuid.UUID         `json:"client_id"`
