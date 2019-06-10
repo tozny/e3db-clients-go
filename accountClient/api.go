@@ -101,8 +101,9 @@ type ValidateTokenResponse struct {
 	Valid     bool   `json:"valid"`      //Whether the token was valid
 }
 
-// CreateRegTokenRequest represents a valid request to the account service's /tokens endpoint POST.
-type CreateRegTokenRequest struct {
+// CreateRegistrationTokenRequest represents a valid request to the account service's /tokens endpoint POST.
+type CreateRegistrationTokenRequest struct {
+	AccountServiceToken string `json:"token"` // JWT token for subsequent requests to the account service.
 	TokenPermissions
 }
 
@@ -116,7 +117,7 @@ type CreateRegTokenResponse struct {
 // called ClientPermissions in the account service spec
 type TokenPermissions struct {
 	Enabled bool `json:"enabled"`  // Flag a newly created client as enabled even if the default behavior is creating disabled clients
-	OneTime bool `json:"one-time"` // Automatically delete the token after it's been used to register a client
+	OneTime bool `json:"one_time"` // Automatically delete the token after it's been used to register a client
 }
 
 // RegTokenInfo is the return from the token endpoint on a valid request
