@@ -4,20 +4,26 @@ import (
 	"github.com/google/uuid"
 )
 
+// AdminListRequest is the information sent to the paginated /admin GET endpooint,
+// to get the clients for a specific account (determined by authN).
 type AdminListRequest struct {
 	NextToken int64 `json:"next_token"`
 	Limit     int   `json:"limit"`
 }
 
+// AdminListResponse is a list of client information associated with a specific accountID (authN) and page.
 type AdminListResponse struct {
 	Clients   []Client `json:"clients"`
 	NextToken int64    `json:"next_token"`
 }
 
+// AdminGetResponse is the client information from the endpoint /admin/<client_id>,
+// owned by the account that authenticated this call.
 type AdminGetResponse struct {
 	Client
 }
 
+// ClientGetResponse is the client information from the endpoint /<client_id>
 type ClientGetResponse struct {
 	Client
 }
@@ -33,7 +39,7 @@ type ClientRegisterRequest struct {
 	} `json:"client"`
 }
 
-// ClientRegisterResponse sends back the JSON information of a client.
+// ClientRegisterResponse sends back the client information for a newly registered client
 type ClientRegisterResponse struct {
 	Client
 	APISecret string `json:"api_secret"`
