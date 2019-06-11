@@ -50,7 +50,7 @@ func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegiste
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakePublicCall(ctx, request, &result)
 	return result, err
 }
 

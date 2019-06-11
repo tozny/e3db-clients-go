@@ -56,6 +56,12 @@ func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *htt
 	return MakeRawServiceCall(client, request, result)
 }
 
+// MakePublicCall makes an unauthenticated request to an e3db service.
+func MakePublicCall(ctx context.Context, request *http.Request, result interface{}) error {
+	client := &http.Client{}
+	return MakeRawServiceCall(client, request, result)
+}
+
 // MakeRawServiceCall sends a request, auto decoding the response to the result interface if sent.
 func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) error {
 	response, err := client.Do(request)
