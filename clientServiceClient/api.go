@@ -28,13 +28,18 @@ type ClientGetResponse struct {
 	Client
 }
 
+// ClientGetPublicResponse is the client information from the endpoint /<client_id>/public
+type ClientGetPublicResponse struct {
+	PublicClient
+}
+
 // ClientRegisterRequest captures the information sent to create a client.
 type ClientRegisterRequest struct {
 	RegistrationToken string             `json:"token"`
 	Client            ClientRegisterInfo `json:"client"`
 }
 
-// ClientRegisterInfo  is the client definition required to create a new client.
+// ClientRegisterInfo is the client definition required to create a new client.
 type ClientRegisterInfo struct {
 	Name        string            `json:"name"`
 	Type        string            `json:"type"`
@@ -58,4 +63,11 @@ type Client struct {
 	PublicKeys  map[string]string `json:"public_key"`
 	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 	Meta        map[string]string `json:"meta,omitempty"`
+}
+
+// PublicClient is the public information any client can see about a client.
+type PublicClient struct {
+	ClientID    uuid.UUID         `json:"client_id"`
+	PublicKeys  map[string]string `json:"public_key"`
+	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 }
