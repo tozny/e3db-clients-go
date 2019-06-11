@@ -20,7 +20,7 @@ type Account struct {
 	Company    string        `json:"company"`
 	Plan       string        `json:"plan"`
 	PublicKey  ClientKey     `json:"public_key"`
-	SigningKey EncryptionKey `json:"signing_key",omitempty`
+	SigningKey EncryptionKey `json:"signing_key,omitempty"`
 	Client     *Client       `json:"client,omitempty"`
 }
 

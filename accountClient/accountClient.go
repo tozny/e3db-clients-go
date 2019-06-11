@@ -66,7 +66,7 @@ func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientReg
 }
 
 // CreateRegistrationToken makes a call to account service to create a registration token
-func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params CreateRegTokenRequest) (*CreateRegTokenResponse, error) {
+func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params CreateRegistrationTokenRequest) (*CreateRegTokenResponse, error) {
 	var result *CreateRegTokenResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
