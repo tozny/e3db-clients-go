@@ -46,6 +46,39 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 	return result, err
 }
 
+// RegisterClient registers a client with using the account service which proxies to the client service,
+// this method is intended for TESTING the functionality of the integrated client service. Not intended for future use.
+func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientRegistrationRequest) (*ClientRegistrationResponse, error) {
+	var result *ClientRegistrationResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/e3db/clients/register"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	resp, err := e3dbClients.ReturnE3dbServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	// TODO: add this reponse as a field in account service so we don't have to parse it from the header here.
+	backupClient := resp.Header.Get("X-Backup-Client")
+	result.RootClientID = backupClient
+	return result, err
+}
+
+// CreateRegistrationToken makes a call to account service to create a registration token
+func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params CreateRegTokenRequest) (*CreateRegTokenResponse, error) {
+	var result *CreateRegTokenResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	// TODO: Not actually a `proxied user call` but account service serves it's own auth...
+	// Consider a renaming of MakeProxiedUserCall
+	err = e3dbClients.MakeProxiedUserCall(ctx, params.AccountServiceToken, request, &result)
+	return result, err
+}
+
 // RegistrationToken validates a registration token with the account service and fetches its permissions
 func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegTokenInfo, error) {
 	result := RegTokenInfo{
@@ -79,7 +112,7 @@ func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params Valida
 	return result, err
 }
 
-// InternalGetStripeID attempts to get account information for the specified account ID. Currently the only account information that is returned is the stripeID
+// InternalGetAccountInfo attempts to get account information for the specified account ID. Currently the only account information that is returned is the stripeID
 func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountID string) (*InternalGetAccountInfoResponse, error) {
 	var result *InternalGetAccountInfoResponse
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/account-info/" + accountID
@@ -91,7 +124,7 @@ func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountI
 	return result, err
 }
 
-// InternaSigClientInfo attempts to get client information for the specified
+// InternalSigClientInfo attempts to get client information for the specified
 // client ID and client public singing key.
 func (c *E3dbAccountClient) InternalSigClientInfo(ctx context.Context, clientID string, sigKey string) (*InternalSigClientInfoResponse, error) {
 	// Set up the request with the proper endpoint

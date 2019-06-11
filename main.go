@@ -89,6 +89,48 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 	return nil
 }
 
+// TODO: determine a better way to handle X-args.
+
+// ReturnE3dbServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
+func ReturnE3dbServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) (*http.Response, error) {
+	client := httpAuthorizer.AuthHTTPClient(ctx)
+	resp, err := ReturnRawServiceCall(client, request.WithContext(ctx), result)
+	return resp, err
+}
+
+// ReturnRawServiceCall sends a request, auto decoding the response to the result interface and returning Response.
+func ReturnRawServiceCall(client *http.Client, request *http.Request, result interface{}) (*http.Response, error) {
+	response, err := client.Do(request)
+	if err != nil {
+		return response, &RequestError{
+			URL:     request.URL.String(),
+			message: err.Error(),
+		}
+	}
+	defer response.Body.Close()
+	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
+		requestURL := request.URL.String()
+		return response, &RequestError{
+			StatusCode: response.StatusCode,
+			URL:        requestURL,
+			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
+		}
+	}
+	// If no result is expected, don't attempt to decode a potentially
+	// empty response stream and avoid incurring EOF errors
+	if result == nil {
+		return response, nil
+	}
+	err = json.NewDecoder(response.Body).Decode(&result)
+	if err != nil {
+		return response, &RequestError{
+			URL:     request.URL.String(),
+			message: err.Error(),
+		}
+	}
+	return response, nil
+}
+
 // CreateRequest isolates duplicate code in creating http search request.
 func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
 	var buf bytes.Buffer
