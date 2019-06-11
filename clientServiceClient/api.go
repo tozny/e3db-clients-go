@@ -30,13 +30,16 @@ type ClientGetResponse struct {
 
 // ClientRegisterRequest captures the information sent to create a client.
 type ClientRegisterRequest struct {
-	RegistrationToken string `json:"token"`
-	Client            struct {
-		Name       string            `json:"name"`
-		Type       string            `json:"type"`
-		PublicKey  map[string]string `json:"public_key"`
-		SigningKey map[string]string `json:"signing_key,omitemtpy"`
-	} `json:"client"`
+	RegistrationToken string             `json:"token"`
+	Client            ClientRegisterInfo `json:"client"`
+}
+
+// ClientRegisterInfo  is the client definition required to create a new client.
+type ClientRegisterInfo struct {
+	Name       string            `json:"name"`
+	Type       string            `json:"type"`
+	PublicKey  map[string]string `json:"public_key"`
+	SigningKey map[string]string `json:"signing_key,omitemtpy"`
 }
 
 // ClientRegisterResponse sends back the client information for a newly registered client
