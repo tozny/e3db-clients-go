@@ -78,6 +78,17 @@ func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID stri
 	return result, err
 }
 
+// InternalPatchBackup gets a client's public client information for clientID.
+func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params InternalClientPatchBackupRequest) error {
+	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/backup"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
 func New(config e3dbClients.ClientConfig) ClientServiceClient {
 	authService := authClient.New(config)

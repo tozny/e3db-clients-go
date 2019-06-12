@@ -53,6 +53,11 @@ type ClientRegisterResponse struct {
 	APISecret string `json:"api_secret"`
 }
 
+type InternalClientPatchBackupRequest struct {
+	ClientID  string
+	HasBackup bool `json:"has_backup"`
+}
+
 // Client is all the information the user gets to see about their client.
 type Client struct {
 	ClientID    uuid.UUID         `json:"client_id"`
@@ -60,6 +65,7 @@ type Client struct {
 	Name        string            `json:"name"`
 	Type        string            `json:"type"`
 	Enabled     bool              `json:"enabled"`
+	HasBackup   bool              `json:"has_backup"`
 	PublicKeys  map[string]string `json:"public_key"`
 	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 	Meta        map[string]string `json:"meta,omitempty"`
