@@ -33,6 +33,16 @@ type ClientGetPublicResponse struct {
 	PublicClient
 }
 
+// ClientBatchPublicRequest is a list of clientIDs to get public information for.
+type ClientBatchPublicRequest struct {
+	ClientIDs []string `json:"client_ids"`
+}
+
+// ClientBatchPublicResponse is the a map of client ID to public client information from endpoint /public.
+type ClientBatchPublicResponse struct {
+	Clients map[uuid.UUID]PublicClient `json:"clients"`
+}
+
 // ClientRegisterRequest captures the information sent to create a client.
 type ClientRegisterRequest struct {
 	RegistrationToken string             `json:"token"`

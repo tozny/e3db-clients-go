@@ -78,6 +78,18 @@ func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID stri
 	return result, err
 }
 
+// BatchPublic makes POST call to retrieve a list of clients public information for clientIDs
+func (c *ClientServiceClient) BatchPublic(ctx context.Context, params ClientBatchPublicRequest) (*ClientBatchPublicResponse, error) {
+	var result *ClientBatchPublicResponse
+	path := c.Host + "/" + ClientServiceBasePath + "public"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // InternalPatchBackup calls internal endpoint to flip a clients has backup flag.
 func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params InternalClientPatchBackupRequest) error {
 	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/backup"
