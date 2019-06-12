@@ -78,7 +78,7 @@ func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID stri
 	return result, err
 }
 
-// InternalPatchBackup gets a client's public client information for clientID.
+// InternalPatchBackup calls internal endpoint to flip a clients has backup flag.
 func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params InternalClientPatchBackupRequest) error {
 	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/backup"
 	request, err := e3dbClients.CreateRequest("PATCH", path, params)
