@@ -112,6 +112,18 @@ func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params In
 	return err
 }
 
+// InternalAccountIDForClientID calls internal endpoint to return account id associated with a client id.
+func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, clientID string) (*InternalAccountIDForClientIDResponse, error) {
+	var result *InternalAccountIDForClientIDResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + clientID + "/accountid"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
 func New(config e3dbClients.ClientConfig) ClientServiceClient {
 	authService := authClient.New(config)
