@@ -78,9 +78,9 @@ func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID stri
 	return result, err
 }
 
-// BatchPublic makes POST call to retrieve a list of clients public information for clientIDs
-func (c *ClientServiceClient) BatchPublic(ctx context.Context, params ClientBatchPublicRequest) (*ClientBatchPublicResponse, error) {
-	var result *ClientBatchPublicResponse
+// BatchPublicInfo makes POST call to retrieve a list of clients public information for clientIDs
+func (c *ClientServiceClient) BatchPublicInfo(ctx context.Context, params ClientBatchPublicInfoRequest) (*ClientBatchPublicInfoResponse, error) {
+	var result *ClientBatchPublicInfoResponse
 	path := c.Host + "/" + ClientServiceBasePath + "public"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
