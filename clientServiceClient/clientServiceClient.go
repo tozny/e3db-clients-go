@@ -50,14 +50,26 @@ func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegiste
 	if err != nil {
 		return result, err
 	}
+	err = e3dbClients.MakePublicCall(ctx, request, &result)
+	return result, err
+}
+
+// GetClient gets a client for clientID.
+func (c *ClientServiceClient) GetClient(ctx context.Context, clientID string) (*ClientGetResponse, error) {
+	var result *ClientGetResponse
+	path := c.Host + "/" + ClientServiceBasePath + clientID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
 
-// GetClient gets a client for clientID
-func (c *ClientServiceClient) GetClient(ctx context.Context, clientID string) (*ClientGetResponse, error) {
-	var result *ClientGetResponse
-	path := c.Host + "/" + ClientServiceBasePath + clientID
+// GetPublicClient gets a client's public client information for clientID.
+func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID string) (*ClientGetPublicResponse, error) {
+	var result *ClientGetPublicResponse
+	path := c.Host + "/" + ClientServiceBasePath + clientID + "/public"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
