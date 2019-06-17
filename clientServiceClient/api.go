@@ -33,6 +33,16 @@ type ClientGetPublicResponse struct {
 	PublicClient
 }
 
+// ClientBatchPublicInfoRequest is a list of clientIDs to get public information for.
+type ClientBatchPublicInfoRequest struct {
+	ClientIDs []string `json:"client_ids"`
+}
+
+// ClientBatchPublicInfoResponse is the a map of client ID to public client information from endpoint /public.
+type ClientBatchPublicInfoResponse struct {
+	Clients map[uuid.UUID]PublicClient `json:"clients"`
+}
+
 // ClientRegisterRequest captures the information sent to create a client.
 type ClientRegisterRequest struct {
 	RegistrationToken string             `json:"token"`
@@ -53,6 +63,16 @@ type ClientRegisterResponse struct {
 	APISecret string `json:"api_secret"`
 }
 
+type InternalClientPatchBackupRequest struct {
+	ClientID  string
+	HasBackup bool `json:"has_backup"`
+}
+
+type AdminToggleClientEnabledRequest struct {
+	ClientID string
+	Enabled  bool `json:"enabled"`
+}
+
 // Client is all the information the user gets to see about their client.
 type Client struct {
 	ClientID    uuid.UUID         `json:"client_id"`
@@ -60,6 +80,7 @@ type Client struct {
 	Name        string            `json:"name"`
 	Type        string            `json:"type"`
 	Enabled     bool              `json:"enabled"`
+	HasBackup   bool              `json:"has_backup"`
 	PublicKeys  map[string]string `json:"public_key"`
 	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 	Meta        map[string]string `json:"meta,omitempty"`
