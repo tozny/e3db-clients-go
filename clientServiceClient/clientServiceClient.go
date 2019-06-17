@@ -42,6 +42,17 @@ func (c *ClientServiceClient) AdminGet(ctx context.Context, clientID string) (*A
 	return result, err
 }
 
+// AdminToggleClientEnabled enables/disables clients with account auth.
+func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, params AdminToggleClientEnabledRequest) error {
+	path := c.Host + "/" + ClientServiceBasePath + "admin/" + params.ClientID + "/enable"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // Register registers a client.
 func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
 	var result *ClientRegisterResponse
@@ -71,6 +82,18 @@ func (c *ClientServiceClient) GetPublicClient(ctx context.Context, clientID stri
 	var result *ClientGetPublicResponse
 	path := c.Host + "/" + ClientServiceBasePath + clientID + "/public"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
+// BatchPublicInfo makes POST call to retrieve a list of clients public information for clientIDs
+func (c *ClientServiceClient) BatchPublicInfo(ctx context.Context, params ClientBatchPublicInfoRequest) (*ClientBatchPublicInfoResponse, error) {
+	var result *ClientBatchPublicInfoResponse
+	path := c.Host + "/" + ClientServiceBasePath + "public"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
