@@ -68,6 +68,11 @@ type InternalClientPatchBackupRequest struct {
 	HasBackup bool `json:"has_backup"`
 }
 
+type AdminToggleClientEnabledRequest struct {
+	ClientID string
+	Enabled  bool `json:"enabled"`
+}
+
 // Client is all the information the user gets to see about their client.
 type Client struct {
 	ClientID    uuid.UUID         `json:"client_id"`

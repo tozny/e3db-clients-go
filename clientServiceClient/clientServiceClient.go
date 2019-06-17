@@ -42,6 +42,17 @@ func (c *ClientServiceClient) AdminGet(ctx context.Context, clientID string) (*A
 	return result, err
 }
 
+// AdminToggleClientEnabled enables/disables clients with account auth.
+func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, params AdminToggleClientEnabledRequest) error {
+	path := c.Host + "/" + ClientServiceBasePath + "admin/" + params.ClientID + "/enable"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // Register registers a client.
 func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
 	var result *ClientRegisterResponse
