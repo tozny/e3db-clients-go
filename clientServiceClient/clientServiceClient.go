@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
+	"strconv"
 )
 
 var (
@@ -21,8 +22,8 @@ type ClientServiceClient struct {
 // AdminList makes authenticated call to the /admin endpoint for client service.
 func (c *ClientServiceClient) AdminList(ctx context.Context, params AdminListRequest) (*AdminListResponse, error) {
 	var result *AdminListResponse
-	path := c.Host + "/" + ClientServiceBasePath + "admin"
-	request, err := e3dbClients.CreateRequest("GET", path, params)
+	path := c.Host + "/" + ClientServiceBasePath + "admin?next=" + strconv.Itoa(int(params.NextToken)) + "&limit=" + strconv.Itoa(params.Limit)
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
