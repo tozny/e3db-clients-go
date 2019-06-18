@@ -24,6 +24,7 @@ export E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c
 export E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
 export E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
 export WEBHOOK_URL=https://en8781lpip6xb.x.pipedream.net/
+export E3DB_IDENTITY_SERVICE_HOST=http://localhost:14000
 ```
 Then run:
 ```
