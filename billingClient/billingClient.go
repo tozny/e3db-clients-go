@@ -75,6 +75,17 @@ func (b *E3dbBillingClient) Resubscribe(ctx context.Context) (*GetAccountStatusR
 	return result, err
 }
 
+func (b *E3dbBillingClient) ListInvoices(ctx context.Context) (*ListInvoicesResponse, error) {
+	var result *ListInvoicesResponse
+	path := b.Host + BillingServiceBasePath + "/invoices"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(b.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 func New(config e3dbClients.ClientConfig) E3dbBillingClient {
 	authService := authClient.New(config)
 	return E3dbBillingClient{

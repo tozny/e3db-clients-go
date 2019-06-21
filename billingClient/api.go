@@ -35,3 +35,17 @@ type GetAccountStatusResponse struct {
 	IsLegacy        bool      `json:"is_legacy"`
 	IsGoodStanding  bool      `json:"is_good_standing"`
 }
+
+type ListInvoicesResponse struct {
+	HasMore   bool      `json:"has_more"`
+	NextToken string    `json:"next_token"`
+	Invoices  []Invoice `json:"invoices"`
+}
+
+type Invoice struct {
+	Date            time.Time `json:"date"`
+	InvoiceAmount   int64     `json:"invoice_amount"`
+	AmountRemaining int64     `json:"amount_remaining"`
+	Status          string    `json:"status"`
+	Link            string    `json:"link"`
+}
