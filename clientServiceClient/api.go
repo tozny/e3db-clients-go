@@ -68,6 +68,10 @@ type InternalClientPatchBackupRequest struct {
 	HasBackup bool `json:"has_backup"`
 }
 
+type InternalAccountIDForClientIDResponse struct {
+	AccountID string `json:"account_id"`
+}
+
 type AdminToggleClientEnabledRequest struct {
 	ClientID string
 	Enabled  bool `json:"enabled"`
