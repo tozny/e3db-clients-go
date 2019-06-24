@@ -86,6 +86,26 @@ func (b *E3dbBillingClient) ListInvoices(ctx context.Context) (*ListInvoicesResp
 	return result, err
 }
 
+func (b *E3dbBillingClient) UpdatePaymentSource(ctx context.Context, source UpdateSourceRequest) error {
+	path := b.Host + BillingServiceBasePath + "/payment-source"
+	request, err := e3dbClients.CreateRequest("POST", path, source)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(b.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+func (b *E3dbBillingClient) ApplyCoupon(ctx context.Context, coupon ApplyCouponRequest) error {
+	path := b.Host + BillingServiceBasePath + "/coupon"
+	request, err := e3dbClients.CreateRequest("POST", path, coupon)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(b.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 func New(config e3dbClients.ClientConfig) E3dbBillingClient {
 	authService := authClient.New(config)
 	return E3dbBillingClient{

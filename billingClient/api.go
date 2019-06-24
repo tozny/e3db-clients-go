@@ -49,3 +49,12 @@ type Invoice struct {
 	Status          string    `json:"status"`
 	Link            string    `json:"link"`
 }
+
+type UpdateSourceRequest struct {
+	SourceToken string `json:"token"`
+}
+
+type ApplyCouponRequest struct {
+	CouponCode      string `json:"coupon_code"`
+	ProductCategory string `json:"product_category"` // This can be left blank and it will be set to default category
+}
