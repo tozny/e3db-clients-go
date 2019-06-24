@@ -123,6 +123,32 @@ func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params In
 	return err
 }
 
+// InternalClientInfoForSignature calls internal endpoint to authenticate for clientID and publicKey.
+func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context, params ClientInfoForSignatureRequest) (*AuthNClientInfoResponse, error) {
+	var result *AuthNClientInfoResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + "signature-context"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+
+}
+
+// InternalClientInfoForTokenClaims calls internal endpoint to authenticate for a clientID.
+func (c *ClientServiceClient) InternalClientInfoForTokenClaims(ctx context.Context, params ClientInfoForTokenClaimsRequest) (*AuthNClientInfoResponse, error) {
+	var result *AuthNClientInfoResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + "token-context"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+
+}
+
 // InternalAccountIDForClientID calls internal endpoint to return account id associated with a client id.
 func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, clientID string) (*InternalAccountIDForClientIDResponse, error) {
 	var result *InternalAccountIDForClientIDResponse
