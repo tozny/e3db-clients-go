@@ -64,12 +64,12 @@ type ClientRegisterResponse struct {
 }
 
 type ClientInfoForSignatureRequest struct {
-	ClientID  uuid.UUID `json:"client_id"`
-	PublicKey string    `json:"public_key"`
+	ClientID  string `json:"client_id"`
+	PublicKey string `json:"public_key"`
 }
 
 type ClientInfoForTokenClaimsRequest struct {
-	ClientID uuid.UUID `json:"client_id"`
+	ClientID string `json:"client_id"`
 }
 
 type AuthNClientInfoResponse struct {
