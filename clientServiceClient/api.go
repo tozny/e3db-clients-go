@@ -63,6 +63,23 @@ type ClientRegisterResponse struct {
 	APISecret string `json:"api_secret"`
 }
 
+type ClientInfoForSignatureRequest struct {
+	ClientID  string `json:"client_id"`
+	PublicKey string `json:"public_key"`
+}
+
+type ClientInfoForTokenClaimsRequest struct {
+	ClientID string `json:"client_id"`
+}
+
+type AuthNClientInfoResponse struct {
+	ClientID   uuid.UUID         `json:"client_id"`
+	AccountID  uuid.UUID         `json:"account_id"`
+	Name       string            `json:"name"`
+	PublicKey  map[string]string `json:"public_key"`
+	SigningKey map[string]string `json:"signing_key,omitemtpy"`
+}
+
 type InternalClientPatchBackupRequest struct {
 	ClientID  string
 	HasBackup bool `json:"has_backup"`

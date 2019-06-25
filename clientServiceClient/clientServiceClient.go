@@ -2,10 +2,8 @@ package clientServiceClient
 
 import (
 	"context"
-	"fmt"
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
-	"net/url"
 	"strconv"
 )
 
@@ -24,19 +22,15 @@ type ClientServiceClient struct {
 // AdminList makes authenticated call to the /admin endpoint for client service.
 func (c *ClientServiceClient) AdminList(ctx context.Context, params AdminListRequest) (*AdminListResponse, error) {
 	var result *AdminListResponse
-	url, err := url.Parse(fmt.Sprintf("%s/%sadmin", c.Host, ClientServiceBasePath))
-	if err != nil {
-		return result, err
-	}
-	urlParams := url.Query()
-	urlParams.Set("next", strconv.Itoa(int(params.NextToken)))
-	urlParams.Set("limit", strconv.Itoa(int(params.Limit)))
-	url.RawQuery = urlParams.Encode()
-	path := url.String()
+	path := c.Host + "/" + ClientServiceBasePath + "admin"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
+	urlParams := request.URL.Query()
+	urlParams.Set("next", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("limit", strconv.Itoa(int(params.Limit)))
+	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }
@@ -121,6 +115,35 @@ func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params In
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
 	return err
+}
+
+// InternalClientInfoForSignature calls internal endpoint to authenticate for clientID and publicKey.
+func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context, params ClientInfoForSignatureRequest) (*AuthNClientInfoResponse, error) {
+	var result *AuthNClientInfoResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/signature-context"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	query := request.URL.Query()
+	query.Add("public_key", params.PublicKey)
+	request.URL.RawQuery = query.Encode()
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+
+}
+
+// InternalClientInfoForTokenClaims calls internal endpoint to authenticate for a clientID.
+func (c *ClientServiceClient) InternalClientInfoForTokenClaims(ctx context.Context, params ClientInfoForTokenClaimsRequest) (*AuthNClientInfoResponse, error) {
+	var result *AuthNClientInfoResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/token-context"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+
 }
 
 // InternalAccountIDForClientID calls internal endpoint to return account id associated with a client id.
