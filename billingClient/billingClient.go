@@ -42,6 +42,17 @@ func (b *E3dbBillingClient) InternalSubscriptionInfo(ctx context.Context, accoun
 	return result, err
 }
 
+func (b *E3dbBillingClient) InternalSubscriptionStatus(ctx context.Context, accountID uuid.UUID) (*GetAccountStatusResponse, error) {
+	var result *GetAccountStatusResponse
+	path := b.Host + "/internal/" + BillingServiceBasePath + "/subscription/status/" + accountID.String()
+	request, err := e3dbClients.CreateRequest("GET", path, accountID)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(b.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 func (b *E3dbBillingClient) AccountSubscriptionStatus(ctx context.Context) (*GetAccountStatusResponse, error) {
 	var result *GetAccountStatusResponse
 	path := b.Host + BillingServiceBasePath + "/subscription/status"
