@@ -10,6 +10,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
+	"github.com/tozny/e3db-clients-go/pdsClient"
 	"github.com/tozny/e3db-go/v2"
 )
 
@@ -137,4 +138,20 @@ func CreateRegistrationToken(t *testing.T, queenAccountClient *accountClient.E3d
 		t.Fatalf("could not create registration token %s\n", err)
 	}
 	return createdTokenResp.Token
+}
+
+func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (string, error) {
+	ctx := context.TODO()
+	putEAKParams := pdsClient.PutAccessKeyRequest{
+		WriterID:           clientID,
+		UserID:             clientID,
+		ReaderID:           clientID,
+		RecordType:         recordType,
+		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
+	}
+	resp, err := pdsUser.PutAccessKey(ctx, putEAKParams)
+	if err != nil {
+		return "", err
+	}
+	return resp.EncryptedAccessKey, err
 }
