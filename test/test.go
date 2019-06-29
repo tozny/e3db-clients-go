@@ -156,16 +156,19 @@ func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID str
 	return resp.EncryptedAccessKey, err
 }
 
-func WriteRandomRecordForUser(user pdsClient.E3dbPDSClient, recordType string, writerID string) (*pdsClient.Record, error) {
+func WriteRandomRecordForUser(user pdsClient.E3dbPDSClient, recordType string, writerID string, meta *map[string]string) (*pdsClient.Record, error) {
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
+	if meta == nil {
+		meta = &map[string]string{"key": "value"}
+	}
 	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
 		Metadata: pdsClient.Meta{
 			Type:     recordType,
 			WriterID: writerID,
 			UserID:   writerID,
-			Plain:    map[string]string{"key": "value"},
+			Plain:    *meta,
 		},
 	}
 	return user.WriteRecord(ctx, recordToWrite)
