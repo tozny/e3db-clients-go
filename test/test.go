@@ -123,6 +123,20 @@ func RegisterClient(clientServiceHost string, registrationToken string, clientNa
 	return registrationResponse, userClientConfig, err
 }
 
+func CreatePDSClient(pdsHost string, clientHost string, registrationToken string, clientName string, recordType string) (pdsClient.E3dbPDSClient, string, e3dbClients.ClientConfig, error) {
+	var userClientID string
+	var userPDSClient pdsClient.E3dbPDSClient
+	registrationResponse, userClientConfig, err := RegisterClient(clientHost, registrationToken, clientName)
+	if err != nil {
+		return userPDSClient, userClientID, userClientConfig, err
+	}
+	userClientConfig.Host = pdsHost
+	userPDSClient = pdsClient.New(userClientConfig)
+	userClientID = registrationResponse.ClientID.String()
+	_, err = MakeClientWriterForRecordType(userPDSClient, userClientID, recordType)
+	return userPDSClient, userClientID, userClientConfig, err
+}
+
 // CreateRegistrationToken makes a registration token for a queenAccount
 // requires the accountServiceJWT recieved from successfully completing an account-service challenge.
 func CreateRegistrationToken(queenAccountClient *accountClient.E3dbAccountClient, accountServiceJWT string) (string, error) {
