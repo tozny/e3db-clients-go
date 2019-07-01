@@ -83,10 +83,9 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 	return accountClientConfig, accountResponse, err
 }
 
-// RegisterClient is a helper method to generate a client with client service,
-// returns a registration response and an empty config for said client.
-// On error t.Fatal is called halting test execution.
-func RegisterClient(t *testing.T, clientServiceHost string, registrationToken string, clientName string) (*clientServiceClient.ClientRegisterResponse, e3dbClients.ClientConfig) {
+// RegisterClient is a helper method to generate a client with the client service,
+// returns a registration response and a config for the created client without the Host field populated.
+func RegisterClient(clientServiceHost string, registrationToken string, clientName string) (*clientServiceClient.ClientRegisterResponse, e3dbClients.ClientConfig, error) {
 	// init empty config to make registration requests
 	var registrationResponse *clientServiceClient.ClientRegisterResponse
 	userClientConfig := e3dbClients.ClientConfig{
@@ -94,11 +93,11 @@ func RegisterClient(t *testing.T, clientServiceHost string, registrationToken st
 	}
 	publicKey, _, err := e3db.GenerateKeyPair()
 	if err != nil {
-		t.Fatalf("Failed generating public key pair %s", err)
+		return registrationResponse, userClientConfig, err
 	}
 	signingKey, _, err := e3db.GenerateKeyPair()
 	if err != nil {
-		t.Fatalf("Failed generating signing key pair %s", err)
+		return registrationResponse, userClientConfig, err
 	}
 	unAuthedClientServiceClient := clientServiceClient.New(userClientConfig)
 	// Register user
@@ -114,16 +113,18 @@ func RegisterClient(t *testing.T, clientServiceHost string, registrationToken st
 	ctx := context.Background()
 	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
 	if err != nil {
-		t.Fatalf("unable to register user %+v, err: %s\n", userRegister, err)
+		return registrationResponse, userClientConfig, err
 	}
-	userClientConfig.Host = ""                     // clear host, make user define
+	userClientConfig.Host = ""                     // clear host, and force the user to define
 	userClientConfig.AuthNHost = clientServiceHost // client service is now auth-service
 	userClientConfig.APIKey = registrationResponse.APIKeyID
 	userClientConfig.APISecret = registrationResponse.APISecret
-	return registrationResponse, userClientConfig
+	return registrationResponse, userClientConfig, err
 }
 
-func CreateRegistrationToken(t *testing.T, queenAccountClient *accountClient.E3dbAccountClient, accountServiceJWT string, clientServiceHost string) string {
+// CreateRegistrationToken makes a registration token for a queenAccount
+// requires the accountServiceJWT recieved from successfully completing an account-service challenge.
+func CreateRegistrationToken(queenAccountClient *accountClient.E3dbAccountClient, accountServiceJWT string) (string, error) {
 	createRegParams := accountClient.CreateRegistrationTokenRequest{
 		AccountServiceToken: accountServiceJWT,
 		TokenPermissions: accountClient.TokenPermissions{
@@ -135,13 +136,14 @@ func CreateRegistrationToken(t *testing.T, queenAccountClient *accountClient.E3d
 	ctx := context.Background()
 	createdTokenResp, err := queenAccountClient.CreateRegistrationToken(ctx, createRegParams)
 	if err != nil {
-		t.Fatalf("could not create registration token %s\n", err)
+		return "", err
 	}
-	return createdTokenResp.Token
+	return createdTokenResp.Token, err
 }
 
-func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (string, error) {
-	ctx := context.TODO()
+// MakeClientWriterForRecordType places an EAK for a record type for a pdsUser.
+func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (*pdsClient.PutAccessKeyResponse, error) {
+	ctx := context.Background()
 	putEAKParams := pdsClient.PutAccessKeyRequest{
 		WriterID:           clientID,
 		UserID:             clientID,
@@ -149,21 +151,20 @@ func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID str
 		RecordType:         recordType,
 		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
 	}
-	resp, err := pdsUser.PutAccessKey(ctx, putEAKParams)
-	if err != nil {
-		return "", err
-	}
-	return resp.EncryptedAccessKey, err
+	return pdsUser.PutAccessKey(ctx, putEAKParams)
 }
 
-func WriteRandomRecordForUser(user pdsClient.E3dbPDSClient, recordType string, writerID string, meta *map[string]string) (*pdsClient.Record, error) {
-	ctx := context.TODO()
-	data := map[string]string{"data": "unencrypted"}
+// WriteRandomRecordForUser creates a record with junk data and meta for a pdsUser by default.
+func WriteRandomRecordForUser(user pdsClient.E3dbPDSClient, recordType string, writerID string, data *map[string]string, meta *map[string]string) (*pdsClient.Record, error) {
+	ctx := context.Background()
+	if data == nil {
+		data = &map[string]string{"data": "unencrypted"}
+	}
 	if meta == nil {
 		meta = &map[string]string{"key": "value"}
 	}
 	recordToWrite := pdsClient.WriteRecordRequest{
-		Data: data,
+		Data: *data,
 		Metadata: pdsClient.Meta{
 			Type:     recordType,
 			WriterID: writerID,
