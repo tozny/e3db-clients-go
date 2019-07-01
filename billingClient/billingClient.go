@@ -117,6 +117,26 @@ func (b *E3dbBillingClient) ApplyCoupon(ctx context.Context, coupon ApplyCouponR
 	return err
 }
 
+func (c *E3dbBillingClient) HealthCheck(ctx context.Context) error {
+	path := c.Host + "/" + BillingServiceBasePath + "/healthcheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+func (c *E3dbBillingClient) ServiceCheck(ctx context.Context) error {
+	path := c.Host + "/" + BillingServiceBasePath + "/servicecheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 func New(config e3dbClients.ClientConfig) E3dbBillingClient {
 	authService := authClient.New(config)
 	return E3dbBillingClient{
