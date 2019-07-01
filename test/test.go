@@ -11,6 +11,7 @@ import (
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
+
 	"github.com/tozny/e3db-go/v2"
 )
 
