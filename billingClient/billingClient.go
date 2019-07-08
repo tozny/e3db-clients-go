@@ -55,7 +55,7 @@ func (b *E3dbBillingClient) InternalSubscriptionStatus(ctx context.Context, acco
 
 func (b *E3dbBillingClient) AccountSubscriptionStatus(ctx context.Context) (*GetAccountStatusResponse, error) {
 	var result *GetAccountStatusResponse
-	path := b.Host + BillingServiceBasePath + "/subscription/status"
+	path := b.Host + "/" + BillingServiceBasePath + "/subscription/status"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
@@ -66,7 +66,7 @@ func (b *E3dbBillingClient) AccountSubscriptionStatus(ctx context.Context) (*Get
 
 func (b *E3dbBillingClient) Unsubscribe(ctx context.Context) (*GetAccountStatusResponse, error) {
 	var result *GetAccountStatusResponse
-	path := b.Host + BillingServiceBasePath + "/unsubscribe"
+	path := b.Host + "/" + BillingServiceBasePath + "/unsubscribe"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
@@ -77,7 +77,7 @@ func (b *E3dbBillingClient) Unsubscribe(ctx context.Context) (*GetAccountStatusR
 
 func (b *E3dbBillingClient) Resubscribe(ctx context.Context) (*GetAccountStatusResponse, error) {
 	var result *GetAccountStatusResponse
-	path := b.Host + BillingServiceBasePath + "/resubscribe"
+	path := b.Host + "/" + BillingServiceBasePath + "/resubscribe"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
@@ -88,7 +88,7 @@ func (b *E3dbBillingClient) Resubscribe(ctx context.Context) (*GetAccountStatusR
 
 func (b *E3dbBillingClient) ListInvoices(ctx context.Context) (*ListInvoicesResponse, error) {
 	var result *ListInvoicesResponse
-	path := b.Host + BillingServiceBasePath + "/invoices"
+	path := b.Host + "/" + BillingServiceBasePath + "/invoices"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
@@ -98,7 +98,7 @@ func (b *E3dbBillingClient) ListInvoices(ctx context.Context) (*ListInvoicesResp
 }
 
 func (b *E3dbBillingClient) UpdatePaymentSource(ctx context.Context, source UpdateSourceRequest) error {
-	path := b.Host + BillingServiceBasePath + "/payment-source"
+	path := b.Host + "/" + BillingServiceBasePath + "/payment-source"
 	request, err := e3dbClients.CreateRequest("POST", path, source)
 	if err != nil {
 		return e3dbClients.NewError(err.Error(), path, 0)
@@ -108,7 +108,7 @@ func (b *E3dbBillingClient) UpdatePaymentSource(ctx context.Context, source Upda
 }
 
 func (b *E3dbBillingClient) ApplyCoupon(ctx context.Context, coupon ApplyCouponRequest) error {
-	path := b.Host + BillingServiceBasePath + "/coupon"
+	path := b.Host + "/" + BillingServiceBasePath + "/coupon"
 	request, err := e3dbClients.CreateRequest("POST", path, coupon)
 	if err != nil {
 		return e3dbClients.NewError(err.Error(), path, 0)
