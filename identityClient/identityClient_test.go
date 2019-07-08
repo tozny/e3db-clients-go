@@ -30,3 +30,18 @@ func TestServiceCheckPassesIfServiceIsRunning(t *testing.T) {
 		t.Errorf("%s service check failed using %+v\n", err, identityServiceClient)
 	}
 }
+
+func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
+	realmName := "TestCreateRealmCreatesRealmWithUserDefinedName"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: realmName,
+	}
+	response, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Errorf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	if response.Name != realmName {
+		t.Errorf("expected realm name to be %+v , got %+v", realmName, response)
+	}
+}
