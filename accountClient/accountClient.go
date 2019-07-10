@@ -124,26 +124,6 @@ func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountI
 	return result, err
 }
 
-// InternalSigClientInfo attempts to get client information for the specified
-// client ID and client public singing key.
-func (c *E3dbAccountClient) InternalSigClientInfo(ctx context.Context, clientID string, sigKey string) (*InternalSigClientInfoResponse, error) {
-	// Set up the request with the proper endpoint
-	var result *InternalSigClientInfoResponse
-	path := c.Host + "/internal/" + AccountServiceBasePath + "/validate-signature-client"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
-	if err != nil {
-		return result, e3dbClients.NewError(err.Error(), path, 0)
-	}
-	// Add the user info to the request query string
-	q := request.URL.Query()
-	q.Add("user_id", clientID)
-	q.Add("public_key", sigKey)
-	request.URL.RawQuery = q.Encode()
-	// Make the service call
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
-}
-
 // ServiceCheck checks whether the account service is up and working.
 // returning error if unable to connect service
 func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {

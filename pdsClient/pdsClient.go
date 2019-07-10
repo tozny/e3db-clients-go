@@ -152,18 +152,6 @@ func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context,
 	return result, err
 }
 
-// InternalRegisterClient uses an internal(available only to locally running e3db instances) endpoint to register a client, returning the registered client and error (if any).
-func (c *E3dbPDSClient) InternalRegisterClient(ctx context.Context, params RegisterClientRequest) (*RegisterClientResponse, error) {
-	var result *RegisterClientResponse
-	path := c.Host + "/" + PDSServiceBasePath + "/clients"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
-	if err != nil {
-		return result, err
-	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
-}
-
 // InternalSearch returns records matching the provided params,
 // returning the list of records and error (if any).
 func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearchRequest) (*InternalSearchResponse, error) {

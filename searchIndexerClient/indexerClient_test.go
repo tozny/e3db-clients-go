@@ -23,7 +23,7 @@ var (
 func TestIndexRecordSucceedsWithValidInput(t *testing.T) {
 	indexer := New(ValidClientConfig)
 	params := IndexRecordRequest{RecordId: "8344742e-2789-457b-bbc8-2ce070bca6ae"}
-	ctx := context.TODO()
+	ctx := context.Background()
 	_, err := indexer.IndexRecord(ctx, params)
 	if err != nil {
 		t.Error(err)
@@ -39,7 +39,7 @@ func TestBatchIndexRecordSucceedsWithValidInput(t *testing.T) {
 			"53860b16-c37c-4bdd-95b9-39a44b536ce7",
 		},
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	_, err := indexer.BatchIndexRecord(ctx, params)
 	if err != nil {
 		t.Error(err)

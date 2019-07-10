@@ -1,86 +1,76 @@
-package pdsClient
+package pdsClient_test
 
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	clientHelper "github.com/tozny/e3db-clients-go/test"
-	"github.com/tozny/e3db-go/v2"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/pdsClient"
+	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
-	e3dbStorageHost      = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
-	e3dbAuthHost         = os.Getenv("E3DB_AUTH_SERVICE_HOST")
-	e3dbAccountHost      = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
-	e3dbAPIKey           = os.Getenv("E3DB_API_KEY_ID")
-	e3dbAPISecret        = os.Getenv("E3DB_API_KEY_SECRET")
-	ValidPDSClientConfig = e3dbClients.ClientConfig{
+	e3dbPDSHost              = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
+	e3dbAuthHost             = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost          = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbClientHost           = os.Getenv("E3DB_CLIENT_SERVICE_HOST")
+	e3dbAPIKey               = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret            = os.Getenv("E3DB_API_KEY_SECRET")
+	ValidBootPDSClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
-		Host:      e3dbStorageHost,
+		Host:      e3dbPDSHost,
 		AuthNHost: e3dbAuthHost,
 	}
-	e3dbPDS                  = New(ValidPDSClientConfig)
-	ValidAccountClientConfig = e3dbClients.ClientConfig{
+	bootPDSClient                = pdsClient.New(ValidBootPDSClientConfig)
+	ValidBootAccountClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
 		Host:      e3dbAccountHost,
 		AuthNHost: e3dbAuthHost,
 	}
-	e3dbAccountService = accountClient.New(ValidAccountClientConfig)
+	bootAccountClient         = accountClient.New(ValidBootAccountClientConfig)
+	validPDSUser              pdsClient.E3dbPDSClient
+	validPDSUserID            string
+	validPDSRegistrationToken string
+	defaultPDSUserRecordType  = "integration_tests"
 )
 
-func RegisterClient(email string) (E3dbPDSClient, string, error) {
-	var user E3dbPDSClient
-	publicKey, privateKey, err := e3db.GenerateKeyPair()
+//TestMain gives all tests access to a client "validPDSUser" who is authorized to write to a default record type.
+func TestMain(m *testing.M) {
+	err := setup()
 	if err != nil {
-		return user, "", err
+		fmt.Printf("Could perform setup for tests due to %s", err)
+		os.Exit(1)
 	}
-	params := RegisterClientRequest{
-		Email:      email,
-		PublicKey:  ClientKey{publicKey},
-		PrivateKey: ClientKey{privateKey},
-	}
-	ctx := context.TODO()
-	resp, err := e3dbPDS.InternalRegisterClient(ctx, params)
-	if err != nil {
-		return user, "", err
-	}
-	user = New(e3dbClients.ClientConfig{
-		APIKey:    resp.APIKeyID,
-		APISecret: resp.APISecret,
-		Host:      e3dbStorageHost,
-		AuthNHost: e3dbAuthHost,
-	})
-	return user, resp.ClientID, err
+	code := m.Run()
+	os.Exit(code)
 }
 
-var validPDSUser, validPDSUserID, _ = RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", time.Now().Unix()))
-
-var defaultPDSUserRecordType = "integration_tests"
-
-func MakeClientWriterForRecordType(pdsUser E3dbPDSClient, clientID string, recordType string) (string, error) {
-	ctx := context.TODO()
-	putEAKParams := PutAccessKeyRequest{
-		WriterID:           clientID,
-		UserID:             clientID,
-		ReaderID:           clientID,
-		RecordType:         recordType,
-		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
-	}
-	resp, err := pdsUser.PutAccessKey(ctx, putEAKParams)
+func setup() error {
+	accountTag := uuid.New().String()
+	queenAccountConfig, createAccountResp, err := test.MakeE3DBAccount(&testing.T{}, &bootAccountClient, accountTag, e3dbAuthHost)
 	if err != nil {
-		fmt.Printf("Error placing access key %s\n", err)
+		return err
 	}
-	return resp.EncryptedAccessKey, err
-}
+	queenAccountClient := accountClient.New(queenAccountConfig)
+	accountServiceJWT := createAccountResp.AccountServiceToken
 
-var validPDSEncryptedAccessKey, _ = MakeClientWriterForRecordType(validPDSUser, validPDSUserID, defaultPDSUserRecordType)
+	queenAccountConfig.Host = e3dbPDSHost
+	validPDSUser = pdsClient.New(queenAccountConfig)
+	validPDSUserID = createAccountResp.Account.Client.ClientID
+	_, err = test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, defaultPDSUserRecordType)
+	if err != nil {
+		return err
+	}
+	validPDSRegistrationToken, err = test.CreateRegistrationToken(&queenAccountClient, accountServiceJWT)
+	return err
+}
 
 func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	var createdRecordIDs []string
@@ -88,9 +78,9 @@ func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	// Create two records with the default client
 	for i := 0; i < 2; i++ {
 		data := map[string]string{"data": "unencrypted"}
-		recordToWrite := WriteRecordRequest{
+		recordToWrite := pdsClient.WriteRecordRequest{
 			Data: data,
-			Metadata: Meta{
+			Metadata: pdsClient.Meta{
 				Type:     defaultPDSUserRecordType,
 				WriterID: validPDSUserID,
 				UserID:   validPDSUserID,
@@ -104,7 +94,7 @@ func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
 	}
 	// Batch get records and verify the created records are returned
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: createdRecordIDs,
 	}
 	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
@@ -131,9 +121,9 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 	// Create two records with the default client
 	for i := 0; i < 2; i++ {
 		data := map[string]string{"data": "unencrypted"}
-		recordToWrite := WriteRecordRequest{
+		recordToWrite := pdsClient.WriteRecordRequest{
 			Data: data,
-			Metadata: Meta{
+			Metadata: pdsClient.Meta{
 				Type:     defaultPDSUserRecordType,
 				WriterID: validPDSUserID,
 				UserID:   validPDSUserID,
@@ -147,7 +137,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
 	}
 	// Batch get records and verify the created records are returned
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: createdRecordIDs,
 	}
 	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
@@ -168,7 +158,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 	}
 	// Delete the first record
 	recordIDToDelete := createdRecordIDs[0]
-	deleteParams := DeleteRecordRequest{RecordID: recordIDToDelete}
+	deleteParams := pdsClient.DeleteRecordRequest{RecordID: recordIDToDelete}
 	err = validPDSUser.DeleteRecord(ctx, deleteParams)
 	if err != nil {
 		t.Errorf("err %s making DeleteRecord call %+v\n", err, deleteParams)
@@ -191,7 +181,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 }
 
 func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
-	batchRecordRequestCount := BatchReadRecordLimit + 1
+	batchRecordRequestCount := pdsClient.BatchReadRecordLimit + 1
 	recordIDs := make([]string, batchRecordRequestCount)
 	for index := range recordIDs {
 		recordIDs[index] = uuid.New().String()
@@ -199,7 +189,7 @@ func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
 	ctx := context.TODO()
 
 	// Batch get records and verify the created records are returned
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: recordIDs,
 	}
 	_, err := validPDSUser.BatchGetRecords(ctx, params)
@@ -210,16 +200,16 @@ func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
 
 func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	sharee, shareeID, _, err := test.CreatePDSClient(e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -231,7 +221,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 		t.Errorf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
-	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
 		UserID:     validPDSUserID,
 		WriterID:   validPDSUserID,
 		ReaderID:   shareeID,
@@ -241,7 +231,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: []string{createdRecord.Metadata.RecordID},
 	}
 	batchRecords, err := sharee.BatchGetRecords(ctx, params)
@@ -262,16 +252,16 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 
 func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, _, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	sharee, _, _, err := test.CreatePDSClient(e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -283,7 +273,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 		t.Errorf("Error writing record to share %s\n", err)
 	}
 	// Verify sharee can not fetch unshared record
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: []string{createdRecord.Metadata.RecordID},
 	}
 	batchRecords, err := sharee.BatchGetRecords(ctx, params)
@@ -308,9 +298,9 @@ func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	// Create two records with the default client
 	for i := 0; i < 2; i++ {
 		data := map[string]string{"data": "unencrypted"}
-		recordToWrite := WriteRecordRequest{
+		recordToWrite := pdsClient.WriteRecordRequest{
 			Data: data,
-			Metadata: Meta{
+			Metadata: pdsClient.Meta{
 				Type:     defaultPDSUserRecordType,
 				WriterID: validPDSUserID,
 				UserID:   validPDSUserID,
@@ -324,14 +314,14 @@ func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
 	}
 	// Batch get records and verify the created records are returned
-	params := BatchGetRecordsRequest{
+	params := pdsClient.BatchGetRecordsRequest{
 		RecordIDs: createdRecordIDs,
 	}
 	usersToken, err := validPDSUser.GetToken(ctx)
 	if err != nil {
 		t.Errorf("err %s making GetToken call for user %+v\n", err, validPDSUser)
 	}
-	proxyBatchRecords, err := e3dbPDS.ProxyBatchGetRecords(ctx, usersToken.AccessToken, params)
+	proxyBatchRecords, err := bootPDSClient.ProxyBatchGetRecords(ctx, usersToken.AccessToken, params)
 	if err != nil {
 		t.Errorf("err %s making ProxyBatchGetRecords call %+v\n on with user token %+v\n", err, usersToken, params)
 	}
@@ -355,9 +345,9 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 	// Create two records with that client
 	for i := 0; i < 2; i++ {
 		data := map[string]string{"data": "unencrypted"}
-		recordToWrite := WriteRecordRequest{
+		recordToWrite := pdsClient.WriteRecordRequest{
 			Data: data,
-			Metadata: Meta{
+			Metadata: pdsClient.Meta{
 				Type:     defaultPDSUserRecordType,
 				WriterID: validPDSUserID,
 				UserID:   validPDSUserID,
@@ -371,13 +361,13 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 		createdRecordIDs = append(createdRecordIDs, record.Metadata.RecordID)
 	}
 	// List records and verify the created records are present
-	params := ListRecordsRequest{
+	params := pdsClient.ListRecordsRequest{
 		Count:             50,
 		IncludeAllWriters: true,
 	}
 	tok, err := validPDSUser.GetToken(ctx)
-	proxyListedRecords, err := e3dbPDS.ProxyListRecords(ctx, tok.AccessToken, params) // proxy record
-	listedRecords, err := validPDSUser.ListRecords(ctx, params)                       // user request record
+	proxyListedRecords, err := bootPDSClient.ProxyListRecords(ctx, tok.AccessToken, params) // proxy record
+	listedRecords, err := validPDSUser.ListRecords(ctx, params)                             // user request record
 	if err != nil {
 		t.Error(err)
 	}
@@ -405,9 +395,9 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 	ctx := context.TODO()
 	// Create record with e3db external client
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -419,9 +409,9 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetch that record with e3db internal client
-	e3dbPDS := New(ValidPDSClientConfig)
+	bootPDSClient := pdsClient.New(ValidBootPDSClientConfig)
 
-	resp, err := e3dbPDS.InternalGetRecord(ctx, createdRecord.Metadata.RecordID)
+	resp, err := bootPDSClient.InternalGetRecord(ctx, createdRecord.Metadata.RecordID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -442,7 +432,7 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 func TestInternalAllowedReadReturnsValidResponse(t *testing.T) {
 	ctx := context.TODO()
 	readerID := "3a0649b8-4e4c-4cd0-b909-1179c4d74d42"
-	_, err := e3dbPDS.InternalAllowedReads(ctx, readerID)
+	_, err := bootPDSClient.InternalAllowedReads(ctx, readerID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -452,7 +442,7 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 	// Put an access key
 	recordType := uuid.New().String()
 	ctx := context.TODO()
-	putEAKParams := PutAccessKeyRequest{
+	putEAKParams := pdsClient.PutAccessKeyRequest{
 		WriterID:           validPDSUserID,
 		UserID:             validPDSUserID,
 		ReaderID:           validPDSUserID,
@@ -463,7 +453,7 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error trying to put access key for %+v %s", validPDSUser, err)
 	}
-	getEAKParams := GetAccessKeyRequest{
+	getEAKParams := pdsClient.GetAccessKeyRequest{
 		WriterID:   validPDSUserID,
 		UserID:     validPDSUserID,
 		ReaderID:   validPDSUserID,
@@ -480,16 +470,16 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 
 func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	sharee, shareeID, _, err := test.CreatePDSClient(e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -501,7 +491,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		t.Errorf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
-	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
 		UserID:     validPDSUserID,
 		WriterID:   validPDSUserID,
 		ReaderID:   shareeID,
@@ -511,7 +501,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
-	listResponse, err := sharee.ListRecords(ctx, ListRecordsRequest{
+	listResponse, err := sharee.ListRecords(ctx, pdsClient.ListRecordsRequest{
 		ContentTypes:      []string{defaultPDSUserRecordType},
 		IncludeAllWriters: true,
 	})
@@ -532,13 +522,13 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 
 func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	sharee, shareeID, _, err := test.CreatePDSClient(e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
 	// Share records of type created with sharee client
 	ctx := context.TODO()
-	err = validPDSUser.ShareRecords(ctx, ShareRecordsRequest{
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
 		UserID:     validPDSUserID,
 		WriterID:   validPDSUserID,
 		ReaderID:   shareeID,
@@ -549,9 +539,9 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	}
 	// Create records to share with this client
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -563,11 +553,11 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 		t.Errorf("Error writing record to share %s\n", err)
 	}
 
-	allowedReadsRequest := InternalAllowedReadersForPolicyRequest{
+	allowedReadsRequest := pdsClient.InternalAllowedReadersForPolicyRequest{
 		WriterID:    validPDSUserID,
 		ContentType: defaultPDSUserRecordType,
 	}
-	resp, err := e3dbPDS.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
+	resp, err := bootPDSClient.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
 	if err != nil {
 		t.Errorf("Error trying to call PDS for allowed readers %s\n", err)
 	}
@@ -587,9 +577,9 @@ func TestDeleteRecord(t *testing.T) {
 	// Create record to delete
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -600,7 +590,7 @@ func TestDeleteRecord(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error writing record to delete %s\n", err)
 	}
-	deleteRequest := DeleteRecordRequest{
+	deleteRequest := pdsClient.DeleteRecordRequest{
 		RecordID: createdRecord.Metadata.RecordID,
 	}
 	err = validPDSUser.DeleteRecord(ctx, deleteRequest)
@@ -613,9 +603,9 @@ func TestFindModifiedRecords(t *testing.T) {
 	startTime := time.Now()
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -628,14 +618,14 @@ func TestFindModifiedRecords(t *testing.T) {
 	}
 	endTime := time.Now()
 
-	modifiedRecordRequest := InternalSearchRequest{
+	modifiedRecordRequest := pdsClient.InternalSearchRequest{
 		NextToken: 0,
-		Range: &InternalModifiedRange{
+		Range: &pdsClient.InternalModifiedRange{
 			After:  startTime,
 			Before: endTime,
 		},
 	}
-	modifiedResponse, err := e3dbPDS.InternalSearch(ctx, modifiedRecordRequest)
+	modifiedResponse, err := bootPDSClient.InternalSearch(ctx, modifiedRecordRequest)
 	if err != nil {
 		t.Fatalf("Error getting modified records %s\n", err)
 	}
@@ -653,20 +643,21 @@ func TestFindModifiedRecords(t *testing.T) {
 
 func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T) {
 	// Create authorizing account and client
-	clientConfig, authorizingAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizing client using %+v", e3dbAccountService)
+		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
 	}
-	authorizingClient := New(clientConfig)
+	clientConfig.Host = e3dbPDSHost
+	authorizingClient := pdsClient.New(clientConfig)
 	authorizingClientID := authorizingAccount.Account.Client.ClientID
 	// Setup authorizing client to be able to write records of a given type
-	_, err = MakeClientWriterForRecordType(authorizingClient, authorizingClientID, defaultPDSUserRecordType)
+	_, err = test.MakeClientWriterForRecordType(authorizingClient, authorizingClientID, defaultPDSUserRecordType)
 	// Create records to for authorizer to share
 	ctx := context.TODO()
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     defaultPDSUserRecordType,
 			WriterID: authorizingClientID,
 			UserID:   authorizingClientID,
@@ -678,21 +669,23 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
-	clientConfig, authorizerAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
-	authorizerClient := New(clientConfig)
+	clientConfig.Host = e3dbPDSHost
+	authorizerClient := pdsClient.New(clientConfig)
 	authorizerClientID := authorizerAccount.Account.Client.ClientID
 	// Create account and client for authorizer to share records with
-	clientConfig, shareeAccount, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
+	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", e3dbAccountService)
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
-	shareeClient := New(clientConfig)
+	clientConfig.Host = e3dbPDSHost
+	shareeClient := pdsClient.New(clientConfig)
 	shareeAccountID := shareeAccount.Account.Client.ClientID
 	// Authorize the authorizer for sharing records
-	authorizeRequest := AddAuthorizedWriterRequest{
+	authorizeRequest := pdsClient.AddAuthorizedWriterRequest{
 		UserID:       authorizingClientID,
 		WriterID:     authorizingClientID,
 		AuthorizerID: authorizerClientID,
@@ -703,7 +696,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
 	}
 	// Authorizer share record type they have been authorized to share
-	err = authorizerClient.AuthorizerShareRecords(ctx, AuthorizerShareRecordsRequest{
+	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
 		UserID:       authorizingClientID,
 		WriterID:     authorizingClientID,
 		AuthorizerID: authorizerClientID,
@@ -714,7 +707,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 	// Verify sharee can retrieve shared record
-	listRecordsResponse, err := shareeClient.ListRecords(ctx, ListRecordsRequest{
+	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
 		ContentTypes:      []string{defaultPDSUserRecordType},
 		IncludeAllWriters: true,
 		IncludeData:       true})
@@ -743,33 +736,37 @@ func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 
 func TestInternalSearchAllowedReads(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, err := RegisterClient(fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()))
+	sharee, shareeID, _, err := test.CreatePDSClient(e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
 	// Share records of type created with sharee client
 	ctx := context.TODO()
 	startTime := time.Now().UTC()
-	share := ShareRecordsRequest{
+	share := pdsClient.ShareRecordsRequest{
 		UserID:     validPDSUserID,
 		WriterID:   validPDSUserID,
 		ReaderID:   shareeID,
 		RecordType: defaultPDSUserRecordType,
 	}
 	err = validPDSUser.ShareRecords(ctx, share)
-	endTime := time.Now().UTC()
+	endTime := time.Now().AddDate(0, 0, 1).UTC()
 	if err != nil {
 		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
+	record, err := test.WriteRandomRecordForUser(validPDSUser, defaultPDSUserRecordType, validPDSUserID, nil, nil)
+	if err != nil {
+		t.Errorf("Unable to write record for PDS User %s", err)
+	}
 	// Verify the new allowed_read is visible to the internal client
-	searchAllowedReadsRequest := InternalSearchAllowedReadsRequest{
+	searchAllowedReadsRequest := pdsClient.InternalSearchAllowedReadsRequest{
 		NextToken: 0,
-		Range: &InternalModifiedRange{
+		Range: &pdsClient.InternalModifiedRange{
 			After:  startTime,
 			Before: endTime,
 		},
 	}
-	searchResponse, err := e3dbPDS.InternalSearchAllowedReads(ctx, searchAllowedReadsRequest)
+	searchResponse, err := bootPDSClient.InternalSearchAllowedReads(ctx, searchAllowedReadsRequest)
 	if err != nil {
 		t.Fatalf("Error searching allowed_reads %s\n", err)
 	}
@@ -780,21 +777,21 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record", share, searchResponse.AllowedReads)
+		t.Errorf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record %+v", share, searchResponse, record)
 	}
 }
 
 func TestInternalSearchUsingRecordType(t *testing.T) {
 	// Create record to with an external client
 	recordType := "TestInternalSearchUsingRecordType"
-	_, err := MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
+	_, err := test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
 	if err != nil {
 		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
 	}
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     recordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -807,10 +804,10 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
 	}
 	// Verify we can do an internal search based off the record type
-	searchRequest := InternalSearchRequest{
+	searchRequest := pdsClient.InternalSearchRequest{
 		ContentTypes: []string{recordType},
 	}
-	searchResponse, err := e3dbPDS.InternalSearch(ctx, searchRequest)
+	searchResponse, err := bootPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
 		t.Errorf("Error %s searching records\n", err)
 	}
@@ -829,14 +826,14 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 func TestInternalSearchByWriterId(t *testing.T) {
 	// Create record to with an external client
 	recordType := "TestInternalSearchUsingUUID"
-	_, err := MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
+	_, err := test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
 	if err != nil {
 		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
 	}
 	data := map[string]string{"data": "unencrypted"}
-	recordToWrite := WriteRecordRequest{
+	recordToWrite := pdsClient.WriteRecordRequest{
 		Data: data,
-		Metadata: Meta{
+		Metadata: pdsClient.Meta{
 			Type:     recordType,
 			WriterID: validPDSUserID,
 			UserID:   validPDSUserID,
@@ -849,10 +846,10 @@ func TestInternalSearchByWriterId(t *testing.T) {
 		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
 	}
 	// Verify we can do an internal search based off the record type
-	searchRequest := InternalSearchRequest{
+	searchRequest := pdsClient.InternalSearchRequest{
 		WriterIDs: []string{validPDSUserID},
 	}
-	searchResponse, err := e3dbPDS.InternalSearch(ctx, searchRequest)
+	searchResponse, err := bootPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
 		t.Errorf("Error %s searching records\n", err)
 	}

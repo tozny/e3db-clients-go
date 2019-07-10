@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+var (
+	e3dbAuthHost  = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAPIKey    = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
+)
+
 func TestNewReturnsE3dbAuthClientWithSpecifiedConfiguration(t *testing.T) {
 	config := e3dbClients.ClientConfig{
 		APIKey:    "MyApiKey",
@@ -20,8 +26,6 @@ func TestNewReturnsE3dbAuthClientWithSpecifiedConfiguration(t *testing.T) {
 		t.Errorf("Expected api secret to be %s, got %+v", config.APISecret, e3dbAuth)
 	}
 }
-
-var e3dbAuthHost = os.Getenv("E3DB_AUTH_SERVICE_HOST")
 
 func TestGetTokenFailsWhenClientCredentialsAreBogus(t *testing.T) {
 	config := e3dbClients.ClientConfig{
@@ -37,9 +41,6 @@ func TestGetTokenFailsWhenClientCredentialsAreBogus(t *testing.T) {
 		t.Error("Expected error when calling GetToken with invalid auth client")
 	}
 }
-
-var e3dbAPIKey = os.Getenv("E3DB_API_KEY_ID")
-var e3dbAPISecret = os.Getenv("E3DB_API_KEY_SECRET")
 
 func TestGetTokenSucceedsWhenClientCredentialsAreValid(t *testing.T) {
 	config := e3dbClients.ClientConfig{
@@ -95,11 +96,8 @@ func TestValidateTokenReturnsValidResultsForInvalidToken(t *testing.T) {
 	e3dbAuth := New(config)
 	ctx := context.TODO()
 	validateTokenRequestParams := ValidateTokenRequest{Token: "invalidToken.AccessToken"}
-	response, err := e3dbAuth.ValidateToken(ctx, validateTokenRequestParams)
-	if err != nil {
-		t.Errorf("Error: %s calling ValidateToken", err)
-	}
-	if response.Valid != false {
-		t.Errorf("Expected token to be invalid, got %v", response)
+	_, err := e3dbAuth.ValidateToken(ctx, validateTokenRequestParams)
+	if err == nil {
+		t.Fatal("No error returned when validating invalid token")
 	}
 }
