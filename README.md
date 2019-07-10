@@ -15,18 +15,18 @@ will lint and build the projects source code.
 Export valid values for use by the integration tests
 
 ```
-E3DB_API_URL=http://platform.local.tozny.com
-E3DB_AUTH_SERVICE_HOST=http://platform.local.tozny.com:8003
-E3DB_ACCOUNT_SERVICE_HOST=http://platform.local.tozny.com:8002
-E3DB_STORAGE_SERVICE_HOST=http://platform.local.tozny.com:8001
-E3DB_CLIENT_SERVICE_HOST=http://platform.local.tozny.com:8003
-E3DB_HOOK_SERVICE_HOST=http://platform.local.tozny.com:10000
-E3DB_SEARCH_INDEXER_HOST=http://platform.local.tozny.com:9001
-E3DB_IDENTITY_SERVICE_HOST=http://platform.local.tozny.com:14000
-E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c197538b
-E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
-E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
-WEBHOOK_URL=https://en8781lpip6xb.x.pipedream.net/
+export E3DB_API_URL=http://platform.local.tozny.com
+export E3DB_AUTH_SERVICE_HOST=http://platform.local.tozny.com:8003
+export E3DB_ACCOUNT_SERVICE_HOST=http://platform.local.tozny.com:8002
+export E3DB_STORAGE_SERVICE_HOST=http://platform.local.tozny.com:8001
+export E3DB_CLIENT_SERVICE_HOST=http://platform.local.tozny.com:8003
+export E3DB_HOOK_SERVICE_HOST=http://platform.local.tozny.com:10000
+export E3DB_SEARCH_INDEXER_HOST=http://platform.local.tozny.com:9001
+export E3DB_IDENTITY_SERVICE_HOST=http://platform.local.tozny.com:14000
+export E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c197538b
+export E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
+export E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
+export WEBHOOK_URL=https://en8781lpip6xb.x.pipedream.net/
 ```
 Then run:
 ```
