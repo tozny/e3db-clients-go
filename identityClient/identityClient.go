@@ -2,6 +2,7 @@ package identityClient
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/tozny/e3db-clients-go"
@@ -18,18 +19,55 @@ type E3dbIdentityClient struct {
 	authClient *http.Client
 }
 
+// ListRealms lists the realms belonging to the requester returning the realms and error (if any).
+func (c *E3dbIdentityClient) ListRealms(ctx context.Context) (*ListRealmsResponse, error) {
+	var realms *ListRealmsResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return realms, err
+	}
+	// TODO: signature based request
+	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realms)
+	return realms, nil
+}
+
+// DeleteRealm deletes the realm with the specified id, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealm(ctx context.Context, realmID int64) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%d", realmID)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	// TODO: signature based request
+	return e3dbClients.MakeRawServiceCall(c.authClient, request, nil)
+}
+
+// DescribeRealm describes the realm with the specified id, returning the realm and error (if any).
+func (c *E3dbIdentityClient) DescribeRealm(ctx context.Context, realmID int64) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%d", realmID)
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return realm, err
+	}
+	// TODO: signature based request
+	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realm)
+	return realm, nil
+}
+
 // CreateRealm creates a realm using the specified parameters,
 // returning the created realm (including it's associated sovereign) and error (if any).
-func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealmRequest) (*CreateRealmResponse, error) {
-	var createRealmResponse *CreateRealmResponse
+func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealmRequest) (*Realm, error) {
+	var realm *Realm
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
-		return createRealmResponse, err
+		return realm, err
 	}
 	// TODO: signature based request
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &createRealmResponse)
-	return createRealmResponse, err
+	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realm)
+	return realm, err
 }
 
 // ServiceCheck checks whether the identity service is up and working.
