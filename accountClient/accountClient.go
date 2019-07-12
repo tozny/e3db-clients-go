@@ -112,18 +112,6 @@ func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params Valida
 	return result, err
 }
 
-// InternalGetAccountInfo attempts to get account information for the specified account ID. Currently the only account information that is returned is the stripeID
-func (c *E3dbAccountClient) InternalGetAccountInfo(ctx context.Context, accountID string) (*InternalGetAccountInfoResponse, error) {
-	var result *InternalGetAccountInfoResponse
-	path := c.Host + "/internal/" + AccountServiceBasePath + "/account-info/" + accountID
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
-	if err != nil {
-		return result, e3dbClients.NewError(err.Error(), path, 0)
-	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
-	return result, err
-}
-
 // ServiceCheck checks whether the account service is up and working.
 // returning error if unable to connect service
 func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {
