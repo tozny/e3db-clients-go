@@ -34,6 +34,23 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 	return result, internalErr
 }
 
+type AccountInfoResponse struct {
+	Email     string `json:'email'`
+	AccountId string `json:'account_id'`
+}
+
+func (c *E3dbAccountClient) AccountInfo(ctx context.Context, accountID string) (*AccountInfoResponse, error) {
+	var result *AccountInfoResponse
+
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/info/" + accountID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // InternalGetClientAccount attempts to get the account id and other account information for the specified client id
 func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, error) {
 	var result *InternalGetClientAccountResponse
