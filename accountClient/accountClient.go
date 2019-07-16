@@ -34,11 +34,6 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 	return result, internalErr
 }
 
-type AccountInfoResponse struct {
-	Email     string `json:"email"`
-	AccountId string `json:"account_id"`
-}
-
 func (c *E3dbAccountClient) AccountInfo(ctx context.Context, accountID string) (*AccountInfoResponse, error) {
 	var result *AccountInfoResponse
 
