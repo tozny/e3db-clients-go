@@ -140,6 +140,13 @@ type InternalGetAccountInfoResponse struct {
 	SubscriptionID string `json:"stripe_subscription_id"`
 }
 
+// InternalAccountInfoResponse represents a response from calling the account service at
+// internal/v1/account/info/{accountID}
+type InternalAccountInfoResponse struct {
+	Email     string `json:"email"`
+	AccountID string `json:"account_id"`
+}
+
 // InternalSigClientInfoResponse wraps the data returned from the
 // /internal/v1/account/validate-signature-client endpoint
 type InternalSigClientInfoResponse struct {
