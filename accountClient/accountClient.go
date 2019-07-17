@@ -34,8 +34,10 @@ func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAcco
 	return result, internalErr
 }
 
-func (c *E3dbAccountClient) AccountInfo(ctx context.Context, accountID string) (*AccountInfoResponse, error) {
-	var result *AccountInfoResponse
+// InternalAccountInfo attempts to get the account info for an accountID,
+// requires the bootstrap client.
+func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID string) (*InternalAccountInfoResponse, error) {
+	var result *InternalAccountInfoResponse
 
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/info/" + accountID
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
