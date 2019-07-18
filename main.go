@@ -8,6 +8,31 @@ import (
 	"net/http"
 )
 
+const (
+	// https://security.stackexchange.com/questions/50878/ecdsa-vs-ecdh-vs-ed25519-vs-curve25519
+	DefaultEncryptionKeyType = "curve25519"
+	DefaultSigningKeyType    = "ed25519"
+)
+
+// Key wraps material generated using an algorithm/curve for use in cryptographic operations
+type Key struct {
+	Material string
+	Type     string // e.g. Curve25519
+}
+
+// AsymmetricKeypair wraps a public and private key used for
+// asymmetric cryptographic operations.
+type AsymmetricKeypair struct {
+	Private Key // Used for decryption and signing
+	Public  Key // Used for authentication and encryption
+}
+
+// SigningKeys wraps a keypair for signing and authenticating requests
+type SigningKeys = AsymmetricKeypair
+
+// EncryptionKeys wraps a keypair for encrypting and decrypting data
+type EncryptionKeys = AsymmetricKeypair
+
 // ClientConfig wraps configuration
 // needed by an e3db client
 type ClientConfig struct {
@@ -16,7 +41,9 @@ type ClientConfig struct {
 	APISecret string // User/Client secret to use when communicating with the e3db API
 	// Hostname for the soon to be deprecated (v1) e3db bearer auth service API.
 	// Once request signing is the primary mode of authenticating e3db requests this can be removed.
-	AuthNHost string
+	AuthNHost      string
+	SigningKeys    SigningKeys    // AsymmetricEncryptionKeypair used for signing and authenticating requests
+	EncryptionKeys EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
 }
 
 // E3DBHTTPAuthorizer implements the functionality needed to make
