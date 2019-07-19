@@ -78,6 +78,7 @@ type AuthNClientInfoResponse struct {
 	Name       string            `json:"name"`
 	PublicKey  map[string]string `json:"public_key"`
 	SigningKey map[string]string `json:"signing_key,omitemtpy"`
+	Type       string            `json:"type"`
 }
 
 type InternalClientPatchBackupRequest struct {
