@@ -2,7 +2,6 @@ package clientServiceClient
 
 import (
 	"github.com/google/uuid"
-	e3dbClients "github.com/tozny/e3db-clients-go"
 )
 
 // AdminListRequest is the information sent to the paginated /admin GET endpooint,
@@ -72,17 +71,6 @@ type ClientInfoForSignatureRequest struct {
 type ClientInfoForTokenClaimsRequest struct {
 	ClientID string `json:"client_id"`
 }
-
-// type AuthNClientInfoResponse struct {
-// 	ClientID   uuid.UUID         `json:"client_id"`
-// 	AccountID  uuid.UUID         `json:"account_id"`
-// 	Name       string            `json:"name"`
-// 	PublicKey  map[string]string `json:"public_key"`
-// 	SigningKey map[string]string `json:"signing_key,omitemtpy"`
-// 	Type       string            `json:"type"`
-// }
-
-type AuthNClientInfoResponse = e3dbClients.ToznyAuthenticatedContext
 
 type InternalClientPatchBackupRequest struct {
 	ClientID  string

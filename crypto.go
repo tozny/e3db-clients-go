@@ -14,9 +14,9 @@ const (
 	DefaultSigningKeyType    = "ed25519"
 )
 
-// ToznyAuthenticatedContext represents the contextual information provided by cyclops to downstream services
+// ToznyAuthenticatedClientContext represents the contextual information provided by cyclops to downstream services
 // when a user is successfully authenticated.
-type ToznyAuthenticatedContext struct {
+type ToznyAuthenticatedClientContext struct {
 	ClientID       uuid.UUID            `json:"client_id"`
 	AccountID      uuid.UUID            `json:"account_id"`
 	Name           string               `json:"name"`

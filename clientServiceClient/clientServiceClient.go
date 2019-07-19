@@ -118,8 +118,8 @@ func (c *ClientServiceClient) InternalPatchBackup(ctx context.Context, params In
 }
 
 // InternalClientInfoForSignature calls internal endpoint to authenticate for clientID and publicKey.
-func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context, params ClientInfoForSignatureRequest) (*AuthNClientInfoResponse, error) {
-	var result *AuthNClientInfoResponse
+func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context, params ClientInfoForSignatureRequest) (*e3dbClients.ToznyAuthenticatedClientContext, error) {
+	var result *e3dbClients.ToznyAuthenticatedClientContext
 	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/signature-context"
 	request, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
@@ -134,8 +134,8 @@ func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context
 }
 
 // InternalClientInfoForTokenClaims calls internal endpoint to authenticate for a clientID.
-func (c *ClientServiceClient) InternalClientInfoForTokenClaims(ctx context.Context, params ClientInfoForTokenClaimsRequest) (*AuthNClientInfoResponse, error) {
-	var result *AuthNClientInfoResponse
+func (c *ClientServiceClient) InternalClientInfoForTokenClaims(ctx context.Context, params ClientInfoForTokenClaimsRequest) (*e3dbClients.ToznyAuthenticatedClientContext, error) {
+	var result *e3dbClients.ToznyAuthenticatedClientContext
 	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/token-context"
 	request, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
