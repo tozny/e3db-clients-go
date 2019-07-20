@@ -14,7 +14,7 @@ import (
 const (
 	HashingAlgorithim    = "BLAKE2B"
 	SignatureType        = "ED25519"
-	AuthenticationMethod = "TSV1-" + SignatureType + "-" + SignatureType // TSV1-ED25519-BLAKE2B
+	AuthenticationMethod = "TSV1-" + SignatureType + "-" + HashingAlgorithim // TSV1-ED25519-BLAKE2B
 	PublicKeyBytes       = 32
 	PrivateKeyBytes      = 64
 	AuthorizationHeader  = "Authorization"
@@ -30,12 +30,20 @@ var (
 // If successful, SignRequest will overwrite any existing `AuthorizationHeader`.
 func SignRequest(r *http.Request, signingKeys SigningKeys, timestamp int64, clientID string) error {
 	publicKey := &[PublicKeyBytes]byte{}
-	copied := copy(publicKey[:], []byte(signingKeys.Public.Material))
+	rawKeyBytes, err := base64.RawURLEncoding.DecodeString(signingKeys.Public.Material)
+	if err != nil {
+		return err
+	}
+	copied := copy(publicKey[:], rawKeyBytes)
 	if copied != PublicKeyBytes {
 		return fmt.Errorf("invalid number %d of public signing key byte, required %d", copied, PublicKeyBytes)
 	}
 	privateKey := &[PrivateKeyBytes]byte{}
-	copied = copy(privateKey[:], []byte(signingKeys.Private.Material))
+	rawKeyBytes, err = base64.RawURLEncoding.DecodeString(signingKeys.Private.Material)
+	if err != nil {
+		return err
+	}
+	copied = copy(privateKey[:], rawKeyBytes)
 	if copied != PrivateKeyBytes {
 		return fmt.Errorf("invalid number %d of public signing key byte, required %d", copied, PrivateKeyBytes)
 	}

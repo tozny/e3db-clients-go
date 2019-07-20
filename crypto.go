@@ -2,6 +2,7 @@ package e3dbClients
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 
 	sodium "golang.org/x/crypto/nacl/sign"
 )
@@ -31,8 +32,8 @@ type SigningKeys AsymmetricKeypair
 // EncryptionKeys wraps a keypair for encrypting and decrypting data
 type EncryptionKeys AsymmetricKeypair
 
-// GenerateSigningKeys generates a private and public key
-// for signing requests and data made by Tozny clients,
+// GenerateSigningKeys generates a `base64.RawURLEncoding` private and public key
+// for signing requests and data on behalf of Tozny clients,
 // returning the signing keys and error (if any).
 func GenerateSigningKeys() (SigningKeys, error) {
 	var signingKeys SigningKeys
@@ -40,8 +41,8 @@ func GenerateSigningKeys() (SigningKeys, error) {
 	if err != nil {
 		return signingKeys, err
 	}
-	signingKey := string(signingKeyBytes[:])
-	privateSigningKey := string(privateSigningKeyBytes[:])
+	signingKey := base64.RawURLEncoding.EncodeToString(signingKeyBytes[:])
+	privateSigningKey := base64.RawURLEncoding.EncodeToString(privateSigningKeyBytes[:])
 	signingKeys = SigningKeys{
 		Private: Key{
 			Material: privateSigningKey,

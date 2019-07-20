@@ -80,6 +80,7 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 		t.Errorf("Error %s creating account with params %+v\n", err, createAccountParams)
 		return accountClientConfig, accountResponse, err
 	}
+	accountClientConfig.ClientID = accountResponse.Account.Client.ClientID
 	accountClientConfig.APIKey = accountResponse.Account.Client.APIKeyID
 	accountClientConfig.APISecret = accountResponse.Account.Client.APISecretKey
 	accountClientConfig.SigningKeys = signingKeys
@@ -128,6 +129,7 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	}
 	userClientConfig.Host = ""                     // clear host, and force the user to define
 	userClientConfig.AuthNHost = clientServiceHost // client service is responsible for authenticating requests
+	userClientConfig.ClientID = registrationResponse.Client.ClientID.String()
 	userClientConfig.APIKey = registrationResponse.APIKeyID
 	userClientConfig.APISecret = registrationResponse.APISecret
 	userClientConfig.SigningKeys = signingKeys

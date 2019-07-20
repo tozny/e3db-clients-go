@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	toznyCyclopsHost         = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
 	e3dbPDSHost              = os.Getenv("E3DB_STORAGE_SERVICE_HOST")
 	e3dbAuthHost             = os.Getenv("E3DB_AUTH_SERVICE_HOST")
 	e3dbAccountHost          = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
@@ -24,10 +25,17 @@ var (
 	ValidBootPDSClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
+		Host:      toznyCyclopsHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	bootPDSClient                    = pdsClient.New(ValidBootPDSClientConfig)
+	ValidInternalBootPDSClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
 		Host:      e3dbPDSHost,
 		AuthNHost: e3dbAuthHost,
 	}
-	bootPDSClient                = pdsClient.New(ValidBootPDSClientConfig)
+	bootInternalPDSClient        = pdsClient.New(ValidInternalBootPDSClientConfig)
 	ValidBootAccountClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
@@ -46,7 +54,7 @@ var (
 func TestMain(m *testing.M) {
 	err := setup()
 	if err != nil {
-		fmt.Printf("Could perform setup for tests due to %s", err)
+		fmt.Printf("Could not perform setup for tests due to %s", err)
 		os.Exit(1)
 	}
 	code := m.Run()
@@ -62,7 +70,7 @@ func setup() error {
 	queenAccountClient := accountClient.New(queenAccountConfig)
 	accountServiceJWT := createAccountResp.AccountServiceToken
 
-	queenAccountConfig.Host = e3dbPDSHost
+	queenAccountConfig.Host = toznyCyclopsHost
 	validPDSUser = pdsClient.New(queenAccountConfig)
 	validPDSUserID = createAccountResp.Account.Client.ClientID
 	_, err = test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, defaultPDSUserRecordType)
@@ -201,7 +209,7 @@ func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
 
 func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
@@ -253,7 +261,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 
 func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, _, _, err := test.CreatePDSClient(testContext, e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, _, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
@@ -410,7 +418,7 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetch that record with e3db internal client
-	bootPDSClient := pdsClient.New(ValidBootPDSClientConfig)
+	bootPDSClient := pdsClient.New(ValidInternalBootPDSClientConfig)
 
 	resp, err := bootPDSClient.InternalGetRecord(ctx, createdRecord.Metadata.RecordID)
 	if err != nil {
@@ -433,7 +441,7 @@ func TestInternalGetRecordSucceedsWithValidClientCredentials(t *testing.T) {
 func TestInternalAllowedReadReturnsValidResponse(t *testing.T) {
 	ctx := context.TODO()
 	readerID := "3a0649b8-4e4c-4cd0-b909-1179c4d74d42"
-	_, err := bootPDSClient.InternalAllowedReads(ctx, readerID)
+	_, err := bootInternalPDSClient.InternalAllowedReads(ctx, readerID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -471,7 +479,7 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 
 func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
@@ -523,7 +531,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 
 func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
@@ -558,7 +566,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 		WriterID:    validPDSUserID,
 		ContentType: defaultPDSUserRecordType,
 	}
-	resp, err := bootPDSClient.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
+	resp, err := bootInternalPDSClient.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
 	if err != nil {
 		t.Errorf("Error trying to call PDS for allowed readers %s\n", err)
 	}
@@ -626,7 +634,7 @@ func TestFindModifiedRecords(t *testing.T) {
 			Before: endTime,
 		},
 	}
-	modifiedResponse, err := bootPDSClient.InternalSearch(ctx, modifiedRecordRequest)
+	modifiedResponse, err := bootInternalPDSClient.InternalSearch(ctx, modifiedRecordRequest)
 	if err != nil {
 		t.Fatalf("Error getting modified records %s\n", err)
 	}
@@ -648,7 +656,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	if err != nil {
 		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
 	}
-	clientConfig.Host = e3dbPDSHost
+	clientConfig.Host = toznyCyclopsHost
 	authorizingClient := pdsClient.New(clientConfig)
 	authorizingClientID := authorizingAccount.Account.Client.ClientID
 	// Setup authorizing client to be able to write records of a given type
@@ -674,7 +682,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
-	clientConfig.Host = e3dbPDSHost
+	clientConfig.Host = toznyCyclopsHost
 	authorizerClient := pdsClient.New(clientConfig)
 	authorizerClientID := authorizerAccount.Account.Client.ClientID
 	// Create account and client for authorizer to share records with
@@ -682,7 +690,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	if err != nil {
 		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
-	clientConfig.Host = e3dbPDSHost
+	clientConfig.Host = toznyCyclopsHost
 	shareeClient := pdsClient.New(clientConfig)
 	shareeAccountID := shareeAccount.Account.Client.ClientID
 	// Authorize the authorizer for sharing records
@@ -737,7 +745,7 @@ func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 
 func TestInternalSearchAllowedReads(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, e3dbPDSHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Errorf("Error creating client to share records with: %s", err)
 	}
@@ -767,7 +775,7 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 			Before: endTime,
 		},
 	}
-	searchResponse, err := bootPDSClient.InternalSearchAllowedReads(ctx, searchAllowedReadsRequest)
+	searchResponse, err := bootInternalPDSClient.InternalSearchAllowedReads(ctx, searchAllowedReadsRequest)
 	if err != nil {
 		t.Fatalf("Error searching allowed_reads %s\n", err)
 	}
@@ -808,7 +816,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 	searchRequest := pdsClient.InternalSearchRequest{
 		ContentTypes: []string{recordType},
 	}
-	searchResponse, err := bootPDSClient.InternalSearch(ctx, searchRequest)
+	searchResponse, err := bootInternalPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
 		t.Errorf("Error %s searching records\n", err)
 	}
@@ -850,7 +858,7 @@ func TestInternalSearchByWriterId(t *testing.T) {
 	searchRequest := pdsClient.InternalSearchRequest{
 		WriterIDs: []string{validPDSUserID},
 	}
-	searchResponse, err := bootPDSClient.InternalSearch(ctx, searchRequest)
+	searchResponse, err := bootInternalPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
 		t.Errorf("Error %s searching records\n", err)
 	}

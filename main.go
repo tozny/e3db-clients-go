@@ -15,6 +15,7 @@ type ClientConfig struct {
 	Host      string // Hostname of the e3db API to communicate with
 	APIKey    string // User/Client ID to use when communicating with the e3db API
 	APISecret string // User/Client secret to use when communicating with the e3db API
+	ClientID  string // Serviced defined client uuid
 	// Hostname for the soon to be deprecated (v1) e3db bearer auth service API.
 	// Once request signing is the primary mode of authenticating e3db requests this can be removed.
 	AuthNHost      string
