@@ -1,40 +1,48 @@
 # e3db-clients-go
+
 Contains golang implementations of http clients for use by golang applications that need to interface with e3db services.
 
 ## Pre-requisites
+
 * Go 1.11+ must be installed, follow [these instructions ](https://golang.org/doc/install) if not installed in your development environment.
 
+* [Tozny Platform](https://github.com/tozny/tozny-platform) checked out locally
+
+    1. `TOZNY_PLATFORM_DIR` environment set pointing to the repo ☝️
+
+    2. OR: Alternate configuration values in [`.env`](./env) for the Tozny services and clients of choice
+
 ## Build
+
 Running:
+
 ```
 make build
 ```
+
 will lint and build the projects source code.
 
 ## Test
-Export valid values for use by the integration tests
+
+Project tests run against an instance of Tozny Platform.
+
+To run Tozny Platform services
 
 ```
-export E3DB_API_URL=http://platform.local.tozny.com
-export E3DB_AUTH_SERVICE_HOST=http://platform.local.tozny.com:8003
-export E3DB_ACCOUNT_SERVICE_HOST=http://platform.local.tozny.com:8002
-export E3DB_STORAGE_SERVICE_HOST=http://platform.local.tozny.com:8001
-export E3DB_CLIENT_SERVICE_HOST=http://platform.local.tozny.com:8003
-export E3DB_HOOK_SERVICE_HOST=http://platform.local.tozny.com:8006
-export E3DB_SEARCH_INDEXER_HOST=http://platform.local.tozny.com:9010
-export E3DB_IDENTITY_SERVICE_HOST=http://platform.local.tozny.com:8009
-export E3DB_API_KEY_ID=1d66c182779e47714cd957d4760a121580598d68e064c948e5887662c197538b
-export E3DB_API_KEY_SECRET=aaadbd1cc72870e6bd41befa1273b4513d0d1fa04fb913257eec6158b6a35d75
-export E3DB_CLIENT_ID=864e4b87-9eda-43fb-ae6d-d07d4275c73a
-export WEBHOOK_URL=https://en8781lpip6xb.x.pipedream.net/
+make up
 ```
-Then run:
+
+After Tozny Platform is up, execute the tests by running:
+
 ```
 make test
 ```
-to execute integration tests using the code in this project to make API calls against the specified e3db instance.
 
-Sample values above will work against running local services from checked out [pds-service](https://github.com/tozny/pds-service) and [e3dbSearchService](https://github.com/tozny/e3dbSearchService) repos.
+After testing is done, you can stop Tozny Platform services by running
+
+```
+make down
+```
 
 ## Use
 
@@ -73,3 +81,23 @@ func main() {
 }
 ```
 
+## Publishing
+
+Follow [semantic versioning](https://semver.org) when releasing new versions of this library.
+
+Releasing involves tagging a commit in this repository, and pushing the tag. Tagging and releasing of new versions should only be done from the master branch after an approved Pull Request has been merged, or on the branch of an approved Pull Request.
+
+To publish a new version, run
+
+```
+go tag vX.Y.Z
+go push origin vX.Y.Z
+```
+
+To consume published updates from other repositories that depends on this module run
+
+```
+go get github.com/tozny/e3db-clients-go@vX.Y.Z
+```
+
+and the go `get` tool will fetch the published artifact and update that modules `go.mod` and`go.sum` files with the updated dependency.

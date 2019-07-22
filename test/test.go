@@ -11,7 +11,6 @@ import (
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-
 	"github.com/tozny/e3db-go/v2"
 )
 
@@ -27,25 +26,27 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 	saltSeed := [saltSize]byte{}
 	_, err := rand.Read(saltSeed[:])
 	if err != nil {
-		t.Errorf("Failed creating salt: %s", err)
+		t.Errorf("Failed creating encryption key pair salt: %s", err)
 		return accountClientConfig, accountResponse, err
 	}
 	salt := base64.RawURLEncoding.EncodeToString(saltSeed[:])
 	publicKey, privateEncryptionKey, err := e3db.GenerateKeyPair()
 	if err != nil {
-		t.Errorf("Failed generating key pair %s", err)
+		t.Errorf("Failed generating encryption key pair %s", err)
 		return accountClientConfig, accountResponse, err
 	}
-	signingKey, privateSigningKey, err := e3db.GenerateKeyPair()
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
-		t.Errorf("Failed generating key pair %s", err)
+		t.Errorf("Failed generating signing key pair %s", err)
 		return accountClientConfig, accountResponse, err
 	}
-	backupSigningKey, _, err := e3db.GenerateKeyPair()
+	signingKey := signingKeys.Public.Material
+	backupSigningKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
-		t.Errorf("Failed generating key pair %s", err)
+		t.Errorf("Failed generating backup signing key pair %s", err)
 		return accountClientConfig, accountResponse, err
 	}
+	backupSigningKey := backupSigningKeys.Public.Material
 	createAccountParams := accountClient.CreateAccountRequest{
 		Profile: accountClient.Profile{
 			Name:               accountTag,
@@ -79,16 +80,10 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 		t.Errorf("Error %s creating account with params %+v\n", err, createAccountParams)
 		return accountClientConfig, accountResponse, err
 	}
+	accountClientConfig.ClientID = accountResponse.Account.Client.ClientID
 	accountClientConfig.APIKey = accountResponse.Account.Client.APIKeyID
 	accountClientConfig.APISecret = accountResponse.Account.Client.APISecretKey
-	accountClientConfig.SigningKeys = e3dbClients.SigningKeys{
-		Private: e3dbClients.Key{
-			Material: privateSigningKey,
-			Type:     e3dbClients.DefaultSigningKeyType},
-		Public: e3dbClients.Key{
-			Material: signingKey,
-			Type:     e3dbClients.DefaultSigningKeyType},
-	}
+	accountClientConfig.SigningKeys = signingKeys
 	accountClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
 		Private: e3dbClients.Key{
 			Material: privateEncryptionKey,
@@ -112,10 +107,11 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}
-	signingKey, privateSigningKey, err := e3db.GenerateKeyPair()
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
-		return registrationResponse, userClientConfig, err
+		return registrationResponse, userClientConfig, fmt.Errorf("error: %s generating signing key pair", err)
 	}
+	signingKey := signingKeys.Public.Material
 	unAuthedClientServiceClient := clientServiceClient.New(userClientConfig)
 	// Register user
 	userRegister := clientServiceClient.ClientRegisterRequest{
@@ -133,16 +129,10 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	}
 	userClientConfig.Host = ""                     // clear host, and force the user to define
 	userClientConfig.AuthNHost = clientServiceHost // client service is responsible for authenticating requests
+	userClientConfig.ClientID = registrationResponse.Client.ClientID.String()
 	userClientConfig.APIKey = registrationResponse.APIKeyID
 	userClientConfig.APISecret = registrationResponse.APISecret
-	userClientConfig.SigningKeys = e3dbClients.SigningKeys{
-		Private: e3dbClients.Key{
-			Material: privateSigningKey,
-			Type:     e3dbClients.DefaultSigningKeyType},
-		Public: e3dbClients.Key{
-			Material: signingKey,
-			Type:     e3dbClients.DefaultSigningKeyType},
-	}
+	userClientConfig.SigningKeys = signingKeys
 	userClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
 		Private: e3dbClients.Key{
 			Material: privateEncryptionKey,

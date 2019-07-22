@@ -5,33 +5,56 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
-	e3dbIdentityHost          = os.Getenv("E3DB_IDENTITY_SERVICE_HOST")
+	toznyCyclopsHost         = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	e3dbAuthHost             = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost          = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey               = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret            = os.Getenv("E3DB_API_KEY_SECRET")
+	e3dbClientID             = os.Getenv("E3DB_CLIENT_ID")
+	ValidAccountClientConfig = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbAccountHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	e3dbIdentityHost          = toznyCyclopsHost
 	ValidIdentityClientConfig = e3dbClients.ClientConfig{
 		Host: e3dbIdentityHost,
 	}
-	identityServiceClient = New(ValidIdentityClientConfig)
-	testContext           = context.TODO()
+	anonymousIdentityServiceClient = New(ValidIdentityClientConfig)
+	testContext                    = context.TODO()
+	accountServiceClient           = accountClient.New(ValidAccountClientConfig)
 )
 
 func TestHealthCheckPassesIfServiceIsRunning(t *testing.T) {
-	err := identityServiceClient.HealthCheck(testContext)
+	err := anonymousIdentityServiceClient.HealthCheck(testContext)
 	if err != nil {
-		t.Errorf("%s health check failed using %+v\n", err, identityServiceClient)
+		t.Errorf("%s health check failed using %+v\n", err, anonymousIdentityServiceClient)
 	}
 }
 
 func TestServiceCheckPassesIfServiceIsRunning(t *testing.T) {
-	err := identityServiceClient.ServiceCheck(testContext)
+	err := anonymousIdentityServiceClient.ServiceCheck(testContext)
 	if err != nil {
-		t.Errorf("%s service check failed using %+v\n", err, identityServiceClient)
+		t.Errorf("%s service check failed using %+v\n", err, anonymousIdentityServiceClient)
 	}
 }
 
 func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
 	realmName := "TestCreateRealmCreatesRealmWithUserDefinedName"
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
@@ -49,6 +72,13 @@ func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 }
 
 func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
 	realmName := "TestDescribeRealmReturnsDetailsOfCreatedRealm"
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
@@ -70,6 +100,13 @@ func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 }
 
 func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
 	realmName := "TestDescribeRealmReturnsDetailsOfCreatedRealm"
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{

@@ -15,8 +15,10 @@ const (
 
 // E3dbIdentityClient implements an http client for communication with an e3db Identity service.
 type E3dbIdentityClient struct {
-	Host       string
-	authClient *http.Client
+	Host        string
+	SigningKeys e3dbClients.SigningKeys
+	ClientID    string
+	httpClient  *http.Client
 }
 
 // ListRealms lists the realms belonging to the requester returning the realms and error (if any).
@@ -27,9 +29,8 @@ func (c *E3dbIdentityClient) ListRealms(ctx context.Context) (*ListRealmsRespons
 	if err != nil {
 		return realms, err
 	}
-	// TODO: signature based request
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realms)
-	return realms, nil
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &realms)
+	return realms, err
 }
 
 // DeleteRealm deletes the realm with the specified id, returning error (if any).
@@ -39,8 +40,7 @@ func (c *E3dbIdentityClient) DeleteRealm(ctx context.Context, realmID int64) err
 	if err != nil {
 		return err
 	}
-	// TODO: signature based request
-	return e3dbClients.MakeRawServiceCall(c.authClient, request, nil)
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
 }
 
 // DescribeRealm describes the realm with the specified id, returning the realm and error (if any).
@@ -51,9 +51,8 @@ func (c *E3dbIdentityClient) DescribeRealm(ctx context.Context, realmID int64) (
 	if err != nil {
 		return realm, err
 	}
-	// TODO: signature based request
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realm)
-	return realm, nil
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
 }
 
 // CreateRealm creates a realm using the specified parameters,
@@ -65,8 +64,7 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 	if err != nil {
 		return realm, err
 	}
-	// TODO: signature based request
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, &realm)
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &realm)
 	return realm, err
 }
 
@@ -78,7 +76,7 @@ func (c *E3dbIdentityClient) ServiceCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, nil)
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, nil)
 	return err
 }
 
@@ -90,15 +88,16 @@ func (c *E3dbIdentityClient) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeRawServiceCall(c.authClient, request, nil)
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, nil)
 	return err
 }
 
 // New returns a new E3dbHookClient configured with the provided values
 func New(config e3dbClients.ClientConfig) E3dbIdentityClient {
 	return E3dbIdentityClient{
-		Host: config.Host,
-		// In the future this client will make authenticated calls using signature based auth
-		authClient: &http.Client{},
+		Host:        config.Host,
+		SigningKeys: config.SigningKeys,
+		ClientID:    config.ClientID,
+		httpClient:  &http.Client{},
 	}
 }
