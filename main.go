@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ClientConfig wraps configuration
@@ -21,6 +23,17 @@ type ClientConfig struct {
 	AuthNHost      string
 	SigningKeys    SigningKeys    // AsymmetricEncryptionKeypair used for signing and authenticating requests
 	EncryptionKeys EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
+}
+
+// ToznyAuthenticatedClientContext represents the contextual information provided by cyclops to downstream services
+// when a user is successfully authenticated.
+type ToznyAuthenticatedClientContext struct {
+	ClientID       uuid.UUID            `json:"client_id"`
+	AccountID      uuid.UUID            `json:"account_id"`
+	Name           string               `json:"name"`
+	EncryptionKeys PublicEncryptionKeys `json:"encryption_keys"`        // Tozny does not know a user's private encryption key
+	SignatureKeys  PublicSignatureKeys  `json:"signing_keys,omitempty"` // Tozny does not know a user's private signing key
+	Type           string               `json:"type"`
 }
 
 // E3DBHTTPAuthorizer implements the functionality needed to make

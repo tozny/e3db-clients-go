@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/tozny/e3db-go/v2"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -27,17 +26,6 @@ type SymmetricKey *[SymmetricKeySize]byte
 
 // Nonce is a type that represents nonce randomly generated unique value that is used once in encrypting data.
 type Nonce *[NonceSize]byte
-
-// ToznyAuthenticatedClientContext represents the contextual information provided by cyclops to downstream services
-// when a user is successfully authenticated.
-type ToznyAuthenticatedClientContext struct {
-	ClientID       uuid.UUID            `json:"client_id"`
-	AccountID      uuid.UUID            `json:"account_id"`
-	Name           string               `json:"name"`
-	EncryptionKeys PublicEncryptionKeys `json:"encryption_keys"`        // Tozny does not know a user's private encryption key
-	SignatureKeys  PublicSignatureKeys  `json:"signing_keys,omitempty"` // Tozny does not know a user's private signing key
-	ClientType     string               `json:"type"`
-}
 
 // Key wraps material generated using an algorithm/curve for use in cryptographic operations
 type Key struct {
