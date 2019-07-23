@@ -54,10 +54,10 @@ type EncryptionKeys AsymmetricKeypair
 // or externally (client calls).
 type PublicEncryptionKeys Keys
 
-// PublicSignatureKeys are a set of key, NIST or Sodium, used within Tozny to sign requests
+// PublicSigningKeys are a set of key, NIST or Sodium, used within Tozny to sign requests
 // It's the responsibility of the user to assign proper key types to raw keys obtained internally (db)
 // or externally (client calls).
-type PublicSignatureKeys Keys
+type PublicSigningKeys Keys
 
 // GenerateSigningKeys generates a `base64.RawURLEncoding` private and public key
 // for signing requests and data on behalf of Tozny clients,

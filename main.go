@@ -32,7 +32,7 @@ type ToznyAuthenticatedClientContext struct {
 	AccountID      uuid.UUID            `json:"account_id"`
 	Name           string               `json:"name"`
 	EncryptionKeys PublicEncryptionKeys `json:"encryption_keys"`        // Tozny does not know a user's private encryption key
-	SignatureKeys  PublicSignatureKeys  `json:"signing_keys,omitempty"` // Tozny does not know a user's private signing key
+	SigningKeys    PublicSigningKeys    `json:"signing_keys,omitempty"` // Tozny does not know a user's private signing key
 	Type           string               `json:"type"`
 }
 
