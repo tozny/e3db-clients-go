@@ -14,9 +14,10 @@ const (
 
 //E3dbPDSClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
-	APIKey    string
-	APISecret string
-	Host      string
+	APIKey         string
+	APISecret      string
+	Host           string
+	EncryptionKeys e3dbClients.EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
 	*authClient.E3dbAuthClient
 }
 
@@ -188,6 +189,16 @@ func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyReq
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+// PutEncryptedAccessKey wraps PutAccessKey to encrypt an unencryptedAK before placing it in Tozstore.
+func (c *E3dbPDSClient) PutEncryptedAccessKey(ctx context.Context, params PutAccessKeyRequest, unencryptedAK e3dbClients.SymmetricKey) (*PutAccessKeyResponse, error) {
+	eak, err := e3dbClients.EncryptAccessKey(unencryptedAK, c.EncryptionKeys)
+	if err != nil {
+		return nil, err
+	}
+	params.EncryptedAccessKey = eak
+	return c.PutAccessKey(ctx, params)
 }
 
 // GetAccessKey attempts to get an access key stored in E3DB returning the response and error (if any).
@@ -378,6 +389,7 @@ func New(config e3dbClients.ClientConfig) E3dbPDSClient {
 		config.APIKey,
 		config.APISecret,
 		config.Host,
+		config.EncryptionKeys,
 		&authService,
 	}
 }
