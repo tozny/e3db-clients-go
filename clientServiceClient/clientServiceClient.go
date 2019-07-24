@@ -160,7 +160,7 @@ func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, 
 }
 
 func (c *ClientServiceClient) HealthCheck(ctx context.Context) error {
-	path := c.Host + "/" + ClientServiceBasePath + "/healthcheck"
+	path := c.Host + "/" + ClientServiceBasePath + "healthcheck"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return err
