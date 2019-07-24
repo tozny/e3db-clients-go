@@ -2,9 +2,10 @@ package clientServiceClient
 
 import (
 	"context"
-	"github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/authClient"
 	"strconv"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/authClient"
 )
 
 var (
@@ -156,6 +157,16 @@ func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, 
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+func (c *ClientServiceClient) HealthCheck(ctx context.Context) error {
+	path := c.Host + "/" + ClientServiceBasePath + "/healthcheck"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
