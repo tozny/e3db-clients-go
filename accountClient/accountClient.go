@@ -110,6 +110,18 @@ func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string)
 	return &result, err
 }
 
+// IncrementTokenUse increases the number of uses on a registration token. It does not disable tokens
+func (c *E3dbAccountClient) IncrementTokenUse(ctx context.Context, token string) (*RegTokenInfo, error) {
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/token/" + token + "/increment"
+	result := RegTokenInfo{}
+	request, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return &result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return &result, err
+}
+
 // ValidateAuthToken validates a bearer token issued by the account service
 func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params ValidateTokenRequest) (*ValidateTokenResponse, error) {
 	var result *ValidateTokenResponse

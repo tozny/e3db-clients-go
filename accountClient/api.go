@@ -104,7 +104,10 @@ type ValidateTokenResponse struct {
 // CreateRegistrationTokenRequest represents a valid request to the account service's /tokens endpoint POST.
 type CreateRegistrationTokenRequest struct {
 	AccountServiceToken string `json:"token"` // JWT token for subsequent requests to the account service.
-	TokenPermissions
+	TokenPermissions    `json:"permissions"`
+	Name                string `json:"name"`
+	TotalAllowedUses    int    `json:"total_uses_allowed"`
+	Uses                int    `json:"uses"`
 }
 
 // CreateRegTokenResponse  represents the result of calling the account service's /tokens POST endpoint.
@@ -122,9 +125,12 @@ type TokenPermissions struct {
 
 // RegTokenInfo is the return from the token endpoint on a valid request
 type RegTokenInfo struct {
-	Token       string
-	AccountID   uuid.UUID `json:"account_id"`
-	Permissions RegTokenPermissions
+	Token            string
+	AccountID        uuid.UUID           `json:"account_id"`
+	Permissions      RegTokenPermissions `json:"permissions"`
+	Name             string              `json:"name"`
+	TotalAllowedUses int                 `json:"total_uses_allowed"`
+	Uses             int                 `json:"uses"`
 }
 
 // RegTokenPermissions decodes needed token permissions
