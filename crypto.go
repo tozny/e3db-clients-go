@@ -105,13 +105,13 @@ func EncryptAccessKey(rawAK SymmetricKey, encryptionKeys EncryptionKeys) (string
 
 // RandomSymmetricKey generates a random symmetric key (secret).
 func RandomSymmetricKey() SymmetricKey {
-	key := &[SymmetricKeySize]byte{}
+	key := [SymmetricKeySize]byte{}
 	_, err := rand.Read(key[:])
 	if err != nil {
 		// we don't expect this to fail
 		panic("random number generation failed")
 	}
-	return key
+	return &key
 }
 
 // RandomNonce generates a random nonce of size NoneSize
@@ -125,7 +125,7 @@ func RandomNonce() Nonce {
 	return &b
 }
 
-// BoxEncryptToBase64 uses asymmetric encryption key sot encrypt data
+// BoxEncryptToBase64 uses asymmetric encryption keys to encrypt data
 func BoxEncryptToBase64(data []byte, encryptionKeys EncryptionKeys) (string, string, error) {
 	n := RandomNonce()
 	rawPubKey, err := Base64Decode(encryptionKeys.Public.Material)
