@@ -9,6 +9,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
+	"github.com/tozny/e3db-go/v2"
 )
 
 var (
@@ -136,5 +137,58 @@ func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
 		if realm.ID == listedRealm.ID {
 			t.Errorf("expected realm %+v to be deleted, found it in listed realms %+v", realm, realms)
 		}
+	}
+}
+
+func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := "TestRegisterIdentityWithCreatedRealm"
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	identityName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	publicKey, _, err := e3db.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmID:                realm.ID,
+		Identity: Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
 	}
 }
