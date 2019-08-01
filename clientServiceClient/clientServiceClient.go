@@ -165,7 +165,7 @@ func (c *ClientServiceClient) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakePublicCall(ctx, request, nil)
 	return err
 }
 
