@@ -21,6 +21,19 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// RegisterIdentity registers an identity with the specified realm using the specified parameters,
+// returning the created identity and error (if any).
+func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {
+	var identity *RegisterIdentityResponse
+	path := c.Host + identityServiceBasePath + "/register"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return identity, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &identity)
+	return identity, err
+}
+
 // ListRealms lists the realms belonging to the requester returning the realms and error (if any).
 func (c *E3dbIdentityClient) ListRealms(ctx context.Context) (*ListRealmsResponse, error) {
 	var realms *ListRealmsResponse
