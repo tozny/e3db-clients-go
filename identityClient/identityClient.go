@@ -6,11 +6,18 @@ import (
 	"net/http"
 
 	"github.com/tozny/e3db-clients-go"
+	"github.com/tozny/utils-go/server"
 )
 
 const (
 	identityServiceBasePath = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
 	realmResourceName       = "realm"
+	realmLoginPathPrefix    = "/auth/realms"
+	realmLoginPathPostfix   = "/protocol/openid-connect/token"
+)
+
+var (
+	internalIdentityServiceBasePath = fmt.Sprintf("/internal%s", identityServiceBasePath)
 )
 
 // E3dbIdentityClient implements an http client for communication with an e3db Identity service.
@@ -19,6 +26,34 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// IdentityLogin logs in the client identity to the specified realm,
+// returning the identities realm authentication info and error (if any).
+func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string) (*IdentityLoginResponse, error) {
+	var identity *IdentityLoginResponse
+	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", realmName) + realmLoginPathPostfix
+	request, err := e3dbClients.CreateRequest("POST", path, nil)
+	if err != nil {
+		return identity, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &identity)
+	return identity, err
+}
+
+// InternalIdentityLogin requests internal authentication context
+// for the ability of the authenticated identity to login into the specified realm
+// returning the identities internal realm authentication context and error (if any).
+func (c *E3dbIdentityClient) InternalIdentityLogin(ctx context.Context, params InternalIdentityLoginRequest) (*InternalIdentityLoginResponse, error) {
+	var identity *InternalIdentityLoginResponse
+	path := c.Host + internalIdentityServiceBasePath + fmt.Sprintf("/%s/%s", realmResourceName, params.RealmName) + "/login"
+	request, err := e3dbClients.CreateRequest("POST", path, nil)
+	if err != nil {
+		return identity, err
+	}
+	request.Header.Set(server.ToznyAuthNHeader, params.XToznyAuthNHeader)
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &identity)
+	return identity, err
 }
 
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,

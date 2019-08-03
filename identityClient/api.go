@@ -1,5 +1,12 @@
 package identityClient
 
+import (
+	"encoding/json"
+	"strings"
+
+	"github.com/google/uuid"
+)
+
 // Realm represents the top level identity management resource for grouping and managing
 // authentication and authorization of consuming application, identities, and sovereigns within a realm.
 type Realm struct {
@@ -33,7 +40,7 @@ type ListRealmsResponse struct {
 // Identity wraps a user of a given realm along with its authentication information.
 type Identity struct {
 	ID           int64             `json:"id"`
-	ToznyID      string            `json:"tozny_id"` // Tozny Client ID
+	ToznyID      uuid.UUID         `json:"tozny_id"` // Tozny Client ID
 	RealmID      int64             `json:"realm_id"`
 	Name         string            `json:"name"`
 	APIKeyID     string            `json:"api_key_id"`
@@ -52,4 +59,56 @@ type RegisterIdentityRequest struct {
 // RegisterIdentityResponse wraps values returned from a register identity request.
 type RegisterIdentityResponse struct {
 	Identity Identity `json:"identity"`
+}
+
+// IdentityLoginResponse wraps an extended OpenID v1.0 compatible Token Response
+// that can be used to authenticate an identity as a member of a realm.
+type IdentityLoginResponse struct {
+	AccessToken           string   `json:"access_token"`
+	AccessTokenExpiresIn  int      `json:"expires_in"`
+	RefreshToken          string   `json:"refresh_token"`
+	RefreshTokenExpiresIn int      `json:"refresh_expires_in"`
+	TokenType             string   `json:"token_type"`
+	IDToken               string   `json:"id_token"`
+	NotBeforePolicy       int      `json:"not-before-policy"`
+	Scopes                []string `json:"scopes"`
+	RawScopes             string   `json:"scope"`
+}
+
+func (ilr *IdentityLoginResponse) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, ilr); err != nil {
+		return err
+	}
+	ilr.Scopes = strings.Split(ilr.RawScopes, " ")
+	return nil
+}
+
+func (ilr IdentityLoginResponse) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&IdentityLoginResponse{
+		AccessToken:           ilr.AccessToken,
+		AccessTokenExpiresIn:  ilr.AccessTokenExpiresIn,
+		RefreshToken:          ilr.RefreshToken,
+		RefreshTokenExpiresIn: ilr.RefreshTokenExpiresIn,
+		TokenType:             ilr.TokenType,
+		IDToken:               ilr.IDToken,
+		NotBeforePolicy:       ilr.NotBeforePolicy,
+		Scopes:                ilr.Scopes,
+		RawScopes:             strings.Join(ilr.Scopes, " "),
+	})
+}
+
+// InternalIdentityLoginRequest wraps the parameters needed to determine
+// whether an authenticated Identity can log into the a realm.
+type InternalIdentityLoginRequest struct {
+	XToznyAuthNHeader string // The X-TOZNY-AUTHN-HEADER for the authenticated Identity.
+	RealmName         string // The realm the authenticated Identity is trying to log in to.
+}
+
+// InternalIdentityLoginResponse wraps an internal
+// authentication context for realm identities.
+type InternalIdentityLoginResponse struct {
+	Active    bool   `json:"active"`     // Whether the Identity is currently enabled for realm operations.
+	RealmName string `json:"realm_name"` // The name of the realm the Identity is a member of.
+	RealmID   int64  `json:"realm_id"`   // The ID of the realm the Identity is a member of.
+	UserID    string `json:"user_id"`    // The ID of the Identity's Keycloak user.
 }
