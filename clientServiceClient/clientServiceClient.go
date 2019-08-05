@@ -131,7 +131,6 @@ func (c *ClientServiceClient) InternalClientInfoForSignature(ctx context.Context
 	request.URL.RawQuery = query.Encode()
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
-
 }
 
 // InternalClientInfoForTokenClaims calls internal endpoint to authenticate for a clientID.
