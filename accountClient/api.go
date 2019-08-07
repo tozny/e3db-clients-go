@@ -149,6 +149,7 @@ type InternalGetAccountInfoResponse struct {
 // InternalAccountInfoResponse represents a response from calling the account service at
 // internal/v1/account/info/{accountID}
 type InternalAccountInfoResponse struct {
+	Name      string `json:"name"`
 	Email     string `json:"email"`
 	AccountID string `json:"account_id"`
 }
