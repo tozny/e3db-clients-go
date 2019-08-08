@@ -1,9 +1,6 @@
 package identityClient
 
 import (
-	"encoding/json"
-	"strings"
-
 	"github.com/google/uuid"
 )
 
@@ -64,37 +61,14 @@ type RegisterIdentityResponse struct {
 // IdentityLoginResponse wraps an extended OpenID v1.0 compatible Token Response
 // that can be used to authenticate an identity as a member of a realm.
 type IdentityLoginResponse struct {
-	AccessToken           string   `json:"access_token"`
-	AccessTokenExpiresIn  int      `json:"expires_in"`
-	RefreshToken          string   `json:"refresh_token"`
-	RefreshTokenExpiresIn int      `json:"refresh_expires_in"`
-	TokenType             string   `json:"token_type"`
-	IDToken               string   `json:"id_token"`
-	NotBeforePolicy       int      `json:"not-before-policy"`
-	Scopes                []string `json:"scopes"`
-	RawScopes             string   `json:"scope"`
-}
-
-func (ilr *IdentityLoginResponse) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, ilr); err != nil {
-		return err
-	}
-	ilr.Scopes = strings.Split(ilr.RawScopes, " ")
-	return nil
-}
-
-func (ilr IdentityLoginResponse) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&IdentityLoginResponse{
-		AccessToken:           ilr.AccessToken,
-		AccessTokenExpiresIn:  ilr.AccessTokenExpiresIn,
-		RefreshToken:          ilr.RefreshToken,
-		RefreshTokenExpiresIn: ilr.RefreshTokenExpiresIn,
-		TokenType:             ilr.TokenType,
-		IDToken:               ilr.IDToken,
-		NotBeforePolicy:       ilr.NotBeforePolicy,
-		Scopes:                ilr.Scopes,
-		RawScopes:             strings.Join(ilr.Scopes, " "),
-	})
+	AccessToken           string `json:"access_token"`
+	AccessTokenExpiresIn  int    `json:"expires_in"`
+	RefreshToken          string `json:"refresh_token"`
+	RefreshTokenExpiresIn int    `json:"refresh_expires_in"`
+	TokenType             string `json:"token_type"`
+	IDToken               string `json:"id_token"`
+	NotBeforePolicy       int    `json:"not-before-policy"`
+	RawScopes             string `json:"scope"`
 }
 
 // InternalIdentityLoginRequest wraps the parameters needed to determine

@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
-	"github.com/tozny/e3db-clients-go"
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/utils-go/server"
 )
 
@@ -33,10 +35,15 @@ type E3dbIdentityClient struct {
 func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string) (*IdentityLoginResponse, error) {
 	var identity *IdentityLoginResponse
 	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", realmName) + realmLoginPathPostfix
-	request, err := e3dbClients.CreateRequest("POST", path, nil)
+	data := url.Values{}
+	data.Set("grant_type", "password")
+	data.Set("password", "password")
+	data.Set("client_id", "admin-cli")
+	request, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
 	if err != nil {
 		return identity, err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &identity)
 	return identity, err
 }

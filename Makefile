@@ -11,9 +11,9 @@ endif
 
 export GO111MODULE=on
 
-all: clean build test up down restart
+all: clean build up test down
 
-.PHONY: build test lint clean
+.PHONY: build test lint clean up down restart testone
 
 lint :
 	go vet ./...
@@ -33,6 +33,9 @@ restart : down up
 
 test : lint
 	go test -count=1 -v -cover --race ./...
+
+testone: lint
+	TEST_SERVICE_API=$(serviceApi) TEST_LOGFILE=$(log) LOG_QUERIES=$(qlog) PARATEST=$(paratest) go test -v -race -count=1 ./... -run "^($(method))$$"
 
 clean :
 	go clean ./...
