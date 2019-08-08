@@ -25,6 +25,13 @@ type ClientConfig struct {
 	EncryptionKeys EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
 }
 
+// AuthenticationHeader wraps the structure used in the X-Tozny-Authn HTTP header
+type ToznyAuthNHeader struct {
+	Method    string          `json:"method"`
+	AuthnInfo json.RawMessage `json:"authn_info"`
+	User      json.RawMessage `json:"user"`
+}
+
 // ToznyAuthenticatedClientContext represents the contextual information provided by cyclops to downstream services
 // when a user is successfully authenticated.
 type ToznyAuthenticatedClientContext struct {

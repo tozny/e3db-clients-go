@@ -16,7 +16,7 @@ Contains golang implementations of http clients for use by golang applications t
 
 Running:
 
-```
+```bash
 make build
 ```
 
@@ -28,19 +28,26 @@ Project tests run against an instance of Tozny Platform.
 
 To run Tozny Platform services
 
-```
+```bash
 make up
 ```
 
 After Tozny Platform is up, execute the tests by running:
 
-```
+```bash
 make test
 ```
 
+To Run tests matching the name in 'method' form:
+
+```bash
+make testone method=TestCreateCustomer
+```
+
+
 After testing is done, you can stop Tozny Platform services by running
 
-```
+```bash
 make down
 ```
 
@@ -89,14 +96,14 @@ Releasing involves tagging a commit in this repository, and pushing the tag. Tag
 
 To publish a new version, run
 
-```
+```bash
 go tag vX.Y.Z
 go push origin vX.Y.Z
 ```
 
 To consume published updates from other repositories that depends on this module run
 
-```
+```bash
 go get github.com/tozny/e3db-clients-go@vX.Y.Z
 ```
 

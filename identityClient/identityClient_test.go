@@ -230,6 +230,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
+
 	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
 		RealmID:                realm.ID,
@@ -321,9 +322,16 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s marshaling %+v to json", err, registeredIdentityInternalAuthenticationContext)
 	}
+	xToznyAuthNHeader := e3dbClients.ToznyAuthNHeader{
+		User: registeredIdentityInternalAuthHeader,
+	}
+	jsonXToznyAuthNHeader, err := json.Marshal(xToznyAuthNHeader)
+	if err != nil {
+		t.Fatalf("error %s marshaling %+v to json", err, xToznyAuthNHeader)
+	}
 	internalIdentityLoginParams := InternalIdentityLoginRequest{
 		RealmName:         realm.Name,
-		XToznyAuthNHeader: string(registeredIdentityInternalAuthHeader),
+		XToznyAuthNHeader: string(jsonXToznyAuthNHeader),
 	}
 	internalIdentityAuthenticationContext, err := registeredIdentityClient.InternalIdentityLogin(testContext, internalIdentityLoginParams)
 	if err != nil {
