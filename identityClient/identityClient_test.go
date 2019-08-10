@@ -230,7 +230,6 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
-
 	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
 		RealmID:                realm.ID,
