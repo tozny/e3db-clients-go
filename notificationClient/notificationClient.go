@@ -15,13 +15,13 @@ type ToznyNotificationClient struct {
 
 const (
 	// NotificationServiceBasePath is the base path used for notification-service calls
-	NotificationServiceBasePath = "v1/notification"
+	NotificationServiceBasePath = "/v1/notification"
 )
 
 // CreateNotification pushes a notification via an internal endpoint. Requires the bootstrap client.
 func (nc *ToznyNotificationClient) CreateNotification(ctx context.Context, params CreateNotificationRequest) (*NotificationMeta, error) {
 	var result *NotificationMeta
-	path := nc.Host + "/internal/" + NotificationServiceBasePath + "/"
+	path := nc.Host + NotificationServiceBasePath + "/"
 	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
