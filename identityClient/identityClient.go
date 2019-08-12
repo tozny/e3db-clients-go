@@ -36,8 +36,10 @@ func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string
 	var identity *IdentityLoginResponse
 	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", realmName) + realmLoginPathPostfix
 	data := url.Values{}
+	// All login requests are authenticated as valid tsv1 signed requests,
+	// set these for compatibility with default Keycloak Oauth direct grant request handling.
 	data.Set("grant_type", "password")
-	data.Set("password", "password")
+	// Not the actual realm admin, just an identity with API level access.
 	data.Set("client_id", "admin-cli")
 	request, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
 	if err != nil {
