@@ -50,7 +50,7 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 	createAccountParams := accountClient.CreateAccountRequest{
 		Profile: accountClient.Profile{
 			Name:               accountTag,
-			Email:              fmt.Sprintf("test+%s@test.com", accountTag),
+			Email:              fmt.Sprintf("test+%s@example.com", accountTag),
 			AuthenticationSalt: salt,
 			EncodingSalt:       salt,
 			SigningKey: accountClient.EncryptionKey{
