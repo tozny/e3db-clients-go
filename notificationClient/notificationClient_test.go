@@ -15,24 +15,30 @@ import (
 )
 
 var (
-	toznyCyclopsHost  = utils.MustGetenv("TOZNY_CYCLOPS_SERVICE_HOST")
-	e3dbAPIKey        = utils.MustGetenv("E3DB_API_KEY_ID")
-	e3dbAPISecret     = utils.MustGetenv("E3DB_API_KEY_SECRET")
-	ValidClientConfig e3dbClients.ClientConfig
+	toznyCyclopsHost                 = utils.MustGetenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	e3dbAPIKey                       = utils.MustGetenv("E3DB_API_KEY_ID")
+	e3dbAPISecret                    = utils.MustGetenv("E3DB_API_KEY_SECRET")
+	bootstrapClientPublicSigningKey  = utils.MustGetenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
+	bootstrapClientPrivateSigningKey = utils.MustGetenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
+	ValidClientConfig                e3dbClients.ClientConfig
 )
 
-func TestMain(m *testing.M) { // TODO currently fails - no config in service-router
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		println("Failed to create signing keys")
-		os.Exit(1)
-	}
+func TestMain(m *testing.M) {
 	ValidClientConfig = e3dbClients.ClientConfig{
-		APIKey:      e3dbAPIKey,
-		APISecret:   e3dbAPISecret,
-		Host:        toznyCyclopsHost,
-		AuthNHost:   toznyCyclopsHost,
-		SigningKeys: signingKeys,
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      toznyCyclopsHost,
+		AuthNHost: toznyCyclopsHost,
+		SigningKeys: e3dbClients.SigningKeys{
+			Public: e3dbClients.Key{
+				Type:     e3dbClients.DefaultSigningKeyType,
+				Material: bootstrapClientPublicSigningKey,
+			},
+			Private: e3dbClients.Key{
+				Type:     e3dbClients.DefaultSigningKeyType,
+				Material: bootstrapClientPrivateSigningKey,
+			},
+		},
 	}
 	os.Exit(m.Run())
 }
