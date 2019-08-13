@@ -9,8 +9,10 @@ import (
 )
 
 type ToznyNotificationClient struct {
-	Host       string
-	authClient authClient.E3dbAuthClient
+	Host        string
+	SigningKeys e3dbClients.SigningKeys
+	ClientID    string
+	authClient  authClient.E3dbAuthClient
 }
 
 const (
@@ -26,13 +28,15 @@ func (nc *ToznyNotificationClient) CreateNotification(ctx context.Context, param
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(&nc.authClient, ctx, request, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, nc.SigningKeys, nc.ClientID, &result)
 	return result, err
 }
 
 func New(config e3dbClients.ClientConfig) *ToznyNotificationClient {
 	return &ToznyNotificationClient{
-		Host:       config.Host,
-		authClient: authClient.New(config),
+		SigningKeys: config.SigningKeys,
+		ClientID:    config.ClientID,
+		Host:        config.Host,
+		authClient:  authClient.New(config),
 	}
 }

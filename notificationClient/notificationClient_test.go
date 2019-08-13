@@ -2,6 +2,7 @@ package notificationClient_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -14,30 +15,35 @@ import (
 )
 
 var (
-	e3dbAuthHost          = utils.MustGetenv("E3DB_AUTH_SERVICE_HOST")
-	e3dbAccountHost       = utils.MustGetenv("E3DB_ACCOUNT_SERVICE_HOST")
-	toznyNotificationHost = utils.MustGetenv("TOZNY_NOTIFICATION_SERVICE_HOST")
-	e3dbAPIKey            = utils.MustGetenv("E3DB_API_KEY_ID")
-	e3dbAPISecret         = utils.MustGetenv("E3DB_API_KEY_SECRET")
-	ValidClientConfig     = e3dbClients.ClientConfig{
-		APIKey:    e3dbAPIKey,
-		APISecret: e3dbAPISecret,
-		Host:      toznyNotificationHost,
-		AuthNHost: e3dbAuthHost,
-	}
+	toznyCyclopsHost  = utils.MustGetenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	e3dbAPIKey        = utils.MustGetenv("E3DB_API_KEY_ID")
+	e3dbAPISecret     = utils.MustGetenv("E3DB_API_KEY_SECRET")
+	ValidClientConfig e3dbClients.ClientConfig
 )
+
+func TestMain(m *testing.M) { // TODO currently fails - no config in service-router
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		println("Failed to create signing keys")
+		os.Exit(1)
+	}
+	ValidClientConfig = e3dbClients.ClientConfig{
+		APIKey:      e3dbAPIKey,
+		APISecret:   e3dbAPISecret,
+		Host:        toznyCyclopsHost,
+		AuthNHost:   toznyCyclopsHost,
+		SigningKeys: signingKeys,
+	}
+	os.Exit(m.Run())
+}
 
 func TestSendNotification(t *testing.T) {
 	testTag := uuid.New().String()
-	accounter := accountClient.New(e3dbClients.ClientConfig{
-		APIKey:    ValidClientConfig.APIKey,
-		APISecret: ValidClientConfig.APISecret,
-		AuthNHost: ValidClientConfig.AuthNHost,
-		Host:      e3dbAccountHost,
-	})
+
+	accounter := accountClient.New(ValidClientConfig)
 	notifier := notificationClient.New(ValidClientConfig)
 
-	_, account, err := test.MakeE3DBAccount(t, &accounter, testTag, e3dbAuthHost)
+	_, account, err := test.MakeE3DBAccount(t, &accounter, testTag, toznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Failed to create a test account: %s", err)
 	}
@@ -59,15 +65,10 @@ func TestSendNotification(t *testing.T) {
 
 func TestSendInvalidTemplate(t *testing.T) {
 	testTag := uuid.New().String()
-	accounter := accountClient.New(e3dbClients.ClientConfig{
-		APIKey:    ValidClientConfig.APIKey,
-		APISecret: ValidClientConfig.APISecret,
-		AuthNHost: ValidClientConfig.AuthNHost,
-		Host:      e3dbAccountHost,
-	})
+	accounter := accountClient.New(ValidClientConfig)
 	notifier := notificationClient.New(ValidClientConfig)
 
-	_, account, err := test.MakeE3DBAccount(t, &accounter, testTag, e3dbAuthHost)
+	_, account, err := test.MakeE3DBAccount(t, &accounter, testTag, toznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Failed to create a test account: %s", err)
 	}
