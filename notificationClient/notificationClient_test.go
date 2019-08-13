@@ -49,7 +49,6 @@ func TestSendNotification(t *testing.T) {
 	}
 	notificationMeta, err := notifier.CreateNotification(context.Background(), notificationClient.CreateNotificationRequest{
 		Template:  "expiry_30days",
-		Payload:   nil,
 		Channel:   "email",
 		AccountID: uuid.MustParse(account.Profile.AccountID),
 		Nonce:     testTag,
