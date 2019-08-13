@@ -18,6 +18,7 @@ var (
 	toznyCyclopsHost                 = utils.MustGetenv("TOZNY_CYCLOPS_SERVICE_HOST")
 	e3dbAPIKey                       = utils.MustGetenv("E3DB_API_KEY_ID")
 	e3dbAPISecret                    = utils.MustGetenv("E3DB_API_KEY_SECRET")
+	e3dbClientID                     = utils.MustGetenv("E3DB_CLIENT_ID")
 	bootstrapClientPublicSigningKey  = utils.MustGetenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
 	bootstrapClientPrivateSigningKey = utils.MustGetenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
 	ValidClientConfig                e3dbClients.ClientConfig
@@ -39,6 +40,7 @@ func TestMain(m *testing.M) {
 				Material: bootstrapClientPrivateSigningKey,
 			},
 		},
+		ClientID: e3dbClientID,
 	}
 	os.Exit(m.Run())
 }
