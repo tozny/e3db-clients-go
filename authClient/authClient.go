@@ -7,14 +7,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/tozny/e3db-clients-go"
+	"net/http"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/utils-go/server"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
-	"net/http"
 )
 
 const (
-	AuthServiceBasePath = "v1/auth" //HTTP PATH prefix for calls to the auth service.
+	AuthServiceBasePath = "/v1/auth" //HTTP PATH prefix for calls to the auth service.
 )
 
 //E3dbAuthClient implements an http client for communication with an e3db auth service.
@@ -39,7 +41,7 @@ func (c *E3dbAuthClient) ValidateToken(ctx context.Context, params ValidateToken
 	if err != nil {
 		return result, err
 	}
-	request, err := http.NewRequest("POST", c.Host+"/"+AuthServiceBasePath+"/validate", &buf)
+	request, err := http.NewRequest("POST", c.Host+AuthServiceBasePath+"/validate", &buf)
 	if err != nil {
 		return result, err
 	}
@@ -71,6 +73,19 @@ func (c *E3dbAuthClient) AuthHTTPClient(ctx context.Context) *http.Client {
 	return c.httpClient
 }
 
+// HealthCheck checks whether the auth service is up,
+// returning error if unable to connect to the service.
+func (c *E3dbAuthClient) HealthCheck(ctx context.Context) error {
+	req, err := http.NewRequest(http.MethodGet, c.Host+AuthServiceBasePath+server.HealthCheckPathSuffix, nil)
+	if err != nil {
+		return err
+	}
+	if err := e3dbClients.MakePublicCall(ctx, req, nil); err != nil { // run request to auth healthcheck
+		return err
+	}
+	return nil
+}
+
 // New returns a new E3dbAuthClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbAuthClient {
 	return E3dbAuthClient{
@@ -80,7 +95,7 @@ func New(config e3dbClients.ClientConfig) E3dbAuthClient {
 		oauth2Helper: clientcredentials.Config{
 			ClientID:     config.APIKey,
 			ClientSecret: config.APISecret,
-			TokenURL:     fmt.Sprintf("%s/%s/token", config.AuthNHost, AuthServiceBasePath),
+			TokenURL:     fmt.Sprintf("%s%s/token", config.AuthNHost, AuthServiceBasePath),
 		},
 	}
 }
