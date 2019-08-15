@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/tozny/utils-go/server"
 )
 
 // ClientConfig wraps configuration
@@ -198,4 +199,38 @@ func CreateRequest(method string, path string, params interface{}) (*http.Reques
 		}
 	}
 	return request, nil
+}
+
+// XToznyAuthnRequestAuthenticator authenticates implements utils-go
+// server.RequestAuthenticator to validate the presence and form of
+// an X-TOZNY-AUTHN header and yield its clientID, if any
+type XToznyAuthnRequestAuthenticator struct{}
+
+// AuthenticateRequest validates the provided request authenticates
+// an internal OR external e3db client via the request's X-TOZNY-AUTHN
+// header, returning the clientID, authentication status of the
+// provided request, and error (if any).
+func (c *XToznyAuthnRequestAuthenticator) AuthenticateRequest(ctx context.Context, req *http.Request, internal bool) (string, bool, error) {
+	// Ignore "internal", as this authenticator makes no distinction
+	var xTozAuthnValue ToznyAuthNHeader
+	var toznyUser ToznyAuthenticatedClientContext
+	xTozAuthnHeader := req.Header.Get(server.ToznyAuthNHeader)
+	if xTozAuthnHeader == "" {
+		return "", false, fmt.Errorf("unauthorized: No %s headers present", server.ToznyAuthNHeader)
+	}
+	err := json.Unmarshal([]byte(xTozAuthnHeader), &xTozAuthnValue)
+	if err != nil {
+		// If this gets hit the header is present, but in the completely overall format
+		return "", false, fmt.Errorf("unauthorized: Invalid %s header, error during parsing: %s", server.ToznyAuthNHeader, err)
+	}
+	if xTozAuthnValue.User == nil || len(xTozAuthnValue.User) == 0 {
+		// The header was correct and no user was present (a valid state for X-Tozny-Authn)
+		return "", true, nil
+	}
+	err = json.Unmarshal(xTozAuthnValue.User, &toznyUser)
+	if err != nil {
+		// The header structure was correct but the user structure was not
+		return "", true, fmt.Errorf("present but invalid %s header, error during parsing \"user\" field: %s", server.ToznyAuthNHeader, err)
+	}
+	return toznyUser.ClientID.String(), true, nil
 }

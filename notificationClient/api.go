@@ -10,7 +10,7 @@ const (
 	ChannelEmail = "email"
 )
 
-// CreateNotificationRequest is the api-level struct which represents an objcet expected by notification-service's POST / endpoint
+// CreateNotificationRequest is the api-level struct which represents an object expected by notification-service's POST / endpoint
 type CreateNotificationRequest struct {
 	Template  string            `json:"template"`
 	Payload   map[string]string `json:"template_payload,omitempty"`
