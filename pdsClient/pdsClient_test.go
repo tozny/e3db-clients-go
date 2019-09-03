@@ -575,6 +575,74 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	}
 }
 
+func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this client
+	ctx := context.TODO()
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, encryptedRecord)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Share records of type created with sharee client
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify sharee can fetch records of type shared
+	listResponse, err := sharee.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true,
+	})
+	if err != nil {
+		t.Errorf("Error %s listing records for client %+v\n", err, sharee)
+	}
+	var found bool
+	var encryptedSharedRecord pdsClient.Record
+	for _, record := range listResponse.Results {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			encryptedSharedRecord.Data = record.Data
+			encryptedSharedRecord.Metadata = record.Metadata
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Failed to find shared records in list records results %+v\n", listResponse)
+	}
+	decryptedRecord, err := sharee.DecryptRecord(ctx, encryptedSharedRecord)
+	if err != nil {
+		t.Fatalf("error %s decrypting record %+v", err, encryptedSharedRecord)
+	}
+	if decryptedRecord.Data[dataKeyToEncrypt] != data[dataKeyToEncrypt] {
+		t.Errorf("expected shared encrypted record decrypted data to be %+v, got %+v", data, decryptedRecord)
+	}
+}
+
 func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)

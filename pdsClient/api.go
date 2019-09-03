@@ -259,3 +259,12 @@ type GetOrCreateAccessKeyRequest struct {
 	ReaderID   string // the tozny client that this access key is written for
 	RecordType string // the type of records this access key is valid for
 }
+
+type CreateSharedAccessKeyRequest struct {
+	WriterID           string
+	UserID             string
+	ReaderID           string
+	RecordType         string
+	EncryptedAccessKey string
+	ShareePublicKey    string
+}

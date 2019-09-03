@@ -82,7 +82,8 @@ func GenerateSigningKeys() (SigningKeys, error) {
 	return signingKeys, err
 }
 
-// EncryptData ...
+// EncryptData encrypts a collection of data of string key and values using
+// Tozny v1 Record encryption, returning the encrypted data.
 func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
 	encryptedData := make(map[string]string)
 	for k, v := range Data {
@@ -94,7 +95,8 @@ func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
 	return &encryptedData
 }
 
-// DecryptData ...
+// DecryptData decrypts a collection of data of string key and values encrypted using Tozny v1 Record encryption,
+// returning the decrypted data and error (if any).
 func DecryptData(Data map[string]string, ak SymmetricKey) (*map[string]string, error) {
 	decryptedData := make(map[string]string)
 	for k, v := range Data {
@@ -261,9 +263,8 @@ func DecodeSymmetricKey(s string) (SymmetricKey, error) {
 	return MakeSymmetricKey(bytes), nil
 }
 
-// DecryptEAK decodes and decrypts a 'getEAKResponse' object sent
-// from the e3db service, returning the secret access key or an
-// error if the encrypted key is invalid.
+// DecryptEAK decodes and decrypts a raw encrypted access key
+// returning the decrypted symmetric key and error (if any).
 func DecryptEAK(eak string, authorizerPublicKey string, privateKey SymmetricKey) (SymmetricKey, error) {
 	fields := strings.SplitN(eak, ".", 2)
 	if len(fields) != 2 {
