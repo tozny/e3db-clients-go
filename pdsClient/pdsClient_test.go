@@ -81,6 +81,52 @@ func setup() error {
 	return err
 }
 
+func TestEncryptRecordReturnsRecordWithEncryptedData(t *testing.T) {
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(testContext, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	if encryptedRecord.Data[dataKeyToEncrypt] == data[dataKeyToEncrypt] {
+		t.Errorf("Expected encrypted record %+v data field %s to not equal the unencrypted record's %v data field", encryptedRecord, dataKeyToEncrypt, recordToWrite)
+	}
+}
+
+func TestEncryptDecryptRecordReturnsRecordWithCorrectDecryptedData(t *testing.T) {
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(testContext, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	decryptedRecord, err := validPDSUser.DecryptRecord(testContext, encryptedRecord)
+	if err != nil {
+		t.Fatalf("error %s decrypting record %+v", err, encryptedRecord)
+	}
+	if decryptedRecord.Data[dataKeyToEncrypt] != recordToWrite.Data[dataKeyToEncrypt] {
+		t.Errorf("expected the encrypted and decrypted record %+v data field %s to equal the plain text value for %+v", decryptedRecord, dataKeyToEncrypt, recordToWrite)
+	}
+}
+
 func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	var createdRecordIDs []string
 	ctx := context.TODO()

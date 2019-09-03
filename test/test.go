@@ -178,16 +178,15 @@ func CreateRegistrationToken(queenAccountClient *accountClient.E3dbAccountClient
 }
 
 // MakeClientWriterForRecordType places an EAK for a record type for a pdsUser.
-func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (*pdsClient.PutAccessKeyResponse, error) {
+func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (e3dbClients.SymmetricKey, error) {
 	ctx := context.Background()
-	putEAKParams := pdsClient.PutAccessKeyRequest{
-		WriterID:           clientID,
-		UserID:             clientID,
-		ReaderID:           clientID,
-		RecordType:         recordType,
-		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
+	getOrCreateAccessKeyRequest := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID:   clientID,
+		UserID:     clientID,
+		ReaderID:   clientID,
+		RecordType: recordType,
 	}
-	return pdsUser.PutAccessKey(ctx, putEAKParams)
+	return pdsUser.GetOrCreateAccessKey(ctx, getOrCreateAccessKeyRequest)
 }
 
 // WriteRandomRecordForUser creates a record with junk data and meta for a pdsUser by default.

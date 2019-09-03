@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 )
@@ -14,6 +16,7 @@ const (
 
 //E3dbPDSClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
+	ClientID       string
 	APIKey         string
 	APISecret      string
 	Host           string
@@ -213,8 +216,24 @@ func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyReq
 	return result, err
 }
 
-// WriteRecord attempts to store a record in e3db, returning stored record and error (if any).
-// XXX: Data is not encrypted in this method, it is the caller's responsibility to ensure data is encrypted before sending to e3db.
+func (c *E3dbPDSClient) EncryptRecord(ctx context.Context, record Record) (Record, error) {
+	// Get an access key
+	accessKey, err := c.GetOrCreateAccessKey(ctx, GetOrCreateAccessKeyRequest{
+		WriterID:   record.Metadata.WriterID,
+		UserID:     record.Metadata.UserID,
+		ReaderID:   record.Metadata.UserID,
+		RecordType: record.Metadata.Type})
+	if err != nil {
+		return record, err
+	}
+	// Encrypt the record
+	encryptedData := e3dbClients.EncryptData(record.Data, accessKey)
+	// Return the encrypted record
+	record.Data = *encryptedData
+	return record, err
+}
+
+// WriteRecord locally encrypts and stores a record in e3db, returning stored record and error (if any).
 func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordRequest) (*WriteRecordResponse, error) {
 	var result *WriteRecordResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
@@ -224,6 +243,34 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+func (c *E3dbPDSClient) DecryptRecord(ctx context.Context, record Record) (Record, error) {
+	// Get an encrypted access key
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   record.Metadata.WriterID,
+		UserID:     record.Metadata.UserID,
+		ReaderID:   record.Metadata.UserID,
+		RecordType: record.Metadata.Type})
+	if err != nil {
+		return record, err
+	}
+	// Decrypt the access key
+	encryptedAccessKey := accessKeyResponse.EAK
+	// otherwise attempt to decrypt the returned access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return record, err
+	}
+	accessKey, err := e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
+	// Decrypt the record
+	decrypted, err := e3dbClients.DecryptData(record.Data, accessKey)
+	if err != nil {
+		return record, err
+	}
+	// Return the decrypted record
+	record.Data = *decrypted
+	return record, err
 }
 
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
@@ -382,10 +429,60 @@ func (c *E3dbPDSClient) CreateAuthorizerSharingAccessKey(ctx context.Context, pa
 	return err
 }
 
+// GetOrCreateAccessKey gets and decrypts the access key for the given writer, user, client and record type,
+// or creates a new one, returning the decrypted access key and error (if any).
+func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCreateAccessKeyRequest) (e3dbClients.SymmetricKey, error) {
+	var accessKey e3dbClients.SymmetricKey
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType,
+	})
+	// Check to see if the error was 404
+	if err != nil {
+		tozError, ok := err.(*e3dbClients.RequestError)
+		if !ok {
+			return accessKey, err
+		}
+		// If error was not 404 , return the error
+		if tozError.StatusCode != http.StatusNotFound {
+			return accessKey, err
+		}
+		// Otherwise continue as 404 is expected if no access key exists
+	}
+	// if no encrypted access key exists, create one
+	if accessKeyResponse == nil {
+		accessKey = e3dbClients.RandomSymmetricKey()
+		// encrypt and store the created access key for later use
+		eak, err := e3dbClients.EncryptAccessKey(accessKey, c.EncryptionKeys)
+		if err != nil {
+			return accessKey, err
+		}
+		_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
+			WriterID:           params.WriterID,
+			UserID:             params.UserID,
+			ReaderID:           params.ReaderID,
+			RecordType:         params.RecordType,
+			EncryptedAccessKey: eak,
+		})
+		// return the unencrypted version for local use
+		return accessKey, err
+	}
+	encryptedAccessKey := accessKeyResponse.EAK
+	// otherwise attempt to decrypt the returned access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return accessKey, err
+	}
+	return e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
+}
+
 // New returns a new E3dbPDSClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbPDSClient {
 	authService := authClient.New(config)
 	return E3dbPDSClient{
+		config.ClientID,
 		config.APIKey,
 		config.APISecret,
 		config.Host,

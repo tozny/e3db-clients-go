@@ -2,7 +2,6 @@ package hookClient
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -38,23 +37,6 @@ var (
 	e3dbAccountService       = accountClient.New(ValidAccountClientConfig)
 	defaultPDSUserRecordType = "hook-client-integration-tests"
 )
-
-// TODO extract to github.com/tozny/utils-go/test
-func MakeClientWriterForRecordType(pdsUser pdsClient.E3dbPDSClient, clientID string, recordType string) (string, error) {
-	ctx := context.TODO()
-	putEAKParams := pdsClient.PutAccessKeyRequest{
-		WriterID:           clientID,
-		UserID:             clientID,
-		ReaderID:           clientID,
-		RecordType:         recordType,
-		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
-	}
-	resp, err := pdsUser.PutAccessKey(ctx, putEAKParams)
-	if err != nil {
-		fmt.Printf("Error placing access key %s\n", err)
-	}
-	return resp.EncryptedAccessKey, err
-}
 
 func TestCreateWebHook(t *testing.T) {
 	clientConfig, _, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)

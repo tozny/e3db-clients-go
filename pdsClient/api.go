@@ -252,3 +252,10 @@ type BatchGetRecordsRequest struct {
 type BatchGetRecordsResult struct {
 	Records []ListedRecord `json:"records"`
 }
+
+type GetOrCreateAccessKeyRequest struct {
+	WriterID   string // the tozny client that wrote the access key
+	UserID     string // the tozny client that the access key belongs to
+	ReaderID   string // the tozny client that this access key is written for
+	RecordType string // the type of records this access key is valid for
+}
