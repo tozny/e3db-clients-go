@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/tozny/e3db-clients-go"
+	e3dbClients "github.com/tozny/e3db-clients-go"
 )
 
 const (
@@ -42,6 +42,19 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string) (*Note, err
 	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
+}
+
+func (c *StorageClient) Challenge(ctx context.Context, noteID string) error {
+	path := c.Host + storageServiceBasePath + "/notes/challenge"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("note_id", noteID)
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
