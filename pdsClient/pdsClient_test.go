@@ -849,6 +849,120 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	}
 }
 
+func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t *testing.T) {
+	// Create authorizing account and client
+	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	authorizingClient := pdsClient.New(clientConfig)
+	authorizingClientID := authorizingAccount.Account.Client.ClientID
+	// Setup authorizing client to be able to write records of a given type
+	_, err = test.MakeClientWriterForRecordType(authorizingClient, authorizingClientID, defaultPDSUserRecordType)
+	// Create records to for authorizer to share
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: authorizingClientID,
+			UserID:   authorizingClientID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := authorizingClient.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
+	}
+	// Create authorizer account and client
+	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	authorizerClient := pdsClient.New(clientConfig)
+	authorizerClientID := authorizerAccount.Account.Client.ClientID
+	// Create account and client for authorizer to share records with
+	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	shareeClient := pdsClient.New(clientConfig)
+	shareeAccountID := shareeAccount.Account.Client.ClientID
+	// Authorize the authorizer for sharing records
+	authorizeRequest := pdsClient.AddAuthorizedWriterRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		RecordType:   defaultPDSUserRecordType,
+	}
+	err = authorizingClient.AddAuthorizedSharer(ctx, authorizeRequest)
+	if err != nil {
+		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
+	}
+	// Authorizer share record type they have been authorized to share
+	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		ReaderID:     shareeAccountID,
+		RecordType:   defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+	}
+	// Verify sharee can retrieve shared record
+	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true})
+	if err != nil {
+		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+	}
+	var found bool
+	for _, listedRecord := range listRecordsResponse.Results {
+		if listedRecord.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+	}
+	// Authorizer unshare record type with sharee
+	err = authorizerClient.AuthorizerUnshareRecords(ctx, pdsClient.AuthorizerUnshareRecordsRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		ReaderID:     shareeAccountID,
+		RecordType:   defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s unsharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+	}
+	// Verify sharee can't retrieve unshared record
+	listRecordsResponse, err = shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true})
+	if err != nil {
+		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+	}
+	found = false
+	for _, listedRecord := range listRecordsResponse.Results {
+		if listedRecord.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if found {
+		t.Errorf("Expected sharee to find no records after unsharing with them, got %+v", listRecordsResponse.Results)
+	}
+}
+
 func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 	ctx := context.TODO()
 	err := validPDSUser.HealthCheck(ctx)

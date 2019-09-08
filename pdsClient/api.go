@@ -26,6 +26,8 @@ type AuthorizerShareRecordsRequest struct {
 	RecordType   string
 }
 
+type AuthorizerUnshareRecordsRequest = AuthorizerShareRecordsRequest
+
 // ShareRecordsRequest wraps the needed parameters
 // to share records of a specified type from one
 // user to another
@@ -218,6 +220,8 @@ type GetAccessKeyRequest struct {
 	ReaderID   string
 	RecordType string
 }
+
+type DeleteAccessKeyRequest = GetAccessKeyRequest
 
 // ClientKey contains a cryptographic key for use in client operations.
 type ClientKey struct {

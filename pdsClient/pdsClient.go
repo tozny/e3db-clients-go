@@ -42,6 +42,11 @@ type allowReadPolicy struct {
 	Allow []readPolicy `json:"allow"`
 }
 
+// denyReadPolicy wraps an e3db API object denying read access to records
+type denyReadPolicy struct {
+	Deny []readPolicy `json:"deny"`
+}
+
 // allowAuthorizerPolicy wraps an e3db API object granting authorization to share
 // records of a specified type on behalf of the granting client
 type allowAuthorizerPolicy struct {
@@ -133,6 +138,38 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 	return err
 }
 
+// AuthorizerUnshareRecords unshares the specified record type with the specified reader on behalf of
+// the authorizer, returning error (if any).
+func (c *E3dbPDSClient) AuthorizerUnshareRecords(ctx context.Context, params AuthorizerUnshareRecordsRequest) error {
+	// Delete the access key that gave the reader cryptographic access for records of this type
+	deleteAccessKeyParams := DeleteAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType,
+	}
+	err := c.DeleteAccessKey(ctx, deleteAccessKeyParams)
+	if err != nil {
+		return err
+	}
+	// Update the policy access for this reader to deny the reader retrieving records of this type
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.ReaderID + "/" + params.RecordType
+	// Create a policy to apply for the reader to be allowed to read records of type specified in params
+	unsharePolicy := denyReadPolicy{
+		Deny: []readPolicy{
+			readPolicy{
+				Read: make(map[string]interface{}),
+			},
+		},
+	}
+	request, err := e3dbClients.CreateRequest("PUT", path, unsharePolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // InternalAllowedReads attempts to retrieve the list of AllowedRead policies for other users records for the given reader using an internal only e3db endpoint, returning InternalAllowedReadsResponse(which may or may not be empty of AllowedRead policies) and error (if any).
 func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID string) (*InternalAllowedReadsResponse, error) {
 	var result *InternalAllowedReadsResponse
@@ -215,6 +252,17 @@ func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyReq
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+// DeleteAccessKey attempts to delete an access key stored in E3DB returning the response and error (if any).
+func (c *E3dbPDSClient) DeleteAccessKey(ctx context.Context, params DeleteAccessKeyRequest) error {
+	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
 }
 
 func (c *E3dbPDSClient) EncryptRecord(ctx context.Context, record Record) (Record, error) {
