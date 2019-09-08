@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/clientServiceClient"
 )
 
 const (
@@ -14,6 +17,7 @@ const (
 
 //E3dbPDSClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
+	ClientID       string
 	APIKey         string
 	APISecret      string
 	Host           string
@@ -36,6 +40,11 @@ type authorizePolicy struct {
 // allowReadPolicy wraps an e3db API object granting read access to records
 type allowReadPolicy struct {
 	Allow []readPolicy `json:"allow"`
+}
+
+// denyReadPolicy wraps an e3db API object denying read access to records
+type denyReadPolicy struct {
+	Deny []readPolicy `json:"deny"`
 }
 
 // allowAuthorizerPolicy wraps an e3db API object granting authorization to share
@@ -101,7 +110,7 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 }
 
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
-// specified record type the authorizer is authorized to share , returning error (if any).
+// specified record type the authorizer is authorized to share, returning error (if any).
 func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params AuthorizerShareRecordsRequest) error {
 	err := c.CreateAuthorizerSharingAccessKey(ctx, CreateAuthorizerSharingAccessKeyRequest{
 		UserID:       params.UserID,
@@ -122,6 +131,38 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 		},
 	}
 	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+// AuthorizerUnshareRecords unshares the specified record type with the specified reader on behalf of
+// the authorizer, returning error (if any).
+func (c *E3dbPDSClient) AuthorizerUnshareRecords(ctx context.Context, params AuthorizerUnshareRecordsRequest) error {
+	// Delete the access key that gave the reader cryptographic access for records of this type
+	deleteAccessKeyParams := DeleteAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType,
+	}
+	err := c.DeleteAccessKey(ctx, deleteAccessKeyParams)
+	if err != nil {
+		return err
+	}
+	// Update the policy access for this reader to deny the reader retrieving records of this type
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.ReaderID + "/" + params.RecordType
+	// Create a policy to apply for the reader to be allowed to read records of type specified in params
+	unsharePolicy := denyReadPolicy{
+		Deny: []readPolicy{
+			readPolicy{
+				Read: make(map[string]interface{}),
+			},
+		},
+	}
+	request, err := e3dbClients.CreateRequest("PUT", path, unsharePolicy)
 	if err != nil {
 		return err
 	}
@@ -213,8 +254,35 @@ func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyReq
 	return result, err
 }
 
-// WriteRecord attempts to store a record in e3db, returning stored record and error (if any).
-// XXX: Data is not encrypted in this method, it is the caller's responsibility to ensure data is encrypted before sending to e3db.
+// DeleteAccessKey attempts to delete an access key stored in E3DB returning the response and error (if any).
+func (c *E3dbPDSClient) DeleteAccessKey(ctx context.Context, params DeleteAccessKeyRequest) error {
+	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+func (c *E3dbPDSClient) EncryptRecord(ctx context.Context, record Record) (Record, error) {
+	// Get an access key
+	accessKey, err := c.GetOrCreateAccessKey(ctx, GetOrCreateAccessKeyRequest{
+		WriterID:   record.Metadata.WriterID,
+		UserID:     record.Metadata.UserID,
+		ReaderID:   record.Metadata.UserID,
+		RecordType: record.Metadata.Type})
+	if err != nil {
+		return record, err
+	}
+	// Encrypt the record
+	encryptedData := e3dbClients.EncryptData(record.Data, accessKey)
+	// Return the encrypted record
+	record.Data = *encryptedData
+	return record, err
+}
+
+// WriteRecord locally encrypts and stores a record in e3db, returning stored record and error (if any).
 func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordRequest) (*WriteRecordResponse, error) {
 	var result *WriteRecordResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
@@ -224,6 +292,40 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+func (c *E3dbPDSClient) DecryptRecord(ctx context.Context, record Record) (Record, error) {
+	// Get an encrypted access key
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   record.Metadata.WriterID,
+		UserID:     record.Metadata.UserID,
+		ReaderID:   c.ClientID,
+		RecordType: record.Metadata.Type})
+	if err != nil {
+		return record, err
+	}
+	// Decrypt the access key
+	encryptedAccessKey := accessKeyResponse.EAK
+	if encryptedAccessKey == "" {
+		return record, errors.New(fmt.Sprintf("no access key exists for records of type %s", record.Metadata.Type))
+	}
+	// otherwise attempt to decrypt the returned access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return record, err
+	}
+	accessKey, err := e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
+	if err != nil {
+		return record, err
+	}
+	// Decrypt the record
+	decrypted, err := e3dbClients.DecryptData(record.Data, accessKey)
+	if err != nil {
+		return record, err
+	}
+	// Return the decrypted record
+	record.Data = *decrypted
+	return record, err
 }
 
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
@@ -317,7 +419,7 @@ func (c *E3dbPDSClient) CreateSharingAccessKey(ctx context.Context, params Creat
 	// Get the current encrypted access key
 	// used to write records of this type by
 	// the client specified in params
-	getAccessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
 		WriterID:   params.WriterID,
 		UserID:     params.UserID,
 		ReaderID:   params.UserID,
@@ -326,25 +428,19 @@ func (c *E3dbPDSClient) CreateSharingAccessKey(ctx context.Context, params Creat
 	if err != nil {
 		return err
 	}
-	encryptedAccessKey := getAccessKeyResponse.EAK
+	// Decrypt the access key
+	encryptedAccessKey := accessKeyResponse.EAK
 	if encryptedAccessKey == "" {
 		return errors.New(fmt.Sprintf("no access key exists for records of type %s", params.RecordType))
 	}
-	// TODO: Decrypt this key
-	// TODO: using the decrypted version of
-	// encryptedAccessKey and the public key of
-	// the reader specified in params,
-	// create an encrypted access key that
-	// the reader can decrypt
-	// Put the encrypted access key for the reader
-	_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
-		UserID:             params.UserID,
+	return c.CreateSharedAccessKey(ctx, CreateSharedAccessKeyRequest{
 		WriterID:           params.WriterID,
+		UserID:             params.UserID,
 		ReaderID:           params.ReaderID,
 		RecordType:         params.RecordType,
 		EncryptedAccessKey: encryptedAccessKey,
+		ShareePublicKey:    accessKeyResponse.AuthorizerPublicKey.Curve25519,
 	})
-	return err
 }
 
 // CreateAuthorizerSharingAccessKey attempts to create an access key for the specified reader to be able to decrypt records of the specified type that the authorizer is authorized to share, returning error (if any).
@@ -352,7 +448,7 @@ func (c *E3dbPDSClient) CreateAuthorizerSharingAccessKey(ctx context.Context, pa
 	// Get the current encrypted access key
 	// used to write records of this type by
 	// the client specified in params
-	getAccessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
 		WriterID:   params.WriterID,
 		UserID:     params.UserID,
 		ReaderID:   params.AuthorizerID,
@@ -361,31 +457,152 @@ func (c *E3dbPDSClient) CreateAuthorizerSharingAccessKey(ctx context.Context, pa
 	if err != nil {
 		return err
 	}
-	encryptedAccessKey := getAccessKeyResponse.EAK
+	encryptedAccessKey := accessKeyResponse.EAK
 	if encryptedAccessKey == "" {
 		return errors.New(fmt.Sprintf("no access key exists for records of type %s", params.RecordType))
 	}
-	// TODO: Decrypt this key
-	// TODO: using the decrypted version of
+	return c.CreateSharedAccessKey(ctx, CreateSharedAccessKeyRequest{
+		WriterID:           params.WriterID,
+		UserID:             params.UserID,
+		ReaderID:           params.ReaderID,
+		RecordType:         params.RecordType,
+		EncryptedAccessKey: encryptedAccessKey,
+		ShareePublicKey:    accessKeyResponse.AuthorizerPublicKey.Curve25519,
+	})
+}
+
+// CreateSharedAccessKey creates an encrypted (using the sharee's public key) version of the provided access key for
+// the specified sharee/readerID, storing the version of the access key that the reader can decrypt
+// with TozStore to allow the reader to fetch and use the key, returning error (if any).
+// The SharedAccessKey will be created idempotently (if it exists no error will be returned)
+func (c *E3dbPDSClient) CreateSharedAccessKey(ctx context.Context, params CreateSharedAccessKeyRequest) error {
+	// Decrypt the access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return err
+	}
+	accessKey, err := e3dbClients.DecryptEAK(params.EncryptedAccessKey, params.ShareePublicKey, rawEncryptionKey)
+	if err != nil {
+		return err
+	}
+	// Using the decrypted version of
 	// encryptedAccessKey and the public key of
 	// the reader specified in params,
 	// create an encrypted access key that
 	// the reader can decrypt
-	// Put the encrypted access key for the authorizer
+	wrappedEncryptedAccessKey, err := c.WrapAccessKeyForReader(ctx, accessKey, params.ReaderID)
+	// Put the encrypted access key for the reader
 	_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
-		UserID:             params.UserID,
 		WriterID:           params.WriterID,
+		UserID:             params.UserID,
 		ReaderID:           params.ReaderID,
 		RecordType:         params.RecordType,
-		EncryptedAccessKey: encryptedAccessKey,
+		EncryptedAccessKey: wrappedEncryptedAccessKey,
 	})
-	return err
+	// Check to see if the error was 409 / key already exists
+	if err != nil {
+		tozError, ok := err.(*e3dbClients.RequestError)
+		if !ok {
+			return err
+		}
+		// If error was not 409 , return the error
+		if tozError.StatusCode != http.StatusConflict {
+			return err
+		}
+		// Otherwise continue as 409 is expected if the key has already been created
+	}
+	return nil
+}
+
+// WrapAccessKeyForReader wraps an access key for reading records of a type in a layer of encryption
+// that the specified reader will be able to unwrap and use to read records of that type, returning the
+// wrapped access key and error (if any).
+func (c *E3dbPDSClient) WrapAccessKeyForReader(ctx context.Context, accessKey e3dbClients.SymmetricKey, readerID string) (string, error) {
+	var wrappedAccessKey string
+	clientServiceConfig := e3dbClients.ClientConfig{
+		APIKey:    c.APIKey,
+		APISecret: c.APISecret,
+		Host:      c.Host,
+		AuthNHost: c.Host,
+	}
+	clientClient := clientServiceClient.New(clientServiceConfig)
+	publicClient, err := clientClient.GetPublicClient(ctx, readerID)
+	if err != nil {
+		return wrappedAccessKey, err
+	}
+	readerPubKey := publicClient.PublicClient.PublicKeys[e3dbClients.DefaultEncryptionKeyType]
+	// Use the current clients private key for signing (to allow this client to sign the key)
+	// and the readers public key for encryption (to allow the reader to decrypt)
+	encryptionKeys := e3dbClients.EncryptionKeys{
+		Public: e3dbClients.Key{
+			Type:     e3dbClients.DefaultEncryptionKeyType,
+			Material: readerPubKey,
+		},
+		Private: c.EncryptionKeys.Private,
+	}
+	eak, eakN, err := e3dbClients.BoxEncryptToBase64(accessKey[:], encryptionKeys)
+	if err != nil {
+		return wrappedAccessKey, err
+	}
+	wrappedAccessKey = fmt.Sprintf("%s.%s", eak, eakN)
+	return wrappedAccessKey, nil
+
+}
+
+// GetOrCreateAccessKey gets and decrypts the access key for the given writer, user, client and record type,
+// or creates a new one, returning the decrypted access key and error (if any).
+func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCreateAccessKeyRequest) (e3dbClients.SymmetricKey, error) {
+	var accessKey e3dbClients.SymmetricKey
+	accessKeyResponse, err := c.GetAccessKey(ctx, GetAccessKeyRequest{
+		WriterID:   params.WriterID,
+		UserID:     params.UserID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType,
+	})
+	// Check to see if the error was 404
+	if err != nil {
+		tozError, ok := err.(*e3dbClients.RequestError)
+		if !ok {
+			return accessKey, err
+		}
+		// If error was not 404 , return the error
+		if tozError.StatusCode != http.StatusNotFound {
+			return accessKey, err
+		}
+		// Otherwise continue as 404 is expected if no access key exists
+	}
+	// if no encrypted access key exists, create one
+	if accessKeyResponse == nil {
+		accessKey = e3dbClients.RandomSymmetricKey()
+		// encrypt and store the created access key for later use
+		eak, err := e3dbClients.EncryptAccessKey(accessKey, c.EncryptionKeys)
+		if err != nil {
+			return accessKey, err
+		}
+		_, err = c.PutAccessKey(ctx, PutAccessKeyRequest{
+			WriterID:           params.WriterID,
+			UserID:             params.UserID,
+			ReaderID:           params.ReaderID,
+			RecordType:         params.RecordType,
+			EncryptedAccessKey: eak,
+		})
+		// return the unencrypted version for local use
+		return accessKey, err
+	}
+	encryptedAccessKey := accessKeyResponse.EAK
+	// otherwise attempt to decrypt the returned access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return accessKey, err
+	}
+	return e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
 }
 
 // New returns a new E3dbPDSClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbPDSClient {
 	authService := authClient.New(config)
 	return E3dbPDSClient{
+		config.ClientID,
 		config.APIKey,
 		config.APISecret,
 		config.Host,

@@ -81,6 +81,52 @@ func setup() error {
 	return err
 }
 
+func TestEncryptRecordReturnsRecordWithEncryptedData(t *testing.T) {
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(testContext, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	if encryptedRecord.Data[dataKeyToEncrypt] == data[dataKeyToEncrypt] {
+		t.Errorf("Expected encrypted record %+v data field %s to not equal the unencrypted record's %v data field", encryptedRecord, dataKeyToEncrypt, recordToWrite)
+	}
+}
+
+func TestEncryptDecryptRecordReturnsRecordWithCorrectDecryptedData(t *testing.T) {
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(testContext, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	decryptedRecord, err := validPDSUser.DecryptRecord(testContext, encryptedRecord)
+	if err != nil {
+		t.Fatalf("error %s decrypting record %+v", err, encryptedRecord)
+	}
+	if decryptedRecord.Data[dataKeyToEncrypt] != recordToWrite.Data[dataKeyToEncrypt] {
+		t.Errorf("expected the encrypted and decrypted record %+v data field %s to equal the plain text value for %+v", decryptedRecord, dataKeyToEncrypt, recordToWrite)
+	}
+}
+
 func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	var createdRecordIDs []string
 	ctx := context.TODO()
@@ -529,6 +575,74 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	}
 }
 
+func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this client
+	ctx := context.TODO()
+	dataKeyToEncrypt := "data"
+	data := map[string]string{dataKeyToEncrypt: "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	encryptedRecord, err := validPDSUser.EncryptRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, encryptedRecord)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Share records of type created with sharee client
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify sharee can fetch records of type shared
+	listResponse, err := sharee.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true,
+	})
+	if err != nil {
+		t.Errorf("Error %s listing records for client %+v\n", err, sharee)
+	}
+	var found bool
+	var encryptedSharedRecord pdsClient.Record
+	for _, record := range listResponse.Results {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			encryptedSharedRecord.Data = record.Data
+			encryptedSharedRecord.Metadata = record.Metadata
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Failed to find shared records in list records results %+v\n", listResponse)
+	}
+	decryptedRecord, err := sharee.DecryptRecord(ctx, encryptedSharedRecord)
+	if err != nil {
+		t.Fatalf("error %s decrypting record %+v", err, encryptedSharedRecord)
+	}
+	if decryptedRecord.Data[dataKeyToEncrypt] != data[dataKeyToEncrypt] {
+		t.Errorf("expected shared encrypted record decrypted data to be %+v, got %+v", data, decryptedRecord)
+	}
+}
+
 func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
@@ -732,6 +846,120 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	}
 	if !found {
 		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+	}
+}
+
+func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t *testing.T) {
+	// Create authorizing account and client
+	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	authorizingClient := pdsClient.New(clientConfig)
+	authorizingClientID := authorizingAccount.Account.Client.ClientID
+	// Setup authorizing client to be able to write records of a given type
+	_, err = test.MakeClientWriterForRecordType(authorizingClient, authorizingClientID, defaultPDSUserRecordType)
+	// Create records to for authorizer to share
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: authorizingClientID,
+			UserID:   authorizingClientID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := authorizingClient.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
+	}
+	// Create authorizer account and client
+	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	authorizerClient := pdsClient.New(clientConfig)
+	authorizerClientID := authorizerAccount.Account.Client.ClientID
+	// Create account and client for authorizer to share records with
+	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+	}
+	clientConfig.Host = toznyCyclopsHost
+	shareeClient := pdsClient.New(clientConfig)
+	shareeAccountID := shareeAccount.Account.Client.ClientID
+	// Authorize the authorizer for sharing records
+	authorizeRequest := pdsClient.AddAuthorizedWriterRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		RecordType:   defaultPDSUserRecordType,
+	}
+	err = authorizingClient.AddAuthorizedSharer(ctx, authorizeRequest)
+	if err != nil {
+		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
+	}
+	// Authorizer share record type they have been authorized to share
+	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		ReaderID:     shareeAccountID,
+		RecordType:   defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+	}
+	// Verify sharee can retrieve shared record
+	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true})
+	if err != nil {
+		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+	}
+	var found bool
+	for _, listedRecord := range listRecordsResponse.Results {
+		if listedRecord.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+	}
+	// Authorizer unshare record type with sharee
+	err = authorizerClient.AuthorizerUnshareRecords(ctx, pdsClient.AuthorizerUnshareRecordsRequest{
+		UserID:       authorizingClientID,
+		WriterID:     authorizingClientID,
+		AuthorizerID: authorizerClientID,
+		ReaderID:     shareeAccountID,
+		RecordType:   defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s unsharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+	}
+	// Verify sharee can't retrieve unshared record
+	listRecordsResponse, err = shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
+		ContentTypes:      []string{defaultPDSUserRecordType},
+		IncludeAllWriters: true,
+		IncludeData:       true})
+	if err != nil {
+		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+	}
+	found = false
+	for _, listedRecord := range listRecordsResponse.Results {
+		if listedRecord.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if found {
+		t.Errorf("Expected sharee to find no records after unsharing with them, got %+v", listRecordsResponse.Results)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/tozny/e3db-go/v2"
 	"golang.org/x/crypto/nacl/box"
@@ -81,8 +82,8 @@ func GenerateSigningKeys() (SigningKeys, error) {
 	return signingKeys, err
 }
 
-// EncryptData accepts a record object of plain meta and plain data, returning
-// a record with data keys encrypted with dk and ak according to Tozstore spec.
+// EncryptData encrypts a collection of data of string key and values using
+// Tozny v1 Record encryption, returning the encrypted data.
 func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
 	encryptedData := make(map[string]string)
 	for k, v := range Data {
@@ -92,6 +93,38 @@ func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
 		encryptedData[k] = fmt.Sprintf("%s.%s.%s.%s", edk, edkN, ef, efN)
 	}
 	return &encryptedData
+}
+
+// DecryptData decrypts a collection of data of string key and values encrypted using Tozny v1 Record encryption,
+// returning the decrypted data and error (if any).
+func DecryptData(Data map[string]string, ak SymmetricKey) (*map[string]string, error) {
+	decryptedData := make(map[string]string)
+	for k, v := range Data {
+		fields := strings.SplitN(v, ".", 4)
+		if len(fields) != 4 {
+			return &decryptedData, errors.New("invalid record data format")
+		}
+
+		edk := fields[0]
+		edkN := fields[1]
+		ef := fields[2]
+		efN := fields[3]
+
+		dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
+		if err != nil {
+			return &decryptedData, err
+		}
+
+		dk := MakeSymmetricKey(dkBytes)
+		field, err := SecretBoxDecryptFromBase64(ef, efN, dk)
+		if err != nil {
+			return &decryptedData, errors.New("decryption of field data failed")
+		}
+
+		decryptedData[k] = string(field)
+	}
+
+	return &decryptedData, nil
 }
 
 // EncryptAccessKey returns encrypted access key with nonce attached.
@@ -140,6 +173,26 @@ func BoxEncryptToBase64(data []byte, encryptionKeys EncryptionKeys) (string, str
 	privKey := e3db.MakePrivateKey(rawPrivKey)
 	ciphertext := box.Seal(nil, data, n, pubKey, privKey)
 	return Base64Encode(ciphertext), Base64Encode(n[:]), err
+}
+
+func BoxDecryptFromBase64(ciphertext, nonce string, pubKey SymmetricKey, privKey SymmetricKey) ([]byte, error) {
+	ciphertextBytes, err := Base64Decode(ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceBytes, err := Base64Decode(nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	n := MakeNonce(nonceBytes)
+	plaintext, ok := box.Open(nil, ciphertextBytes, n, pubKey, privKey)
+	if !ok {
+		return nil, errors.New("decryption failed")
+	}
+
+	return plaintext, nil
 }
 
 // SecretBoxEncryptToBase64 uses an NaCl secret_box to encrypt a byte
@@ -197,4 +250,37 @@ func Base64Encode(data []byte) string {
 // Base64Decode wrapper to base64 decode data.
 func Base64Decode(s string) ([]byte, error) {
 	return base64.RawURLEncoding.DecodeString(s)
+}
+
+// DecodeSymmetricKey decodes a public key from a Base64URL encoded
+// string containing a 256-bit Curve25519 public key, returning an
+// error if the decode operation fails.
+func DecodeSymmetricKey(s string) (SymmetricKey, error) {
+	bytes, err := Base64Decode(s)
+	if err != nil {
+		return nil, err
+	}
+	return MakeSymmetricKey(bytes), nil
+}
+
+// DecryptEAK decodes and decrypts a raw encrypted access key
+// returning the decrypted symmetric key and error (if any).
+func DecryptEAK(eak string, authorizerPublicKey string, privateKey SymmetricKey) (SymmetricKey, error) {
+	fields := strings.SplitN(eak, ".", 2)
+	if len(fields) != 2 {
+		return nil, errors.New(fmt.Sprintf("invalid access key format: %s", eak))
+	}
+
+	decodedAuthorizerPublicKey, err := DecodeSymmetricKey(authorizerPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	akBytes, err := BoxDecryptFromBase64(fields[0], fields[1], decodedAuthorizerPublicKey, privateKey)
+	if err != nil {
+		return nil, errors.New("access key decryption failure")
+	}
+
+	ak := MakeSymmetricKey(akBytes)
+	return ak, nil
 }

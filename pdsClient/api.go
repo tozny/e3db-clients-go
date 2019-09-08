@@ -26,6 +26,8 @@ type AuthorizerShareRecordsRequest struct {
 	RecordType   string
 }
 
+type AuthorizerUnshareRecordsRequest = AuthorizerShareRecordsRequest
+
 // ShareRecordsRequest wraps the needed parameters
 // to share records of a specified type from one
 // user to another
@@ -219,6 +221,8 @@ type GetAccessKeyRequest struct {
 	RecordType string
 }
 
+type DeleteAccessKeyRequest = GetAccessKeyRequest
+
 // ClientKey contains a cryptographic key for use in client operations.
 type ClientKey struct {
 	Curve25519 string `json:"curve25519"`
@@ -251,4 +255,20 @@ type BatchGetRecordsRequest struct {
 
 type BatchGetRecordsResult struct {
 	Records []ListedRecord `json:"records"`
+}
+
+type GetOrCreateAccessKeyRequest struct {
+	WriterID   string // the tozny client that wrote the access key
+	UserID     string // the tozny client that the access key belongs to
+	ReaderID   string // the tozny client that this access key is written for
+	RecordType string // the type of records this access key is valid for
+}
+
+type CreateSharedAccessKeyRequest struct {
+	WriterID           string
+	UserID             string
+	ReaderID           string
+	RecordType         string
+	EncryptedAccessKey string
+	ShareePublicKey    string
 }
