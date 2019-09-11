@@ -65,10 +65,13 @@ func (c *E3dbAuthClient) AuthenticateE3DBClient(ctx context.Context, token strin
 }
 
 // AuthHTTPClient returns an http client that can be used for
-// making authenticated requests to an e3db endpoint using the provided context.
-func (c *E3dbAuthClient) AuthHTTPClient(ctx context.Context) *http.Client {
+// making requests to Tozny services that require bearer auth,
+// automatically fetching and refreshing the token as needed
+func (c *E3dbAuthClient) AuthHTTPClient() *http.Client {
 	if c.httpClient == nil {
-		c.httpClient = c.oauth2Helper.Client(ctx)
+		// Use a background context as while token refreshing is driven by client actions
+		// it is state maintained server side
+		c.httpClient = c.oauth2Helper.Client(context.Background())
 	}
 	return c.httpClient
 }

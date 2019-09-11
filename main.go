@@ -47,7 +47,7 @@ type ToznyAuthenticatedClientContext struct {
 // E3DBHTTPAuthorizer implements the functionality needed to make
 // an authenticated call to an e3db endpoint.
 type E3DBHTTPAuthorizer interface {
-	AuthHTTPClient(ctx context.Context) *http.Client
+	AuthHTTPClient() *http.Client
 }
 
 // RequestError provides additional details about the failed request.
@@ -69,7 +69,7 @@ func NewError(message, url string, statusCode int) error {
 
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
-	client := httpAuthorizer.AuthHTTPClient(ctx)
+	client := httpAuthorizer.AuthHTTPClient()
 	err := MakeRawServiceCall(client, request.WithContext(ctx), result)
 	return err
 }
@@ -145,7 +145,7 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 
 // ReturnE3dbServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
 func ReturnE3dbServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) (*http.Response, error) {
-	client := httpAuthorizer.AuthHTTPClient(ctx)
+	client := httpAuthorizer.AuthHTTPClient()
 	resp, err := ReturnRawServiceCall(client, request.WithContext(ctx), result)
 	return resp, err
 }
