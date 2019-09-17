@@ -33,7 +33,8 @@ type EACP struct {
 }
 
 type EmailEacp struct {
-	EmailAddress string `json:"email_address"`
-	Template     string `json:"template"`
-	ProviderLink string `json:"provider_link"`
+	EmailAddress   string            `json:"email_address"`
+	Template       string            `json:"template"`
+	ProviderLink   string            `json:"provider_link"`
+	TemplateFields map[string]string `json:"template_fields"`
 }

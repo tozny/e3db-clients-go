@@ -55,17 +55,18 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string) (*Note, err
 	return result, err
 }
 
-func (c *StorageClient) Challenge(ctx context.Context, noteID string) error {
+func (c *StorageClient) Challenge(ctx context.Context, noteID string) ([]string, error) {
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	var challenges []string
 	if err != nil {
-		return err
+		return challenges, err
 	}
 	urlParams := request.URL.Query()
 	urlParams.Set("note_id", noteID)
 	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
-	return err
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, challenges)
+	return challenges, err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
