@@ -14,8 +14,8 @@ import (
 	"github.com/tozny/e3db-go/v2"
 )
 
-// MakeE3DBAccount attempts to create a valid e3db account returning the root client config for the created account and error (if any).
-func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, accountTag string, authNHost string) (e3dbClients.ClientConfig, *accountClient.CreateAccountResponse, error) {
+// MakeE3DBAccountWithEmail attempts to create a valid e3db account returning the root client config for the created account and error (if any).
+func MakeE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccountClient, accountTag string, email string, authNHost string) (e3dbClients.ClientConfig, *accountClient.CreateAccountResponse, error) {
 	var accountClientConfig = e3dbClients.ClientConfig{
 		Host:      accounter.Host,
 		AuthNHost: authNHost,
@@ -50,7 +50,7 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 	createAccountParams := accountClient.CreateAccountRequest{
 		Profile: accountClient.Profile{
 			Name:               accountTag,
-			Email:              fmt.Sprintf("test+%s@example.com", accountTag),
+			Email:              email,
 			AuthenticationSalt: salt,
 			EncodingSalt:       salt,
 			SigningKey: accountClient.EncryptionKey{
@@ -93,6 +93,11 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 	}
 	return accountClientConfig, accountResponse, err
+}
+
+// MakeE3DBAccount attempts to create a valid e3db account returning the root client config for the created account and error (if any).
+func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, accountTag string, authNHost string) (e3dbClients.ClientConfig, *accountClient.CreateAccountResponse, error) {
+	return MakeE3DBAccountWithEmail(t, accounter, accountTag, fmt.Sprintf("test+%s@example.com", accountTag), authNHost)
 }
 
 // RegisterClient is a helper method to generate a client with the client service,
