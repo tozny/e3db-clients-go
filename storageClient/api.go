@@ -18,7 +18,7 @@ type Note struct {
 	Data                map[string]string `json:"data"`
 	Plain               map[string]string `json:"plain"`
 	FileMeta            map[string]string `json:"file_meta,omitempty"`
-	EACPS               EACP              `json:"eacp,omitempty"`
+	EACPS               *EACP             `json:"eacp,omitempty"`
 	Signature           string            `json:"signature"`
 	CreatedAt           time.Time         `json:"created_at"`
 	MaxViews            int               `json:"max_views,omitempty"`
@@ -28,7 +28,7 @@ type Note struct {
 }
 
 type EACP struct {
-	EmailEACP EmailEacp `json:"email_eacp"`
+	EmailEACP EmailEacp `json:"email_eacp,omitempty"`
 	// This can be extended with new EACPs. To do that the AllEACP method must be updated as well
 }
 

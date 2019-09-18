@@ -41,7 +41,7 @@ func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (
 	return result, err
 }
 
-func (c *StorageClient) ReadNote(ctx context.Context, noteID string) (*Note, error) {
+func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
@@ -49,6 +49,11 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string) (*Note, err
 		return result, err
 	}
 	urlParams := request.URL.Query()
+	if eacpParams != nil {
+		for key, val := range eacpParams {
+			urlParams.Set(key, val)
+		}
+	}
 	urlParams.Set("note_id", noteID)
 	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
@@ -65,7 +70,7 @@ func (c *StorageClient) Challenge(ctx context.Context, noteID string) ([]string,
 	urlParams := request.URL.Query()
 	urlParams.Set("note_id", noteID)
 	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, challenges)
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &challenges)
 	return challenges, err
 }
 
