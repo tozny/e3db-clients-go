@@ -2,6 +2,8 @@ package storageClient
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Note is the API-level note object that mirrors the note JSON objects.
@@ -28,13 +30,17 @@ type Note struct {
 }
 
 type EACP struct {
-	EmailEACP EmailEacp `json:"email_eacp,omitempty"`
-	// This can be extended with new EACPs. To do that the AllEACP method must be updated as well
+	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
+	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
 }
 
-type EmailEacp struct {
+type EmailEACP struct {
 	EmailAddress   string            `json:"email_address"`
 	Template       string            `json:"template"`
 	ProviderLink   string            `json:"provider_link"`
 	TemplateFields map[string]string `json:"template_fields"`
+}
+
+type LastAccessEACP struct {
+	LastReadNoteID uuid.UUID `json:"last_read_note_id"`
 }
