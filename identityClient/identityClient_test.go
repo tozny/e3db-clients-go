@@ -340,3 +340,52 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 		t.Fatalf("expected registered identity %+v to be an active member of realm %+v , got  %+v", identity.Identity, realm, internalIdentityAuthenticationContext)
 	}
 }
+
+func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := "TestRegisterRealmBrokerIdentityWithCreatedRealm"
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	identityName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	publicKey, _, err := e3db.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	realmBackupIdentityParams := RegisterRealmBrokerIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
+	}
+	_, err = identityServiceClient.RegisterRealmBrokerIdentity(testContext, realmBackupIdentityParams)
+	if err != nil {
+		t.Fatalf("error %s setting realm backup identity using %+v %+v", err, identityServiceClient, realmBackupIdentityParams)
+	}
+}

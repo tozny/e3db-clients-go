@@ -7,11 +7,12 @@ import (
 // Realm represents the top level identity management resource for grouping and managing
 // authentication and authorization of consuming application, identities, and sovereigns within a realm.
 type Realm struct {
-	ID        int64     `json:"id"`        // Service defined unique identifier for the realm.
-	Name      string    `json:"name"`      // User defined realm identifier.
-	AdminURL  string    `json:"admin_url"` // URL for realm administration console.
-	Active    bool      `json:"active"`    // Whether the realm is active for applications and identities to consume.
-	Sovereign Sovereign `json:"sovereign"` // The realm's sovereign.
+	ID                    int64     `json:"id"`                                 // Service defined unique identifier for the realm.
+	Name                  string    `json:"name"`                               // User defined realm identifier.
+	AdminURL              string    `json:"admin_url"`                          // URL for realm administration console.
+	Active                bool      `json:"active"`                             // Whether the realm is active for applications and identities to consume.
+	Sovereign             Sovereign `json:"sovereign"`                          // The realm's sovereign.
+	BrokerIdentityToznyID uuid.UUID `json:"broker_identity_tozny_id,omitempty"` // The Tozny Client ID associated with the Identity used to broker interactions between the realm and it's Identities. Will be empty if no realm broker Identity has been registered.
 }
 
 // Sovereign represents the top level user of a realm
@@ -43,7 +44,7 @@ type Identity struct {
 	APIKeyID     string            `json:"api_key_id"`
 	APIKeySecret string            `json:"api_secret_key"`
 	PublicKeys   map[string]string `json:"public_key"`
-	SigningKeys  map[string]string `json:"signing_key,omitemtpy"`
+	SigningKeys  map[string]string `json:"signing_key,omitempty"`
 }
 
 // RegisterIdentityRequest wraps parameters needed to create and register an identity with a realm.
@@ -55,7 +56,8 @@ type RegisterIdentityRequest struct {
 
 // RegisterIdentityResponse wraps values returned from a register identity request.
 type RegisterIdentityResponse struct {
-	Identity Identity `json:"identity"`
+	Identity                   Identity  `json:"identity"`
+	RealmBrokerIdentityToznyID uuid.UUID `json:"realm_broker_identity_tozny_id,omitempty"`
 }
 
 // IdentityLoginResponse wraps an extended OpenID v1.0 compatible Token Response
@@ -85,4 +87,17 @@ type InternalIdentityLoginResponse struct {
 	RealmName string `json:"realm_name"` // The name of the realm the Identity is a member of.
 	RealmID   int64  `json:"realm_id"`   // The ID of the realm the Identity is a member of.
 	UserID    string `json:"user_id"`    // The ID of the Identity's Keycloak user.
+}
+
+// RegisterRealmBrokerIdentityRequest wraps parameters needed to create and register
+// an Identity to use for brokering interactions between the realm and its Identities.
+type RegisterRealmBrokerIdentityRequest struct {
+	RealmRegistrationToken string `json:"realm_registration_token"`
+	RealmName              string
+	Identity               Identity `json:"identity"`
+}
+
+// SetRealmBackupIdentityResponse wraps values returned from a RegisterRealmBrokerIdentityRequest.
+type RegisterRealmBrokerIdentityResponse struct {
+	Identity Identity `json:"identity"`
 }

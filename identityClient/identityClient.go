@@ -30,6 +30,19 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// RegisterRealmBrokerIdentity creates and associates an Identity to be used
+// to backup the credentials for the realm's Identities, returning the created identity and error (if any).
+func (c *E3dbIdentityClient) RegisterRealmBrokerIdentity(ctx context.Context, params RegisterRealmBrokerIdentityRequest) (*RegisterRealmBrokerIdentityResponse, error) {
+	var identity *RegisterRealmBrokerIdentityResponse
+	path := c.Host + identityServiceBasePath + fmt.Sprintf("/%s/%s/broker/identity", realmResourceName, params.RealmName)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return identity, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &identity)
+	return identity, err
+}
+
 // IdentityLogin logs in the client identity to the specified realm,
 // returning the identities realm authentication info and error (if any).
 func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string) (*IdentityLoginResponse, error) {
