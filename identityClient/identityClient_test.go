@@ -68,7 +68,7 @@ func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 	if err != nil {
 		t.Errorf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	if realm.Name != realmName {
 		t.Errorf("expected realm name to be %+v , got %+v", realmName, realm)
 	}
@@ -92,8 +92,8 @@ func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
-	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.Name)
 	if err != nil {
 		t.Fatalf("error %s describing realm %+v using %+v", err, realm, identityServiceClient)
 	}
@@ -120,14 +120,14 @@ func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.ID)
+	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.Name)
 	if err != nil {
 		t.Fatalf("error %s describing realm %+v using %+v", err, realm, identityServiceClient)
 	}
 	if describedRealm.Name != realm.Name || describedRealm.Active != realm.Active {
 		t.Errorf("expected %+v to equal %+v", describedRealm, realm)
 	}
-	err = identityServiceClient.DeleteRealm(testContext, realm.ID)
+	err = identityServiceClient.DeleteRealm(testContext, realm.Name)
 	if err != nil {
 		t.Fatalf("error %s deleting realm %+v", err, realm)
 	}
@@ -160,7 +160,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
@@ -179,7 +179,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	}
 	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
-		RealmID:                realm.ID,
+		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
@@ -213,7 +213,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
@@ -232,7 +232,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	}
 	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
-		RealmID:                realm.ID,
+		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
@@ -276,7 +276,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
@@ -295,7 +295,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	}
 	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
-		RealmID:                realm.ID,
+		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
@@ -359,7 +359,7 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.ID)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
