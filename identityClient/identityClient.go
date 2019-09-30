@@ -103,9 +103,9 @@ func (c *E3dbIdentityClient) ListRealms(ctx context.Context) (*ListRealmsRespons
 	return realms, err
 }
 
-// DeleteRealm deletes the realm with the specified id, returning error (if any).
-func (c *E3dbIdentityClient) DeleteRealm(ctx context.Context, realmID int64) error {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%d", realmID)
+// DeleteRealm deletes the realm with the specified name, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealm(ctx context.Context, realmName string) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%s", realmName)
 	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
@@ -113,10 +113,10 @@ func (c *E3dbIdentityClient) DeleteRealm(ctx context.Context, realmID int64) err
 	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
 }
 
-// DescribeRealm describes the realm with the specified id, returning the realm and error (if any).
-func (c *E3dbIdentityClient) DescribeRealm(ctx context.Context, realmID int64) (*Realm, error) {
+// DescribeRealm describes the realm with the specified name, returning the realm and error (if any).
+func (c *E3dbIdentityClient) DescribeRealm(ctx context.Context, realmName string) (*Realm, error) {
 	var realm *Realm
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%d", realmID)
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + fmt.Sprintf("/%s", realmName)
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return realm, err
