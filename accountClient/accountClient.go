@@ -95,12 +95,7 @@ func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params 
 
 // RegistrationToken validates a registration token with the account service and fetches its permissions
 func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegTokenInfo, error) {
-	result := RegTokenInfo{
-		Permissions: RegTokenPermissions{
-			Enabled:      true,
-			AllowedTypes: []string{"general"},
-		},
-	}
+	var result RegTokenInfo
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/token"
 	request, err := e3dbClients.CreateRequest("POST", path, map[string]string{"token": token})
 	if err != nil {
