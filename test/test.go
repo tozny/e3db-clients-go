@@ -169,8 +169,9 @@ func CreateRegistrationToken(queenAccountClient *accountClient.E3dbAccountClient
 	createRegParams := accountClient.CreateRegistrationTokenRequest{
 		AccountServiceToken: accountServiceJWT,
 		TokenPermissions: accountClient.TokenPermissions{
-			Enabled: true,
-			OneTime: false,
+			Enabled:      true,
+			OneTime:      false,
+			AllowedTypes: []string{"general", "identity", "broker"},
 		},
 	}
 	// create registration token

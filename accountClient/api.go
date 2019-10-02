@@ -119,8 +119,9 @@ type CreateRegTokenResponse struct {
 // TokenPermissions permissions associated with a registration token.
 // called ClientPermissions in the account service spec
 type TokenPermissions struct {
-	Enabled bool `json:"enabled"`  // Flag a newly created client as enabled even if the default behavior is creating disabled clients
-	OneTime bool `json:"one_time"` // Automatically delete the token after it's been used to register a client
+	Enabled      bool     `json:"enabled"`       // Flag a newly created client as enabled even if the default behavior is creating disabled clients
+	OneTime      bool     `json:"one_time"`      // Automatically delete the token after it's been used to register a client
+	AllowedTypes []string `json:"allowed_types"` // What client types can be registered using this token
 }
 
 // RegTokenInfo is the return from the token endpoint on a valid request
