@@ -3,7 +3,9 @@ package storageClient
 import (
 	"context"
 	"net/http"
+	"strconv"
 
+	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 )
 
@@ -72,6 +74,22 @@ func (c *StorageClient) Challenge(ctx context.Context, noteID string) ([]string,
 	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &challenges)
 	return challenges, err
+}
+
+func (c *StorageClient) BulkDeleteByClient(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes/bulk/" + clientID.String()
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	var resp BulkDeleteResponse
+	if err != nil {
+		return resp, err
+	}
+	urlParams := request.URL.Query()
+	if limit != 0 {
+		urlParams.Set("limit", strconv.Itoa(limit))
+	}
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.

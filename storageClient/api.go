@@ -44,3 +44,8 @@ type EmailEACP struct {
 type LastAccessEACP struct {
 	LastReadNoteID uuid.UUID `json:"last_read_note_id"`
 }
+
+type BulkDeleteResponse struct {
+	ClientID    uuid.UUID `json:"client_id"`
+	DeleteCount int       `json:"delete_count"`
+}
