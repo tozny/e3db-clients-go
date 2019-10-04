@@ -226,7 +226,7 @@ func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params I
 func (c *E3dbPDSClient) InternalBulkDelete(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
 	var result BulkDeleteResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/records/bulk/" + clientID.String()
-	request, err := e3dbClients.CreateRequest("DELTE", path, nil)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return result, err
 	}

@@ -48,6 +48,17 @@ func (c *ClientServiceClient) AdminGet(ctx context.Context, clientID string) (*A
 	return result, err
 }
 
+// AdminGet makes authenticated call to the /admin endpoint for client service.
+func (c *ClientServiceClient) AdminDelete(ctx context.Context, clientID string) error {
+	path := c.Host + "/" + ClientServiceBasePath + "admin/" + clientID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // AdminToggleClientEnabled enables/disables clients with account auth.
 func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, params AdminToggleClientEnabledRequest) error {
 	path := c.Host + "/" + ClientServiceBasePath + "admin/" + params.ClientID + "/enable"
