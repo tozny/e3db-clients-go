@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
-	"github.com/tozny/e3db-clients-go"
+	"github.com/google/uuid"
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
 )
@@ -216,6 +218,23 @@ func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params I
 	if err != nil {
 		return result, err
 	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
+// InternalBulkDelete deletes up to limit number of records for the given client. This endpoint is bootstrap protected
+func (c *E3dbPDSClient) InternalBulkDelete(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
+	var result BulkDeleteResponse
+	path := c.Host + "/internal/" + PDSServiceBasePath + "/records/bulk/" + clientID.String()
+	request, err := e3dbClients.CreateRequest("DELTE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	urlParams := request.URL.Query()
+	if limit != 0 {
+		urlParams.Set("limit", strconv.Itoa(limit))
+	}
+	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
 }

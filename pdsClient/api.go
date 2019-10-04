@@ -272,3 +272,7 @@ type CreateSharedAccessKeyRequest struct {
 	EncryptedAccessKey string
 	ShareePublicKey    string
 }
+
+type BulkDeleteResponse struct {
+	DeleteCount int `json:"delete_count"`
+}
