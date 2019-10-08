@@ -234,3 +234,24 @@ func (c *XToznyAuthnRequestAuthenticator) AuthenticateRequest(ctx context.Contex
 	}
 	return toznyUser.ClientID.String(), true, nil
 }
+
+// ExtractToznyAuthenticatedClientContext extracts a ToznyAuthenticatedClientContext from a header
+func ExtractToznyAuthenticatedClientContext(header http.Header) (ToznyAuthenticatedClientContext, error) {
+	var toznyAuthenticatedClientContext ToznyAuthenticatedClientContext
+	var toznyAuthNHeader ToznyAuthNHeader
+
+	potentialToznyAuthNHeader := header.Get(server.ToznyAuthNHeader)
+	if potentialToznyAuthNHeader == "" {
+		return toznyAuthenticatedClientContext, fmt.Errorf("authNHeader not present")
+	}
+
+	err := json.Unmarshal([]byte(potentialToznyAuthNHeader), &toznyAuthNHeader)
+	if err != nil {
+		return toznyAuthenticatedClientContext, fmt.Errorf("authNHeader is not properly formatted")
+	}
+	err = json.Unmarshal([]byte(toznyAuthNHeader.User), &toznyAuthenticatedClientContext)
+	if err != nil {
+		return toznyAuthenticatedClientContext, fmt.Errorf("authenticatedClientContext is not properly formatted")
+	}
+	return toznyAuthenticatedClientContext, err
+}
