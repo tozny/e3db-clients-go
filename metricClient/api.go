@@ -59,6 +59,20 @@ type APIMetric struct {
 	Time       time.Time `json:"request_time"`
 }
 
+// ActiveUserAggregateRequest is used to make an ActiveUser aggregate call.
+type ActiveUserAggregateRequest struct {
+	Range           QueryRange `json:"range"`
+	AccountID       string     `json:"account_id"`
+	ClientType      string     `json:"client_type"`
+	AllRequestTypes bool       `json:"all_request_types"` // paid requests only by default
+}
+
+// ActiveUserAggregateResponse is the response of an ActiveUser aggregate call.
+type ActiveUserAggregateResponse struct {
+	AccountID   string `json:"account_id"`
+	ActiveUsers int    `json:"active_users"`
+}
+
 // ApiEndpoint includes the path and method of a service call
 type ApiEndpoint struct {
 	Path   string `json:"path"`   // Path of the request, starting after the host
