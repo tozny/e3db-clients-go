@@ -45,7 +45,7 @@ type Identity struct {
 	APIKeyID     string            `json:"api_key_id"`
 	APIKeySecret string            `json:"api_secret_key"`
 	PublicKeys   map[string]string `json:"public_key"`
-	SigningKeys  map[string]string `json:"signing_key,omitempty"`
+	SigningKeys  map[string]string `json:"signing_key"`
 }
 
 // RegisterIdentityRequest wraps parameters needed to create and register an identity with a realm.
@@ -98,7 +98,35 @@ type RegisterRealmBrokerIdentityRequest struct {
 	Identity               Identity `json:"identity"`
 }
 
-// SetRealmBackupIdentityResponse wraps values returned from a RegisterRealmBrokerIdentityRequest.
+// RegisterRealmBrokerIdentityResponse wraps values returned from a RegisterRealmBrokerIdentityRequest.
 type RegisterRealmBrokerIdentityResponse struct {
 	Identity Identity `json:"identity"`
+}
+
+// BrokerChallengeRequest wraps Identifying information for the Identity initiating the challenge.
+type BrokerChallengeRequest struct {
+	RealmName string // The name of the realm the Identity is a member of.
+	Action    string `json:"action"`   // The requested broker flow action to perform. Currently only challenge is supported.
+	Username  string `json:"username"` // The name for the Identity initiating the challenge.
+}
+
+// EmailOTP wraps a one time password provided via an email challenge.
+type EmailOTP struct {
+	EmailOTP string `json:email_otp` // The one-time password from the email challenge issued.
+}
+
+// BrokerLoginRequest proof that the Identity has completed the broker challenge
+// along with key material to encrypt the login response.
+type BrokerLoginRequest struct {
+	RealmName    string            // The name of the realm the Identity is a member of.
+	Action       string            `json:"action"`        // The requested broker flow action to perform. Currently only login is supported
+	NoteID       uuid.UUID         `json:"note_id"`       // The ID of the recovery Note the email challenge was for.
+	PublicKeys   map[string]string `json:"public_key"`    // The public key to use to encrypt the recovery note.
+	SigningKeys  map[string]string `json:"signing_key"`   // The signing key to use to verify the integrity of the recovery note.
+	AuthResponse EmailOTP          `json:"auth_response"` // The authentication material to allow the broker to access the seed material for the Identities recovery Note.
+}
+
+//  BrokerLoginResponse wraps the Note ID of the broker login recovery note.
+type BrokerLoginResponse struct {
+	RecoveryNoteID uuid.UUID `json:"recovery_note_id"`
 }
