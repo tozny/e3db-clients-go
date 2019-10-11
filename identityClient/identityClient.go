@@ -30,6 +30,29 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// BrokerIdentityChallange begins a broker-based login flow using the specified params, returning error (if any).
+func (c *E3dbIdentityClient) BrokerIdentityChallenge(ctx context.Context, params BrokerChallengeRequest) error {
+	path := c.Host + identityServiceBasePath + fmt.Sprintf("/broker/%s/%s/challenge", realmResourceName, params.RealmName)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeRawServiceCall(c.httpClient, request, nil)
+}
+
+// RegisterIdentity completes a broker based login flow by giving the broker the needed authentication
+// information returning the recovery note and error (if any).
+func (c *E3dbIdentityClient) BrokerIdentityLogin(ctx context.Context, params BrokerLoginRequest) (*BrokerLoginResponse, error) {
+	var identity *BrokerLoginResponse
+	path := c.Host + identityServiceBasePath + fmt.Sprintf("/broker/%s/%s/login", realmResourceName, params.RealmName)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return identity, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &identity)
+	return identity, err
+}
+
 // RegisterRealmBrokerIdentity creates and associates an Identity to be used
 // to backup the credentials for the realm's Identities, returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterRealmBrokerIdentity(ctx context.Context, params RegisterRealmBrokerIdentityRequest) (*RegisterRealmBrokerIdentityResponse, error) {
