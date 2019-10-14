@@ -61,10 +61,10 @@ type APIMetric struct {
 
 // ActiveUserAggregateRequest is used to make an ActiveUser aggregate call.
 type ActiveUserAggregateRequest struct {
-	Range           QueryRange `json:"range"`
-	AccountID       string     `json:"account_id"`
-	ClientType      string     `json:"client_type"`
-	AllRequestTypes bool       `json:"all_request_types"` // paid requests only by default
+	Range            QueryRange `json:"range"`
+	AccountID        string     `json:"account_id"`
+	ClientType       string     `json:"client_type"`
+	PaidRequestsOnly bool       `json:"paid_requests_only"` // set to false for all request types (paid and unpaid)
 }
 
 // ActiveUserAggregateResponse is the response of an ActiveUser aggregate call.
