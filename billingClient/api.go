@@ -55,6 +55,6 @@ type UpdateSourceRequest struct {
 }
 
 type ApplyCouponRequest struct {
-	CouponCode      string `json:"coupon_code"`
-	ProductCategory string `json:"product_category"` // This can be left blank and it will be set to default category
+	CouponCode    string `json:"coupon_code"`
+	ProductBundle string `json:"product_bundle"` // This can be left blank and it will be set to default category
 }
