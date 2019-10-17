@@ -81,6 +81,11 @@ type InternalAccountIDForClientIDResponse struct {
 	AccountID string `json:"account_id"`
 }
 
+type InternalToggleEnabledRequest struct {
+	ClientID string
+	Enabled  bool `json:"enabled"`
+}
+
 type AdminToggleClientEnabledRequest struct {
 	ClientID string
 	Enabled  bool `json:"enabled"`

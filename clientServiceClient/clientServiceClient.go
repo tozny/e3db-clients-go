@@ -169,6 +169,17 @@ func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, 
 	return result, err
 }
 
+// AdminToggleClientEnabled enables/disables clients with account auth.
+func (c *ClientServiceClient) InternalToggleClientEnabled(ctx context.Context, params InternalToggleEnabledRequest) error {
+	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/enable"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 func (c *ClientServiceClient) HealthCheck(ctx context.Context) error {
 	path := c.Host + "/" + ClientServiceBasePath + "healthcheck"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
