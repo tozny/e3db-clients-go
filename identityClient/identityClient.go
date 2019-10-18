@@ -101,6 +101,17 @@ func (c *E3dbIdentityClient) InternalIdentityLogin(ctx context.Context, params I
 	return identity, err
 }
 
+func (c *E3dbIdentityClient) InternalClientForKeycloakUser(ctx context.Context, keyCloakUserID string) (InternalClientForKeycloakUserResponse, error) {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + keyCloakUserID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	var resp InternalClientForKeycloakUserResponse
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,
 // returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {

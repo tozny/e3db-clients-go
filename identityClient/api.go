@@ -130,3 +130,8 @@ type BrokerLoginRequest struct {
 type BrokerLoginResponse struct {
 	RecoveryNoteID uuid.UUID `json:"transferId"`
 }
+
+// InternalClientForKeycloakUserResponse is the tozny client ID for a keycloak user
+type InternalClientForKeycloakUserResponse struct {
+	ClientID uuid.UUID `json:"client_id"`
+}
