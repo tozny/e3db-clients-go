@@ -132,12 +132,6 @@ type BrokerLoginResponse struct {
 }
 
 // InternalClientForKeycloakUserResponse is the tozny client ID for a keycloak user
-type InternalClientForKeycloakUserResponse struct {
-	ClientID uuid.UUID `json:"client_id"`
-	Active   bool      `json:"active"`
-}
-
-// InternalClientForKeycloakUserResponse is the tozny client ID for a keycloak user
 type InternalUpdateActiveForKeycloakUserID struct {
 	Active bool `json:"active"`
 }
