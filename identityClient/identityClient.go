@@ -101,6 +101,21 @@ func (c *E3dbIdentityClient) InternalIdentityLogin(ctx context.Context, params I
 	return identity, err
 }
 
+// InternalIdentitySovereignLogin requests internal authentication context
+// for the ability of the authenticated identity to login into the specified realm's admin console
+// returning the identities internal realm authentication context and error (if any).
+func (c *E3dbIdentityClient) InternalIdentitySovereignLogin(ctx context.Context, params InternalIdentityLoginRequest) (*InternalIdentityLoginResponse, error) {
+	var identity *InternalIdentityLoginResponse
+	path := c.Host + internalIdentityServiceBasePath + fmt.Sprintf("/%s/%s", realmResourceName, params.RealmName) + "/sovereign/login"
+	request, err := e3dbClients.CreateRequest("POST", path, nil)
+	if err != nil {
+		return identity, err
+	}
+	request.Header.Set(server.ToznyAuthNHeader, params.XToznyAuthNHeader)
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &identity)
+	return identity, err
+}
+
 func (c *E3dbIdentityClient) InternalUpdateIdentityActiveByKeycloakUserID(ctx context.Context, keyCloakUserID string, active bool) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + keyCloakUserID + "/active"
 	body := InternalUpdateActiveForKeycloakUserID{
