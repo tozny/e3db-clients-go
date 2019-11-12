@@ -32,6 +32,7 @@ type Note struct {
 type EACP struct {
 	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
 	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
+	ToznyOTPEACP   *ToznyOTPEACP   `json:"tozny_otp_eacp,omitempty"`
 }
 
 type EmailEACP struct {
@@ -45,7 +46,34 @@ type LastAccessEACP struct {
 	LastReadNoteID uuid.UUID `json:"last_read_note_id"`
 }
 
+// ToznyOTPEACP is an EACP that allows a Tozny hosted service to prime an EACP with a
+// one time password. If attaching Include must be set to true.
+type ToznyOTPEACP struct {
+	Include bool `json:"include"`
+}
+
 type BulkDeleteResponse struct {
 	ClientID    uuid.UUID `json:"client_id"`
 	DeleteCount int       `json:"delete_count"`
+}
+
+type OTPRequest struct {
+	ExpiryMinutes int `json:"expiry_minutes"`
+}
+
+// PrimeRequestBody is used in EACP priming requests. These requests allow
+// preparation of an EACP by an authorized entity that is not the signed note recipient
+type PrimeRequestBody struct {
+	OTP *OTPRequest `json:"otp"`
+}
+
+type OTPResponse struct {
+	Password string `json:"password"`
+}
+
+// PrimeResponseBody is returned from EACP priming requests. It will always return the NoteID and responses for
+// EACP primings that supply them i.e. OTPResponse for an ToznyOTPEACP
+type PrimeResponseBody struct {
+	NoteID   uuid.UUID   `json:"note_id"`
+	ToznyOTP OTPResponse `json:"otp"`
 }

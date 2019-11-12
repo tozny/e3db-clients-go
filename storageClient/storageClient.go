@@ -76,6 +76,20 @@ func (c *StorageClient) Challenge(ctx context.Context, noteID string) ([]string,
 	return challenges, err
 }
 
+func (c *StorageClient) Prime(ctx context.Context, noteID string, body PrimeRequestBody) (PrimeResponseBody, error) {
+	path := c.Host + storageServiceBasePath + "/notes/prime"
+	request, err := e3dbClients.CreateRequest("PATCH", path, body)
+	var primedResponse PrimeResponseBody
+	if err != nil {
+		return primedResponse, err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("note_id", noteID)
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &primedResponse)
+	return primedResponse, err
+}
+
 func (c *StorageClient) BulkDeleteByClient(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
 	path := c.Host + "/internal" + storageServiceBasePath + "/notes/bulk/" + clientID.String()
 	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
