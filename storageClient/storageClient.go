@@ -62,9 +62,9 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams 
 	return result, err
 }
 
-func (c *StorageClient) Challenge(ctx context.Context, noteID string) ([]string, error) {
+func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) ([]string, error) {
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
-	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
 	var challenges []string
 	if err != nil {
 		return challenges, err

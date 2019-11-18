@@ -77,3 +77,12 @@ type PrimeResponseBody struct {
 	NoteID   uuid.UUID   `json:"note_id"`
 	ToznyOTP OTPResponse `json:"otp"`
 }
+
+type ChallengeRequest struct {
+	EmailEACPChallenge EmailEACPChallengeRequest `json:"email_eacp"`
+}
+
+type EmailEACPChallengeRequest struct {
+	TemplateName string `json:"template_name"`
+	OTPRequest
+}
