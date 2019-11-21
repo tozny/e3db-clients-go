@@ -112,7 +112,7 @@ type BrokerChallengeRequest struct {
 
 // EmailOTP wraps a one time password provided via an email challenge.
 type EmailOTP struct {
-	EmailOTP string `json:email_otp` // The one-time password from the email challenge issued.
+	EmailOTP string `json:"email_otp"` // The one-time password from the email challenge issued.
 }
 
 // BrokerLoginRequest proof that the Identity has completed the broker challenge

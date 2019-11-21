@@ -11,6 +11,12 @@ import (
 
 const (
 	storageServiceBasePath = "/v2/storage"
+	EmailOTPQueryParam     = "email_otp"
+	ToznyOTPQueryParam     = "tozny_otp"
+	// The TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that contains the one time password as the `nonce` claim and TozID as the authorizing party (`azp`) claim.
+	TozIDLoginTokenNonceQueryParam = "tozid_login_token_nonce"
+	// The TozID realm to verify the token specified by `tozid_login_token_nonce` is signed by.
+	TozIDLoginTokenRealmQueryParam = "tozid_login_token_realm"
 )
 
 //StorageClient implements an http client for communication with the metrics service.
@@ -62,10 +68,10 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams 
 	return result, err
 }
 
-func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) ([]string, error) {
+func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) (ChallengeResponse, error) {
+	var challenges ChallengeResponse
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
 	request, err := e3dbClients.CreateRequest("PATCH", path, params)
-	var challenges []string
 	if err != nil {
 		return challenges, err
 	}
