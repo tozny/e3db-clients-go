@@ -119,3 +119,42 @@ type TozIDEACPChallengeResponse struct {
 	TozIDLoginTokenNonce string `json:"tozid_login_token_nonce"`
 	RealmName            string `json:"realm_name"`
 }
+
+type Record struct {
+	Metadata        Meta              `json:"meta"`
+	Data            map[string]string `json:"data"`
+	RecordSignature string            `json:"rec_sig,omitempty"`
+}
+
+// Meta contains meta-information about an E3DB record, such as
+// who wrote it, when it was written, and the type of the data stored.
+// This is a copy of the PDS client Meta, except that it enforces UUID typing to match the database
+type Meta struct {
+	RecordID     uuid.UUID         `json:"record_id,omitempty"`
+	WriterID     uuid.UUID         `json:"writer_id"`
+	UserID       uuid.UUID         `json:"user_id"`
+	Type         string            `json:"type"`
+	Plain        map[string]string `json:"plain"`
+	Created      time.Time         `json:"created"`
+	LastModified time.Time         `json:"last_modified"`
+	Version      uuid.UUID         `json:"version,omitempty"`
+	// Certain pds endpoints such as WriteRecord return 400 Bad Request if this key is present in the JSON
+	// https://www.sohamkamani.com/blog/golang/2018-07-19-golang-omitempty/
+	FileMeta *FileMeta `json:"file_meta,omitempty"`
+}
+
+// FileMeta contains meta-information about files associated with E3DB Large File Records,
+// such as file name, S3 url, and other file data.
+type FileMeta struct {
+	FileURL     string `json:"file_url,omitempty"`
+	FileName    string `json:"file_name,omitempty"`
+	Size        int    `json:"size,omitempty"`
+	Compression string `json:"compression,omitempty"`
+	Checksum    string `json:"checksum,omitempty"`
+}
+
+// PendingFileResponse contains the pendingFileID and the fileURL to post the file data to.
+type PendingFileResponse struct {
+	PendingFileID uuid.UUID `json:"id"`
+	FileURL       string    `json:"file_url"`
+}

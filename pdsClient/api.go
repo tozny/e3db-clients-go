@@ -113,8 +113,9 @@ type RegisterClientResponse struct {
 
 // Record wraps details about an E3db API record object.
 type Record struct {
-	Metadata Meta              `json:"meta"`
-	Data     map[string]string `json:"data"`
+	Metadata        Meta              `json:"meta"`
+	Data            map[string]string `json:"data"`
+	RecordSignature string            `json:"rec_sig,omitempty"`
 }
 
 // PutAccessKeyRequest represents a request to put an access key into e3db.
@@ -231,9 +232,10 @@ type ClientKey struct {
 // ListedRecord contains the api List
 // representation for a record
 type ListedRecord struct {
-	Metadata  Meta              `json:"meta"`
-	Data      map[string]string `json:"record_data"`
-	AccessKey *GetEAKResponse   `json:"access_key"`
+	Metadata        Meta              `json:"meta"`
+	Data            map[string]string `json:"record_data"`
+	AccessKey       *GetEAKResponse   `json:"access_key"`
+	RecordSignature string            `json:"rec_sig,omitempty"`
 }
 
 // InternalGetRecordResponse wraps the api response from a

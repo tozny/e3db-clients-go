@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/tozny/e3db-clients-go/authClient"
+
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 )
@@ -28,6 +30,7 @@ type StorageClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	Host        string // host will generally need to be cyclops service to get the X-Tozny-Auth header
 	httpClient  *http.Client
+	*authClient.E3dbAuthClient
 }
 
 func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, error) {
@@ -168,12 +171,47 @@ func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName s
 	return err
 }
 
+func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
+	var result *Record
+	path := c.Host + storageServiceBasePath + "/records"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
+func (c *StorageClient) WriteFile(ctx context.Context, params Record) (*PendingFileResponse, error) {
+	var result *PendingFileResponse
+	path := c.Host + storageServiceBasePath + "/files"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
+func (c *StorageClient) FileCommit(ctx context.Context, pendingFileID uuid.UUID) (*Record, error) {
+	var result *Record
+	path := c.Host + storageServiceBasePath + "/files/" + pendingFileID.String()
+	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
 func New(config e3dbClients.ClientConfig) StorageClient {
+	authService := authClient.New(config)
 	return StorageClient{
-		Host:        config.Host,
-		SigningKeys: config.SigningKeys,
-		ClientID:    config.ClientID,
-		httpClient:  &http.Client{},
+		Host:           config.Host,
+		SigningKeys:    config.SigningKeys,
+		ClientID:       config.ClientID,
+		httpClient:     &http.Client{},
+		E3dbAuthClient: &authService,
 	}
 }
