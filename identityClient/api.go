@@ -135,3 +135,25 @@ type BrokerLoginResponse struct {
 type InternalUpdateActiveForKeycloakUserID struct {
 	Active bool `json:"active"`
 }
+
+// RealmOIDCPublicKey wraps parameters for a public key in JWK form used for OIDC flows for a given realm.
+// JWK spec https://tools.ietf.org/html/rfc7517
+// RSA key parameters https://www.gnupg.org/documentation/manuals/gcrypt-devel/RSA-key-parameters.html
+type RealmOIDCPublicKey struct {
+	KeyID string `json:"kid"`
+	// Identifies the algorithm intended for use with the key.
+	Algorithim string `json:"alg"`
+	// The cryptographic algorithm family used with the key, such as "RSA" or "EC".
+	KeyType string `json:"kty"`
+	// RSA Public key exponent
+	RSAExponent string `json:"e"`
+	// RSA public modulus n.
+	RSAModulus string `json:"n"`
+	// The intended use of the public key, one of `sig`(nature) or `enc`(oding)
+	Use string `json:"use"`
+}
+
+// ListRealmOIDCKeysResponse wraps a list of keys used for OIDC flows for a given realm.
+type ListRealmOIDCKeysResponse struct {
+	Keys []RealmOIDCPublicKey `json:"keys"`
+}

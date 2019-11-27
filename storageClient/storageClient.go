@@ -14,9 +14,14 @@ const (
 	EmailOTPQueryParam     = "email_otp"
 	ToznyOTPQueryParam     = "tozny_otp"
 	// The TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that contains the one time password as the `nonce` claim and TozID as the authorizing party (`azp`) claim.
-	TozIDLoginTokenNonceQueryParam = "tozid_login_token_nonce"
+	TozIDLoginTokenHeader = "X-TOZID-LOGIN-TOKEN"
 	// The TozID realm to verify the token specified by `tozid_login_token_nonce` is signed by.
 	TozIDLoginTokenRealmQueryParam = "tozid_login_token_realm"
+)
+
+var (
+	// The EACP params to set as a request
+	EACPHeaders = []string{TozIDLoginTokenHeader}
 )
 
 //StorageClient implements an http client for communication with the metrics service.
@@ -56,10 +61,21 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams 
 	if err != nil {
 		return result, err
 	}
+	// Set appropriate request query params & headers for satisfying
+	// a note's required EACPs
 	urlParams := request.URL.Query()
 	if eacpParams != nil {
 		for key, val := range eacpParams {
-			urlParams.Set(key, val)
+			var isHeaderEACP bool
+			for _, eacpHeader := range EACPHeaders {
+				if key == eacpHeader {
+					isHeaderEACP = true
+					break
+				}
+			}
+			if !isHeaderEACP {
+				urlParams.Set(key, val)
+			}
 		}
 	}
 	urlParams.Set("note_id", noteID)
