@@ -30,6 +30,21 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)
+func (c *E3dbIdentityClient) ListOIDCKeysForRealm(ctx context.Context, realmName string) (ListRealmOIDCKeysResponse, error) {
+	var listedKeys ListRealmOIDCKeysResponse
+	path := fmt.Sprintf("%s%s/%s/protocol/openid-connect/certs", c.Host, realmLoginPathPrefix, realmName)
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return listedKeys, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &listedKeys)
+	if err != nil {
+		return listedKeys, err
+	}
+	return listedKeys, err
+}
+
 // BrokerIdentityChallange begins a broker-based login flow using the specified params, returning error (if any).
 func (c *E3dbIdentityClient) BrokerIdentityChallenge(ctx context.Context, params BrokerChallengeRequest) error {
 	path := c.Host + identityServiceBasePath + fmt.Sprintf("/broker/%s/%s/challenge", realmResourceName, params.RealmName)

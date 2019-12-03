@@ -33,6 +33,7 @@ type EACP struct {
 	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
 	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
 	ToznyOTPEACP   *ToznyOTPEACP   `json:"tozny_otp_eacp,omitempty"`
+	TozIDEACP      *TozIDEACP      `json:"tozid_eacp,omitempty"`
 }
 
 type EmailEACP struct {
@@ -51,6 +52,10 @@ type LastAccessEACP struct {
 type ToznyOTPEACP struct {
 	Include bool `json:"include"`
 }
+
+// TozIDEACP wraps an EACP requiring the proxying of a one time password OTP
+// embedded as the nonce claim for a valid & signed TozID realm auth JWT token
+type TozIDEACP struct{}
 
 type BulkDeleteResponse struct {
 	ClientID    uuid.UUID `json:"client_id"`
@@ -80,9 +85,33 @@ type PrimeResponseBody struct {
 
 type ChallengeRequest struct {
 	EmailEACPChallenge EmailEACPChallengeRequest `json:"email_eacp"`
+	TozIDEACPChallenge TozIDEACPChallengeRequest `json:"tozid_eacp"`
 }
 
 type EmailEACPChallengeRequest struct {
 	TemplateName string `json:"template_name"`
 	OTPRequest
+}
+
+// TozIDEACPChallengeRequest wraps parameters needed to activate a TozID EACP on a note.
+type TozIDEACPChallengeRequest struct {
+	ExpirySeconds int64 `json:"expiry_seconds"`
+}
+
+// ChallengeResponse wraps parameters for all activated challenges on a note.
+type ChallengeResponse struct {
+	EmailEACPChallenge *EmailEACPChallengeResponse `json:"email_eacp,omitempty"`
+	TozIDEACPChallenge *TozIDEACPChallengeResponse `json:"tozid_eacp,omitemtpy"`
+}
+
+type EmailEACPChallengeResponse struct {
+	ExpiresAt    time.Time `json:"expires_at"`
+	TemplateName string    `json:"template_name"`
+}
+
+// TozIDEACPChallengeRequest wraps parameters for an activated TozID EACP on a note.
+type TozIDEACPChallengeResponse struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	// The `nonce` claim that must be present in a TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that also contains TozID as the authorizing party (`azp`) claim.
+	TozIDLoginTokenNonce string `json:"tozid_login_token_nonce"`
 }

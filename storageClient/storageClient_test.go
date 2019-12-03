@@ -13,10 +13,10 @@ import (
 
 var (
 	cyclopsServiceHost = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	testCtx            = context.Background()
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
-	ctx := context.Background()
 	// Make request through cyclops to test tozny header is parsed properly
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
@@ -30,14 +30,13 @@ func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
 	}
-	_, err = storageServiceClient.WriteNote(ctx, *noteToWrite)
+	_, err = storageServiceClient.WriteNote(testCtx, *noteToWrite)
 	if err != nil {
-		t.Errorf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+		t.Errorf("unable to write note %+v, to storage service %s\n", noteToWrite, err)
 	}
 }
 
 func TestFullSignatureAuthenticationFlowSucceedsWithUID(t *testing.T) {
-	ctx := context.Background()
 	// Make request through cyclops to test tozny header is parsed properly
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
@@ -49,9 +48,34 @@ func TestFullSignatureAuthenticationFlowSucceedsWithUID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
 	}
-	_, err = StorageClient.WriteNote(ctx, *noteToWrite)
+	_, err = StorageClient.WriteNote(testCtx, *noteToWrite)
 	if err != nil {
-		t.Errorf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+		t.Errorf("unable to write note %+v, to storage service %s\n", noteToWrite, err)
+	}
+}
+
+func TestAddTozIDEACPWhenCreatingNote(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+	noteToWrite, err := generateNote(queenClientConfig.SigningKeys.Public.Material, queenClientConfig)
+
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	noteToWrite.EACPS = &EACP{
+		TozIDEACP: &TozIDEACP{},
+	}
+	writtenNote, err := StorageClient.WriteNote(testCtx, *noteToWrite)
+	if err != nil {
+		t.Errorf("unable to write note with TozIDEACP %+v, to storage service %s\n ", noteToWrite, err)
+	}
+	if writtenNote.EACPS == nil || writtenNote.EACPS.TozIDEACP == nil {
+		t.Fatalf("expected non nil TozIDEACP for note EACPS, got %+v", writtenNote.EACPS)
 	}
 }
 
