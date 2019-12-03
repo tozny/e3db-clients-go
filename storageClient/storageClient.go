@@ -15,8 +15,6 @@ const (
 	ToznyOTPQueryParam     = "tozny_otp"
 	// The TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that contains the one time password as the `nonce` claim and TozID as the authorizing party (`azp`) claim.
 	TozIDLoginTokenHeader = "X-TOZID-LOGIN-TOKEN"
-	// The TozID realm to verify the token specified by `tozid_login_token_nonce` is signed by.
-	TozIDLoginTokenRealmQueryParam = "tozid_login_token_realm"
 )
 
 var (
