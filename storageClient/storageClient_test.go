@@ -68,7 +68,9 @@ func TestAddTozIDEACPWhenCreatingNote(t *testing.T) {
 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
 	}
 	noteToWrite.EACPS = &EACP{
-		TozIDEACP: &TozIDEACP{},
+		TozIDEACP: &TozIDEACP{
+			RealmName: "someRealm",
+		},
 	}
 	writtenNote, err := StorageClient.WriteNote(testCtx, *noteToWrite)
 	if err != nil {

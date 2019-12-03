@@ -55,7 +55,9 @@ type ToznyOTPEACP struct {
 
 // TozIDEACP wraps an EACP requiring the proxying of a one time password OTP
 // embedded as the nonce claim for a valid & signed TozID realm auth JWT token
-type TozIDEACP struct{}
+type TozIDEACP struct {
+	RealmName string `json:"realm_name"`
+}
 
 type BulkDeleteResponse struct {
 	ClientID    uuid.UUID `json:"client_id"`
@@ -114,4 +116,5 @@ type TozIDEACPChallengeResponse struct {
 	ExpiresAt time.Time `json:"expires_at"`
 	// The `nonce` claim that must be present in a TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that also contains TozID as the authorizing party (`azp`) claim.
 	TozIDLoginTokenNonce string `json:"tozid_login_token_nonce"`
+	RealmName            string `json:"realm_name"`
 }
