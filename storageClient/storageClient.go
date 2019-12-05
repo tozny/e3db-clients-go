@@ -96,6 +96,22 @@ func (c *StorageClient) Challenge(ctx context.Context, noteID string, params Cha
 	return challenges, err
 }
 
+// ProxyChallengeByName allows a service to send an already authenticated request
+// to the Storage service to trigger a note challenge by name.
+func (c *StorageClient) ProxyChallengeByName(ctx context.Context, headers http.Header, noteName string, params ChallengeRequest) (ChallengeResponse, error) {
+	var challenges ChallengeResponse
+	path := c.Host + storageServiceBasePath + "/notes/challenge"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return challenges, err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("id_string", noteName)
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeProxiedSignedCall(ctx, headers, request, challenges)
+	return challenges, err
+}
+
 func (c *StorageClient) Prime(ctx context.Context, noteID string, body PrimeRequestBody) (PrimeResponseBody, error) {
 	path := c.Host + storageServiceBasePath + "/notes/prime"
 	request, err := e3dbClients.CreateRequest("PATCH", path, body)
