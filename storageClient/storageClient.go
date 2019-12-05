@@ -22,7 +22,7 @@ var (
 	EACPHeaders = []string{TozIDLoginTokenHeader}
 )
 
-//StorageClient implements an http client for communication with the metrics service.
+//StorageClient implements an http client for communication with the storage service.
 type StorageClient struct {
 	ClientID    string
 	SigningKeys e3dbClients.SigningKeys
@@ -108,7 +108,7 @@ func (c *StorageClient) ProxyChallengeByName(ctx context.Context, headers http.H
 	urlParams := request.URL.Query()
 	urlParams.Set("id_string", noteName)
 	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeProxiedSignedCall(ctx, headers, request, challenges)
+	err = e3dbClients.MakeProxiedSignedCall(ctx, headers, request, &challenges)
 	return challenges, err
 }
 
