@@ -95,6 +95,15 @@ func MakeSignedServiceCall(ctx context.Context, request *http.Request, keypair S
 	return err
 }
 
+// MakeProxiedSignedCall attempts to call an e3db service using the provided
+// signature to authenticate the request.
+func MakeProxiedSignedCall(ctx context.Context, headers http.Header, request *http.Request, result interface{}) error {
+	client := &http.Client{}
+	request.Header.Add("Authorization", headers.Get("Authorization"))
+	request.Header.Add(server.ToznyAuthNHeader, headers.Get(server.ToznyAuthNHeader))
+	return MakeRawServiceCall(client, request, result)
+}
+
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
 func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
 	client := &http.Client{}
