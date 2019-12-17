@@ -33,3 +33,15 @@ type NotificationMeta struct {
 	NotificationID uuid.UUID `json:"notification_id"`
 	Nonce          string    `json:"nonce"`
 }
+
+// DirectMobilePushRequestWithPayload sends a push request directly to a single user with a data payload.
+type DirectMobilePushRequestWithPayload struct {
+	Title           string            `json:"title"`
+	Body            string            `json:"body"`
+	OneSignalUserID string            `json:"one_signal_user_id"`
+	Data            map[string]string `json:"data"`
+}
+
+type PushResponse struct {
+	PushID string `json:"id"`
+}
