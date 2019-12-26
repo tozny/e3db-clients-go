@@ -42,6 +42,8 @@ type Identity struct {
 	RealmID      int64             `json:"realm_id"`
 	RealmName    string            `json:"realm_name"`
 	Name         string            `json:"name"`
+	FirstName    string            `json:"first_name"`
+	LastName     string            `json:"last_name"`
 	APIKeyID     string            `json:"api_key_id"`
 	APIKeySecret string            `json:"api_secret_key"`
 	PublicKeys   map[string]string `json:"public_key"`
