@@ -142,6 +142,32 @@ func (c *StorageClient) BulkDeleteByClient(ctx context.Context, clientID uuid.UU
 	return resp, err
 }
 
+func (c *StorageClient) InternalDeleteNoteByID(ctx context.Context, noteID uuid.UUID) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes"
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("note_id", noteID.String())
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName string) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes"
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("id_string", noteName)
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
 func New(config e3dbClients.ClientConfig) StorageClient {
 	return StorageClient{
