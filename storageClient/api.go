@@ -91,8 +91,8 @@ type ChallengeRequest struct {
 }
 
 type EmailEACPChallengeRequest struct {
-	TemplateName string `json:"template_name"`
-	OTPRequest
+	TemplateName  string `json:"template_name"`
+	ExpiryMinutes int    `json:"expiry_minutes"`
 }
 
 // TozIDEACPChallengeRequest wraps parameters needed to activate a TozID EACP on a note.
