@@ -129,6 +129,16 @@ func (c *E3dbIdentityClient) InternalUpdateIdentityActiveByKeycloakUserID(ctx co
 	return err
 }
 
+func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmName string, keycloakUserID string) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + realmName + "/" + keycloakUserID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,
 // returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {
