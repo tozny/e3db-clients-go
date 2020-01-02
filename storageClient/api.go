@@ -37,10 +37,11 @@ type EACP struct {
 }
 
 type EmailEACP struct {
-	EmailAddress   string            `json:"email_address"`
-	Template       string            `json:"template"`
-	ProviderLink   string            `json:"provider_link"`
-	TemplateFields map[string]string `json:"template_fields"`
+	EmailAddress             string            `json:"email_address"`
+	Template                 string            `json:"template"`
+	ProviderLink             string            `json:"provider_link"`
+	TemplateFields           map[string]string `json:"template_fields"`
+	DefaultExpirationMinutes int               `json:"default_expiration_minutes"`
 }
 
 type LastAccessEACP struct {
