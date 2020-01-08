@@ -85,3 +85,12 @@ type QueryParams struct {
 	APIEndpoints []ApiEndpoint `json:"api_endpoints"`
 	StatusCodes  []int         `json:"status_codes"`
 }
+
+type FileSizeMetric struct {
+	ClientID string `json:"client_id"`
+	Bytes    int64  `json:"bytes"`
+}
+
+type FileSizeMetricResponse struct {
+	DocumentID string `json:"document_id"`
+}

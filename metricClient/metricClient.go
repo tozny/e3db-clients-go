@@ -2,7 +2,8 @@ package metricClient
 
 import (
 	"context"
-	"github.com/tozny/e3db-clients-go"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 )
 
@@ -52,6 +53,18 @@ func (c *MetricClient) ActiveUsers(ctx context.Context, params ActiveUserAggrega
 	}
 	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
 	return result, err
+}
+
+// AddFileSizeMetric inserts a fileSizeMetric into the metrics service elastic search database.
+func (c *MetricClient) AddFileSizeMetric(ctx context.Context, params FileSizeMetric) (FileSizeMetricResponse, error) {
+	path := c.Host + "/" + MetricServiceBasePath + "requests/files"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return FileSizeMetricResponse{}, err
+	}
+	resp := FileSizeMetricResponse{}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &resp)
+	return resp, err
 }
 
 // New returns a new E3dbSearchIndexerClient for authenticated communication with a Search Indexer service at the specified endpoint.
