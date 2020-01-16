@@ -199,6 +199,61 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 	return realm, err
 }
 
+func (c *E3dbIdentityClient) ChallengePushRequest(ctx context.Context, params UserChallengePushRequest) (InitiateUserChallengeResponse, error) {
+	var resp InitiateUserChallengeResponse
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/challenge"
+	request, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+func (c *E3dbIdentityClient) CompleteChallengeRequest(ctx context.Context, params CompleteChallengeRequest) error {
+	path := c.Host + identityServiceBasePath + "/challenge"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{}
+	err = e3dbClients.MakeRawServiceCall(client, request, nil)
+	return err
+}
+
+func (c *E3dbIdentityClient) InitiateRegisterUserDeviceRequest(ctx context.Context, params InitiateRegisterDeviceRequest) (InitiateRegisterDeviceResponse, error) {
+	var resp InitiateRegisterDeviceResponse
+	path := c.Host + identityServiceBasePath + "/register/device"
+	request, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+func (c *E3dbIdentityClient) CompleteRegisterUserDeviceRequest(ctx context.Context, params CompleteUserDeviceRegisterRequest) error {
+	path := c.Host + identityServiceBasePath + "/register/device"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{}
+	err = e3dbClients.MakeRawServiceCall(client, request, nil)
+	return err
+}
+
+func (c *E3dbIdentityClient) IsChallengeCompleteRequest(ctx context.Context, challengeID string) error {
+	path := c.Host + identityServiceBasePath + "/challenge/" + challengeID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{}
+	err = e3dbClients.MakeRawServiceCall(client, request, nil)
+	return err
+}
+
 // ServiceCheck checks whether the identity service is up and working.
 // returning error if unable to connect service
 func (c *E3dbIdentityClient) ServiceCheck(ctx context.Context) error {
