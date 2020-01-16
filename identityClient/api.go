@@ -159,3 +159,45 @@ type RealmOIDCPublicKey struct {
 type ListRealmOIDCKeysResponse struct {
 	Keys []RealmOIDCPublicKey `json:"keys"`
 }
+
+type UserChallengePushRequest struct {
+	Title    string `json:"title"`
+	Body     string `json:"body"`
+	Question string `json:"question"` // TODO:
+
+	Username string `json:"username"`
+	Realm    string `json:"realm"`
+}
+
+type InitiateUserChallengeResponse struct {
+	ChallengeID     string `json:"challenge_id"`
+	Challenge       string `json:"challenge"`
+	ContinuationURL string `json:"continuation_url"`
+}
+
+type InitiateRegisterDeviceRequest struct {
+	TempPublicKey string `json:"temporary_public_key"`
+}
+
+// InitiateRegisterDeviceResponse
+type InitiateRegisterDeviceResponse struct {
+	Challenge      string `json:"challenge"`
+	RegistrationID string `json:"registration_id"`
+}
+
+type CompleteUserDeviceRegisterRequest struct {
+	RegistrationID  string `json:"registration_id"`
+	SignedChallenge string `json:"signed_challenge"`
+	SignedTime      int64  `json:"sign_time"`
+
+	OneSignalID     string `json:"one_signal_id"`     // Push notification client ID
+	DeviceID        string `json:"device_id"`         // Unique device identifier
+	DeviceName      string `json:"device_name"`       // Human readable device name
+	DevicePublicKey string `json:"device_public_key"` // PublicKey to permanently stored PrivateKey on device
+}
+
+type CompleteChallengeRequest struct {
+	ChallengeID     string `json:"challenge_id"`
+	SignedChallenge string `json:"signed_challenge"` // signed challenge in the form of "{challenge}{timestamp}"
+	SignedTime      int64  `json:"sign_time"`        // time challenge was signed
+}
