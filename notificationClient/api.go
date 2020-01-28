@@ -40,6 +40,13 @@ type DirectMobilePushRequestWithPayload struct {
 	Body            string            `json:"body"`
 	OneSignalUserID string            `json:"one_signal_user_id"`
 	Data            map[string]string `json:"data"`
+	Buttons         []PushButton      `json:"buttons"`
+}
+
+type PushButton struct {
+	ActionID  string `json:"action_id"`
+	Text      string `json:"text"`
+	LaunchURL string `json:"launch_url"`
 }
 
 type PushResponse struct {
