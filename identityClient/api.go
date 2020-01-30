@@ -170,9 +170,10 @@ type UserChallengePushRequest struct {
 }
 
 type InitiateUserChallengeResponse struct {
-	ChallengeID     string `json:"challenge_id"`
-	Challenge       string `json:"challenge"`
-	ContinuationURL string `json:"continuation_url"`
+	ChallengeID string `json:"challenge_id"`
+	Challenge   string `json:"challenge"`
+	Username    string `json:"username"`
+	Realm       string `json:"realm"`
 }
 
 type InitiateRegisterDeviceRequest struct {
@@ -181,8 +182,9 @@ type InitiateRegisterDeviceRequest struct {
 
 // InitiateRegisterDeviceResponse
 type InitiateRegisterDeviceResponse struct {
-	Challenge      string `json:"challenge"`
 	RegistrationID string `json:"registration_id"`
+	Username       string `json:"username"`
+	Realm          string `json:"realm"`
 }
 
 type CompleteUserDeviceRegisterRequest struct {
