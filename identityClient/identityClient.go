@@ -201,7 +201,7 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 
 func (c *E3dbIdentityClient) ChallengePushRequest(ctx context.Context, params UserChallengePushRequest) (InitiateUserChallengeResponse, error) {
 	var resp InitiateUserChallengeResponse
-	path := c.Host + internalIdentityServiceBasePath + "/keycloak/challenge"
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.Realm + "/challenge/" + params.Username
 	request, err := e3dbClients.CreateRequest("PUT", path, params)
 	if err != nil {
 		return resp, err
