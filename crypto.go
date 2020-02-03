@@ -159,21 +159,19 @@ func RandomNonce() Nonce {
 }
 
 // GenerateRandomBytes generate a random number of bytes
-func GenerateRandomBytes(n int) []byte {
+func GenerateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
-	if err != nil {
-		// we don't expect this to fail
-		panic("random number generation failed")
-	}
-
-	return b
+	return b, err
 }
 
 // GenerateRandomString generate a random base64 encoded string of n bytes.
-func GenerateRandomString(n int) string {
-	bytes := GenerateRandomBytes(n)
-	return Base64Encode(bytes)
+func GenerateRandomString(n int) (string, error) {
+	bytes, err := GenerateRandomBytes(n)
+	if err != nil {
+		return "", err
+	}
+	return Base64Encode(bytes), err
 }
 
 // BoxEncryptToBase64 uses asymmetric encryption keys to encrypt data
