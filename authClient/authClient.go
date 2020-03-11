@@ -61,6 +61,9 @@ func (c *E3dbAuthClient) AuthenticateE3DBClient(ctx context.Context, token strin
 		Internal: internal,
 	}
 	validateTokenResponse, err := c.ValidateToken(ctx, params)
+	if err != nil {
+		return "", false, err
+	}
 	return validateTokenResponse.ClientId, validateTokenResponse.Valid, err
 }
 
