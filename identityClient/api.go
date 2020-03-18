@@ -177,7 +177,8 @@ type InitiateUserChallengeResponse struct {
 }
 
 type InitiateRegisterDeviceRequest struct {
-	TempPublicKey string `json:"temporary_public_key"`
+	TempPublicKey           string `json:"temporary_public_key"`
+	TempPublicEncryptionKey string `json:"temporary_public_encryption_key"`
 }
 
 // InitiateRegisterDeviceResponse
