@@ -82,6 +82,30 @@ func GenerateSigningKeys() (SigningKeys, error) {
 	return signingKeys, err
 }
 
+// GenerateKeyPair creates a new Curve25519 keypair for cryptographic operations.
+func GenerateKeyPair() (EncryptionKeys, error) {
+	var encryptionKeys EncryptionKeys
+	pub, priv, err := box.GenerateKey(rand.Reader)
+	if err != nil {
+		return encryptionKeys, err
+	}
+
+	publicKey := Base64Encode(pub[:])
+	privateKey := Base64Encode(priv[:])
+	encryptionKeys = EncryptionKeys{
+		Private: Key{
+			Material: privateKey,
+			Type:     DefaultEncryptionKeyType,
+		},
+		Public: Key{
+			Material: publicKey,
+			Type:     DefaultEncryptionKeyType,
+		},
+	}
+
+	return encryptionKeys, err
+}
+
 // EncryptData encrypts a collection of data of string key and values using
 // Tozny v1 Record encryption, returning the encrypted data.
 func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
