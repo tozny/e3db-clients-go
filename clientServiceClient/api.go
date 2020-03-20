@@ -113,7 +113,6 @@ type PublicClient struct {
 
 type IssueEmailChallengeRequest struct {
 	AccountID string `json:"account_id"`
-	Email     string `json:"email"`
 	Endpoint  string `json:"endpoint"`
 	Lifespan  int    `json:"lifespan"`
 	Context   string `json:"context"`
