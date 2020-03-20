@@ -112,12 +112,13 @@ type PublicClient struct {
 }
 
 type IssueEmailChallengeRequest struct {
-	Email    string `json:"email"`
-	Endpoint string `json:"endpoint"`
-	Lifespan int    `json:"lifespan"`
-	Context  string `json:"context"`
-	Send     bool   `json:"send"`
-	Data     string `json:"data"`
+	AccountID string `json:"account_id"`
+	Email     string `json:"email"`
+	Endpoint  string `json:"endpoint"`
+	Lifespan  int    `json:"lifespan"`
+	Context   string `json:"context"`
+	Send      bool   `json:"send"`
+	Data      string `json:"data"`
 }
 
 type IssueEmailChallengeResponse struct {
