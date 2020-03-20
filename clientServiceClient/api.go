@@ -126,8 +126,8 @@ type IssueEmailChallengeResponse struct {
 }
 
 type VerifyEmailChallengeRequest struct {
-	Email string `json:"email"`
-	OTP   string `json:"otp"`
+	ID  string `json:"id"`
+	OTP string `json:"otp"`
 }
 
 type VerifyEmailChallengeResponse struct {
