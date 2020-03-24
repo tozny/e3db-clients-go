@@ -198,7 +198,7 @@ type CompleteUserDeviceRegisterRequest struct {
 	DeviceID        string `json:"device_id"`         // Unique device identifier
 	DeviceName      string `json:"device_name"`       // Human readable device name
 	DevicePublicKey string `json:"device_public_key"` // PublicKey to permanently stored PrivateKey on device
-	TOTP            string `json:"secret"`
+	TOTP            string `json:"totp"`
 }
 
 type CompleteChallengeRequest struct {
