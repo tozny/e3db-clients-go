@@ -177,14 +177,16 @@ type InitiateUserChallengeResponse struct {
 }
 
 type InitiateRegisterDeviceRequest struct {
-	TempPublicKey string `json:"temporary_public_key"`
+	TempPublicKey           string `json:"temporary_public_key"`
+	TempPublicEncryptionKey string `json:"temporary_public_encryption_key"`
 }
 
 // InitiateRegisterDeviceResponse
 type InitiateRegisterDeviceResponse struct {
-	RegistrationID string `json:"registration_id"`
-	Username       string `json:"username"`
-	Realm          string `json:"realm"`
+	RegistrationID      string `json:"registration_id"`
+	Username            string `json:"username"`
+	Realm               string `json:"realm"`
+	EncryptedTOTPSecret string `json:"encrypted_totp_secret"`
 }
 
 type CompleteUserDeviceRegisterRequest struct {
@@ -196,6 +198,7 @@ type CompleteUserDeviceRegisterRequest struct {
 	DeviceID        string `json:"device_id"`         // Unique device identifier
 	DeviceName      string `json:"device_name"`       // Human readable device name
 	DevicePublicKey string `json:"device_public_key"` // PublicKey to permanently stored PrivateKey on device
+	TOTP            string `json:"totp"`
 }
 
 type CompleteChallengeRequest struct {
