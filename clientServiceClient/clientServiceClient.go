@@ -191,10 +191,10 @@ func (c *ClientServiceClient) EmailChallenge(ctx context.Context, params IssueEm
 	return result, err
 }
 
-func (c *ClientServiceClient) VerifyEmailChallenge(ctx context.Context, params VerifyEmailChallengeRequest) (*VerifyEmailChallengeResponse, error) {
-	var result *VerifyEmailChallengeResponse
+func (c *ClientServiceClient) VerifyEmailChallenge(ctx context.Context, params VerifyEmailChallengeRequest) (*string, error) {
+	var result *string
 	path := c.Host + "/internal/" + ClientServiceBasePath + "challenge/email"
-	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	request, err := e3dbClients.CreateRequest("PATCH", path, result)
 	if err != nil {
 		return result, err
 	}
