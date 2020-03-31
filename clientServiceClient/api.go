@@ -110,3 +110,16 @@ type PublicClient struct {
 	PublicKeys  map[string]string `json:"public_key"`
 	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 }
+
+type IssueEmailChallengeRequest struct {
+	AccountID string `json:"account_id"`
+	Endpoint  string `json:"endpoint"`
+	Lifespan  int    `json:"lifespan"`
+	Context   string `json:"context"`
+	Send      bool   `json:"send"`
+	Data      string `json:"data"`
+}
+
+type IssueEmailChallengeResponse struct {
+	Link string `json:"link"`
+}
