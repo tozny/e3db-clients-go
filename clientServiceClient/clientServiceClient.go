@@ -180,6 +180,18 @@ func (c *ClientServiceClient) InternalToggleClientEnabled(ctx context.Context, p
 	return err
 }
 
+// InternalRollQueenClient rolls the queen client with a new backup client.
+func (c *ClientServiceClient) InternalRollQueenClient(ctx context.Context, params InternalRollQueenClientRequest) (*ClientRegisterResponse, error) {
+	var result *ClientRegisterResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + "queen"
+	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 func (c *ClientServiceClient) EmailChallenge(ctx context.Context, params IssueEmailChallengeRequest) (*IssueEmailChallengeResponse, error) {
 	var result *IssueEmailChallengeResponse
 	path := c.Host + "/internal/" + ClientServiceBasePath + "challenge/email"
