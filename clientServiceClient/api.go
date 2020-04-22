@@ -128,3 +128,9 @@ type VerifyEmailChallengeRequest struct {
 	ID  string `json:"id"`
 	OTP string `json:"otp"`
 }
+
+type InternalRollQueenClientRequest struct {
+	AccountID         string             `json:"account_id"`
+	RegistrationToken string             `json:"token"`
+	Client            ClientRegisterInfo `json:"client"`
+}
