@@ -2,19 +2,14 @@ package identityClient
 
 import (
 	"context"
-	"crypto/ed25519"
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
-	"github.com/tozny/e3db-go/v2"
 )
 
 var (
@@ -189,7 +184,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating identity signing keys", err)
 	}
-	publicKey, _, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
@@ -205,7 +200,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
 	}
 	anonConfig := e3dbClients.ClientConfig{
@@ -242,7 +237,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating identity signing keys", err)
 	}
-	publicKey, _, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
@@ -258,7 +253,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
 	}
 	anonConfig := e3dbClients.ClientConfig{
@@ -305,7 +300,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating identity signing keys", err)
 	}
-	publicKey, _, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
@@ -321,7 +316,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
 	}
 	anonConfig := e3dbClients.ClientConfig{
@@ -388,7 +383,7 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating identity signing keys", err)
 	}
-	publicKey, _, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
@@ -404,7 +399,7 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
 	}
 	_, err = identityServiceClient.RegisterRealmBrokerIdentity(testContext, realmBackupIdentityParams)

@@ -14,7 +14,7 @@ const (
 	AccountServiceBasePath = "v1/account" //HTTP PATH prefix for calls to the e3db Account service
 )
 
-//E3dbAccountClient implements an http client for communication with an e3db PDS service.
+//E3dbAccountClient implements an http client for communication with an e3db Account service.
 type E3dbAccountClient struct {
 	APIKey    string
 	APISecret string

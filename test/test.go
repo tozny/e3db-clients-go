@@ -11,7 +11,6 @@ import (
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-	"github.com/tozny/e3db-go/v2"
 )
 
 // MakeE3DBAccountWithEmail attempts to create a valid e3db account returning the root client config for the created account and error (if any).
@@ -30,7 +29,7 @@ func MakeE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccount
 		return accountClientConfig, accountResponse, err
 	}
 	salt := base64.RawURLEncoding.EncodeToString(saltSeed[:])
-	publicKey, privateEncryptionKey, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return accountClientConfig, accountResponse, err
@@ -66,7 +65,7 @@ func MakeE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccount
 			Company: "ACME Testing",
 			Plan:    "free0",
 			PublicKey: accountClient.ClientKey{
-				Curve25519: publicKey,
+				Curve25519: encryptionKeyPair.Public.Material,
 			},
 			SigningKey: accountClient.EncryptionKey{
 				Ed25519: signingKey,
@@ -86,10 +85,10 @@ func MakeE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccount
 	accountClientConfig.SigningKeys = signingKeys
 	accountClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
 		Private: e3dbClients.Key{
-			Material: privateEncryptionKey,
+			Material: encryptionKeyPair.Private.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 		Public: e3dbClients.Key{
-			Material: publicKey,
+			Material: encryptionKeyPair.Public.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 	}
 	return accountClientConfig, accountResponse, err
@@ -108,10 +107,11 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	userClientConfig := e3dbClients.ClientConfig{
 		Host: clientServiceHost,
 	}
-	publicKey, privateEncryptionKey, err := e3db.GenerateKeyPair()
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}
+	// publicKey, privateEncryptionKey, err := e3db.GenerateKeyPair()
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
 		return registrationResponse, userClientConfig, fmt.Errorf("error: %s generating signing key pair", err)
@@ -122,9 +122,10 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	userRegister := clientServiceClient.ClientRegisterRequest{
 		RegistrationToken: registrationToken,
 		Client: clientServiceClient.ClientRegisterInfo{
-			Name:        clientName,
-			Type:        "general",
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			Name:       clientName,
+			Type:       "general",
+			PublicKeys: map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			// PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
@@ -140,10 +141,12 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	userClientConfig.SigningKeys = signingKeys
 	userClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
 		Private: e3dbClients.Key{
-			Material: privateEncryptionKey,
+			// Material: privateEncryptionKey,
+			Material: encryptionKeyPair.Private.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 		Public: e3dbClients.Key{
-			Material: publicKey,
+			// Material: publicKey,
+			Material: encryptionKeyPair.Public.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 	}
 	return registrationResponse, userClientConfig, err

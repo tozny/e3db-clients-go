@@ -17,6 +17,7 @@ all: clean build up test down
 
 lint :
 	go vet ./...
+	go mod tidy
 
 build : lint
 	go build ./...
