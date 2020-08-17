@@ -4,15 +4,29 @@ import (
 	"github.com/google/uuid"
 )
 
-// ClientKey contains a cryptographic key for use in client level resource encryption operations(e.g. encrypting and decrypting record data).
+// EncryptionKey contains a cryptographic key for use in client level resource encryption operations(e.g. encrypting and decrypting record data).
 type EncryptionKey struct {
 	Ed25519 string `json:"ed25519"`
 }
 
-// ClientKey contains a cryptographic key for use in client operations.
+// ClientKey contains a cryptographic key for use in client operations such as signing and encryption.
 type ClientKey struct {
 	Curve25519 string `json:"curve25519,omitempty"`
 	P384       string `json:"p384,omitempty"` // NIST/FIPS approved curve
+}
+
+// Profile wraps profile configuration for an e3db account.
+type Profile struct {
+	AccountID               string        `json:"id,omitempty"`
+	Name                    string        `json:"name"`
+	Email                   string        `json:"email"`
+	AuthenticationSalt      string        `json:"auth_salt"`
+	EncodingSalt            string        `json:"enc_salt"`
+	SigningKey              EncryptionKey `json:"signing_key"`
+	PaperAuthenticationSalt string        `json:"paper_auth_salt"`
+	PaperEncodingSalt       string        `json:"paper_enc_salt"`
+	PaperSigningKey         EncryptionKey `json:"paper_signing_key"`
+	Verified                bool          `json:"verified,omitempty"`
 }
 
 // Account represents an e3db account.
@@ -33,20 +47,6 @@ type Client struct {
 	APISecretKey string        `json:"api_secret"`
 	SigningKey   EncryptionKey `json:"signing_key"`
 	Enabled      bool          `json:"enabled"`
-}
-
-// Profile wraps profile configuration for an e3db account.
-type Profile struct {
-	AccountID               string        `json:"id,omitempty"`
-	Name                    string        `json:"name"`
-	Email                   string        `json:"email"`
-	AuthenticationSalt      string        `json:"auth_salt"`
-	EncodingSalt            string        `json:"enc_salt"`
-	SigningKey              EncryptionKey `json:"signing_key"`
-	PaperAuthenticationSalt string        `json:"paper_auth_salt"`
-	PaperEncodingSalt       string        `json:"paper_enc_salt"`
-	PaperSigningKey         EncryptionKey `json:"paper_signing_key"`
-	Verified                bool          `json:"verified,omitempty"`
 }
 
 // CreateAccountRequest wraps parameters needed to make a valid
@@ -80,8 +80,44 @@ type ClientRegistrationResponse struct {
 }
 
 type ClientRegistrationInfo struct {
-	Name      string    `json:"name"`
-	PublicKey ClientKey `json:"public_key"`
+	Name       string        `json:"name"`
+	Type       string        `json:"type"`
+	PublicKey  ClientKey     `json:"public_key"`
+	SigningKey EncryptionKey `json:"signing_key,omitempty"`
+}
+
+// ProxiedClientRegistrationRequest wraps information for creating a new client.
+type ProxiedClientRegistrationRequest struct {
+	RegistrationToken string                         `json:"token"`
+	Client            ProxiedClientRegisterationInfo `json:"client"`
+}
+
+// ProxiedClientRegisterationInfo is the client definition required to create a new client.
+type ProxiedClientRegisterationInfo struct {
+	Name        string            `json:"name"`
+	Type        string            `json:"type"`
+	PublicKeys  map[string]string `json:"public_key"`
+	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
+}
+
+// ProxiedClientRegisterationResponse wraps the client information for a newly registered client.
+type ProxiedClientRegisterationResponse struct {
+	ProxyiedRegisteredClient
+	APISecret    string `json:"api_secret"`
+	RootClientID string
+}
+
+// ProxyiedRegisteredClient is all the information the user gets to see about their client.
+type ProxyiedRegisteredClient struct {
+	ClientID    uuid.UUID         `json:"client_id"`
+	APIKeyID    string            `json:"api_key_id"`
+	Name        string            `json:"name"`
+	Type        string            `json:"type"`
+	Enabled     bool              `json:"enabled"`
+	HasBackup   bool              `json:"has_backup"`
+	PublicKeys  map[string]string `json:"public_key"`
+	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
+	Meta        map[string]string `json:"meta,omitempty"`
 }
 
 // InternalGetClientAccountResponse represents a response

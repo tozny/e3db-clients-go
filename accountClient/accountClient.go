@@ -14,7 +14,7 @@ const (
 	AccountServiceBasePath = "v1/account" //HTTP PATH prefix for calls to the e3db Account service
 )
 
-//E3dbAccountClient implements an http client for communication with an e3db PDS service.
+//E3dbAccountClient implements an http client for communication with an e3db Account service.
 type E3dbAccountClient struct {
 	APIKey    string
 	APISecret string
@@ -73,7 +73,26 @@ func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientReg
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	// TODO: add this reponse as a field in account service so we don't have to parse it from the header here.
+	// TODO: add this response as a field in account service so we don't have to parse it from the header here.
+	backupClient := resp.Header.Get("X-Backup-Client")
+	result.RootClientID = backupClient
+	return result, err
+}
+
+// RegisterClient registers a client via a proxied call to client service by the account service.
+// This method is intended for TESTING the functionality of the integrated client service. Not intended for future use.
+func (c *E3dbAccountClient) ProxyiedRegisterClient(ctx context.Context, params ProxiedClientRegistrationRequest) (*ProxiedClientRegisterationResponse, error) {
+	var result *ProxiedClientRegisterationResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/e3db/clients/register"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	resp, err := e3dbClients.ReturnRawServiceCall(&http.Client{}, request, &result)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	// TODO: add this response as a field in account service so we don't have to parse it from the header here.
 	backupClient := resp.Header.Get("X-Backup-Client")
 	result.RootClientID = backupClient
 	return result, err

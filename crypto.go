@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tozny/e3db-go/v2"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
-	sodium "golang.org/x/crypto/nacl/sign"
 )
 
 const (
@@ -65,7 +63,7 @@ type PublicSigningKeys Keys
 // returning the signing keys and error (if any).
 func GenerateSigningKeys() (SigningKeys, error) {
 	var signingKeys SigningKeys
-	signingKeyBytes, privateSigningKeyBytes, err := sodium.GenerateKey(rand.Reader)
+	signingKeyBytes, privateSigningKeyBytes, err := box.GenerateKey(rand.Reader)
 	if err != nil {
 		return signingKeys, err
 	}
@@ -209,8 +207,8 @@ func BoxEncryptToBase64(data []byte, encryptionKeys EncryptionKeys) (string, str
 	if err != nil {
 		return "", "", err
 	}
-	pubKey := e3db.MakePublicKey(rawPubKey)
-	privKey := e3db.MakePrivateKey(rawPrivKey)
+	pubKey := MakeSymmetricKey(rawPubKey)
+	privKey := MakeSymmetricKey(rawPrivKey)
 	ciphertext := box.Seal(nil, data, n, pubKey, privKey)
 	return Base64Encode(ciphertext), Base64Encode(n[:]), err
 }
