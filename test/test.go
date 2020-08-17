@@ -111,7 +111,6 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}
-	// publicKey, privateEncryptionKey, err := e3db.GenerateKeyPair()
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
 		return registrationResponse, userClientConfig, fmt.Errorf("error: %s generating signing key pair", err)
@@ -122,10 +121,9 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	userRegister := clientServiceClient.ClientRegisterRequest{
 		RegistrationToken: registrationToken,
 		Client: clientServiceClient.ClientRegisterInfo{
-			Name:       clientName,
-			Type:       "general",
-			PublicKeys: map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			// PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: publicKey},
+			Name:        clientName,
+			Type:        "general",
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
@@ -141,11 +139,9 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	userClientConfig.SigningKeys = signingKeys
 	userClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
 		Private: e3dbClients.Key{
-			// Material: privateEncryptionKey,
 			Material: encryptionKeyPair.Private.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 		Public: e3dbClients.Key{
-			// Material: publicKey,
 			Material: encryptionKeyPair.Public.Material,
 			Type:     e3dbClients.DefaultEncryptionKeyType},
 	}

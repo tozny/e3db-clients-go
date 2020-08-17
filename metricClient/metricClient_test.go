@@ -2,6 +2,7 @@ package metricClient
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -58,24 +59,50 @@ func TestQueenAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error retrieving metrics with queen client. Error: %v\n", err)
 	}
-	token, err := accounter.CreateRegistrationToken(ctx, accountClient.CreateRegistrationTokenRequest{
+	accountRegistrationResponse, err := accounter.CreateRegistrationToken(ctx, accountClient.CreateRegistrationTokenRequest{
 		AccountServiceToken: response.AccountServiceToken,
 		TokenPermissions: accountClient.TokenPermissions{
-			Enabled: true,
-			OneTime: false,
+			Enabled:      true,
+			OneTime:      false,
+			AllowedTypes: []string{"general"},
 		},
-		Name: "Plebes only",
+		Name: "General Admission",
 	})
 	if err != nil {
 		t.Fatalf("Failure to get a registration token")
 	}
+	accountRegistrationToken := accountRegistrationResponse.Token
 	clientName := uuid.New().String()
-	_, regularClientConfig, err := test.RegisterClient(ctx, e3dbClientHost, token.Token, clientName)
+	encryptionKeys, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf(fmt.Sprintf("%s Failure to generate encryptionKeys keys", err))
+	}
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf(fmt.Sprintf("%s Failure to generate signingKeys keys", err))
+	}
+	clientRegistrationParams := accountClient.ProxiedClientRegistrationRequest{
+		RegistrationToken: accountRegistrationToken,
+		Client: accountClient.ProxiedClientRegisterationInfo{
+			Name:        clientName,
+			Type:        "general",
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeys.Public.Material},
+			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKeys.Public.Material},
+		},
+	}
+	clientRegistrationResponse, err := accounter.ProxyiedRegisterClient(ctx, clientRegistrationParams)
 	if err != nil {
 		t.Fatalf("Failed to register non-queen client. Err: %v\n", err)
 	}
-	regularClientConfig.Host = e3dbCyclopsHost
-	regularMetricsClient := New(regularClientConfig)
+	nonQueenMetricsClientConfig := e3dbClients.ClientConfig{
+		Host:           e3dbCyclopsHost,
+		AuthNHost:      e3dbCyclopsHost,
+		APIKey:         clientRegistrationResponse.APIKeyID,
+		APISecret:      clientRegistrationResponse.APISecret,
+		EncryptionKeys: encryptionKeys,
+		SigningKeys:    signingKeys,
+	}
+	regularMetricsClient := New(nonQueenMetricsClientConfig)
 	_, err = regularMetricsClient.RequestsMetrics(ctx, req)
 	if err == nil {
 		t.Fatalf("Non-queen clients should not be allowed to make requests to metrics, via cyclops.\n")
