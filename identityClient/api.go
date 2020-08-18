@@ -207,3 +207,15 @@ type CompleteChallengeRequest struct {
 	SignedChallenge string `json:"signed_challenge"` // signed challenge in the form of "{challenge}{timestamp}"
 	SignedTime      int64  `json:"sign_time"`        // time challenge was signed
 }
+
+type LDAPCache struct {
+	ID                 string              `json:"id,pk"`
+	LDAPID             string              `json:"ldap_id"`
+	DN                 string              `json:"dn"`
+	RdnAttributeName   string              `json:"rdn_attribute_name"`
+	Classes            []string            `json:"classes"`
+	Attributes         map[string][]string `json:"attributes"`
+	ReadOnlyAttributes []string            `json:"read_only_attributes"`
+	Groups             []string            `json:"groups"`
+	Roles              []string            `json:"roles"`
+}
