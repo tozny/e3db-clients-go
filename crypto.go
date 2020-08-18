@@ -1,14 +1,19 @@
 package e3dbClients
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha512"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
+	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/crypto/nacl/sign"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 const (
@@ -17,6 +22,8 @@ const (
 	DefaultSigningKeyType    = "ed25519"
 	SymmetricKeySize         = 32
 	NonceSize                = 24
+	SaltSize                 = 16
+	AccountDerivationRounds  = 1000
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data
@@ -321,4 +328,87 @@ func DecryptEAK(eak string, authorizerPublicKey string, privateKey SymmetricKey)
 
 	ak := MakeSymmetricKey(akBytes)
 	return ak, nil
+}
+
+// Encrypt uses an NaCl secret_box to encrypt a byte
+// slice with the given secret key and a random nonce,
+// returning the Base64 encoded ciphertext and nonce.
+func Encrypt(data []byte, key SymmetricKey) string {
+	nonce := RandomNonce()
+	message := secretbox.Seal(nil, data, nonce, key)
+	return base64.RawURLEncoding.EncodeToString(nonce[:]) + ":" + base64.RawURLEncoding.EncodeToString(message)
+}
+
+// Decrypt uses NaCl secret_box to decrypt a
+// string containing ciphertext along with the associated
+// nonce, both Base64 encoded. Returns the ciphertext bytes,
+// or an error if the authentication check fails when decrypting.
+func Decrypt(ciphertext string, key SymmetricKey) ([]byte, error) {
+	parts := strings.Split(ciphertext, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("Expected two parts in cipher text %q", ciphertext)
+	}
+	//decode the nonce and message
+	nonceBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, err
+	}
+	nonce := MakeNonce(nonceBytes)
+	message, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, ok := secretbox.Open(nil, message, nonce, key)
+	if !ok {
+		return nil, errors.New("decryption failed")
+	}
+
+	return plaintext, nil
+}
+
+// Sign does a detached signature of the requested message using the provided key
+func Sign(message []byte, key *[64]byte) []byte {
+	bytes := sign.Sign(nil, message, key)
+	offset := len(bytes) - len(message)
+	return bytes[:offset]
+}
+
+// DeriveSymmetricKey create a symmetric encryption key from a seed and a salt
+func DeriveSymmetricKey(seed []byte, salt []byte, iter int) *[32]byte {
+	secretKey := new([32]byte)
+	skBytes := pbkdf2.Key(seed, salt, iter, 32, sha512.New)
+	copy(secretKey[:], skBytes)
+	return secretKey
+}
+
+// DeriveCryptoKey creates an encryption key pair from a seed and a salt
+func DeriveCryptoKey(seed []byte, salt []byte, iter int) (*[32]byte, *[32]byte) {
+	// Make the private public keys
+	publicKey := new([32]byte)
+	privateKey := new([32]byte)
+	// Seed the key using pbkdf2
+	seed25519 := pbkdf2.Key(seed, salt, iter, 32, sha512.New)
+	// Libsodium hashes the seed with sha512 for the secret key
+	hasher := sha512.New()
+	hasher.Write(seed25519)
+	sk := hasher.Sum(nil)
+	copy(privateKey[:], sk)
+	// Make the key pair
+	curve25519.ScalarBaseMult(publicKey, privateKey)
+	return publicKey, privateKey
+}
+
+// DeriveSigningKey creates an encryption key pair from a seed and a salt
+func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte) {
+	// Make the private public keys
+	publicKey := new([32]byte)
+	privateKey := new([64]byte)
+	// Seed the key using pbkdf2
+	seed25519 := pbkdf2.Key(seed, salt, iter, 32, sha512.New)
+	// Create the signing key pair
+	privateKeyBytes := ed25519.NewKeyFromSeed(seed25519)
+	copy((*privateKey)[:], privateKeyBytes[:])
+	copy((*publicKey)[:], privateKeyBytes[32:])
+	return publicKey, privateKey
 }
