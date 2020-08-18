@@ -70,7 +70,7 @@ type PublicSigningKeys Keys
 // returning the signing keys and error (if any).
 func GenerateSigningKeys() (SigningKeys, error) {
 	var signingKeys SigningKeys
-	signingKeyBytes, privateSigningKeyBytes, err := box.GenerateKey(rand.Reader)
+	signingKeyBytes, privateSigningKeyBytes, err := sign.GenerateKey(rand.Reader)
 	if err != nil {
 		return signingKeys, err
 	}

@@ -45,7 +45,7 @@ func SignRequest(r *http.Request, signingKeys SigningKeys, timestamp int64, clie
 	}
 	copied = copy(privateKey[:], rawKeyBytes)
 	if copied != PrivateKeyBytes {
-		return fmt.Errorf("invalid number %d of public signing key byte, required %d", copied, PrivateKeyBytes)
+		return fmt.Errorf("invalid number %d of private signing key byte, required %d", copied, PrivateKeyBytes)
 	}
 	callMethod := r.Method
 	callPath := r.URL.EscapedPath()

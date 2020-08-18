@@ -33,7 +33,7 @@ type E3dbIdentityClient struct {
 // ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)
 func (c *E3dbIdentityClient) ListOIDCKeysForRealm(ctx context.Context, realmName string) (ListRealmOIDCKeysResponse, error) {
 	var listedKeys ListRealmOIDCKeysResponse
-	path := fmt.Sprintf("%s%s/%s/protocol/openid-connect/certs", c.Host, realmLoginPathPrefix, realmName)
+	path := fmt.Sprintf("%s%s/%s/protocol/openid-connect/certs", c.Host, realmLoginPathPrefix, strings.ToLower(realmName))
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return listedKeys, err
@@ -85,7 +85,7 @@ func (c *E3dbIdentityClient) RegisterRealmBrokerIdentity(ctx context.Context, pa
 // returning the identities realm authentication info and error (if any).
 func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string) (*IdentityLoginResponse, error) {
 	var identity *IdentityLoginResponse
-	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", realmName) + realmLoginPathPostfix
+	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", strings.ToLower(realmName)) + realmLoginPathPostfix
 	data := url.Values{}
 	// All login requests are authenticated as valid tsv1 signed requests,
 	// set these for compatibility with default Keycloak Oauth direct grant request handling.

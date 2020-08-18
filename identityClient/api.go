@@ -9,6 +9,7 @@ import (
 type Realm struct {
 	ID                    int64     `json:"id"`                                 // Service defined unique identifier for the realm.
 	Name                  string    `json:"name"`                               // User defined realm identifier.
+	Domain                string    `json:"domain"`                             // Case insensitive realm identifier
 	AdminURL              string    `json:"admin_url"`                          // URL for realm administration console.
 	Active                bool      `json:"active"`                             // Whether the realm is active for applications and identities to consume.
 	Sovereign             Sovereign `json:"sovereign"`                          // The realm's sovereign.
