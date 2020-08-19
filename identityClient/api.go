@@ -208,14 +208,24 @@ type CompleteChallengeRequest struct {
 	SignedTime      int64  `json:"sign_time"`        // time challenge was signed
 }
 
+// LDAPCache wraps the LDAP JSON data passed between services for caching
 type LDAPCache struct {
-	ID                 string              `json:"id,pk"`
-	LDAPID             string              `json:"ldap_id"`
-	DN                 string              `json:"dn"`
-	RdnAttributeName   string              `json:"rdn_attribute_name"`
-	Classes            []string            `json:"classes"`
-	Attributes         map[string][]string `json:"attributes"`
-	ReadOnlyAttributes []string            `json:"read_only_attributes"`
-	Groups             []string            `json:"groups"`
-	Roles              []string            `json:"roles"`
+	// User's Keycloak ID
+	ID string `json:"id,pk"`
+	// User's LDAP UUID (assigned by the LDAP server)
+	LDAPID string `json:"ldap_id"`
+	// The domain query used to find the user in the LDAP server
+	DN string `json:"dn"`
+	// Relative Distinguished Name addresses this specific user relative to the DN
+	RdnAttributeName string `json:"rdn_attribute_name"`
+	// Used to define what type of LDAP object this is
+	Classes []string `json:"classes"`
+	// Information about the LDAP object in key -> multi-value pairs
+	Attributes map[string][]string `json:"attributes"`
+	// Attribute keys which should not be writable
+	ReadOnlyAttributes []string `json:"read_only_attributes"`
+	// A set of Keycloak group IDs the user had at the time of caching
+	Groups []string `json:"groups"`
+	// A set of Keycloak role IDs the user had at the time of caching
+	Roles []string `json:"roles"`
 }
