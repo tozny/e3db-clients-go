@@ -139,6 +139,40 @@ func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmNa
 	return err
 }
 
+// InternalSetLDAPCache stores LDAP information for a specific user by ID in a specific realm
+func (c *E3dbIdentityClient) InternalSetLDAPCache(ctx context.Context, realmName string, params LDAPCache) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmName + "/ldap-cache"
+	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// InternalLDAPCache gets LDAP information for a specific user by ID in a specific realm
+func (c *E3dbIdentityClient) InternalLDAPCache(ctx context.Context, realmName string, keycloakUserID string) (LDAPCache, error) {
+	var response LDAPCache
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmName + "/ldap-cache/" + keycloakUserID
+	request, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
+
+// InternalDeleteLDAPCache removes LDAP information for a specific user by ID in a specific realm
+func (c *E3dbIdentityClient) InternalDeleteLDAPCache(ctx context.Context, realmName string, keycloakUserID string) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmName + "/ldap-cache/" + keycloakUserID
+	request, err := e3dbClients.CreateRequest(http.MethodDelete, path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,
 // returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {
