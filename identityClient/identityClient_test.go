@@ -13,15 +13,15 @@ import (
 )
 
 var (
-	toznyCyclopsHost            = utils.MustGetenv("TOZNY_CYCLOPS_SERVICE_HOST")
-	internalIdentityServiceHost = utils.MustGetenv("E3DB_IDENTITY_SERVICE_HOST")
-	e3dbAuthHost                = utils.MustGetenv("E3DB_AUTH_SERVICE_HOST")
-	e3dbAccountHost             = utils.MustGetenv("E3DB_ACCOUNT_SERVICE_HOST")
-	e3dbAPIKey                  = utils.MustGetenv("E3DB_API_KEY_ID")
-	e3dbAPISecret               = utils.MustGetenv("E3DB_API_KEY_SECRET")
-	e3dbClientID                = utils.MustGetenv("E3DB_CLIENT_ID")
-	bootstrapPublicSigningKey   = utils.MustGetenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
-	bootstrapPrivateSigningKey  = utils.MustGetenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
+	toznyCyclopsHost            = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	internalIdentityServiceHost = os.Getenv("E3DB_IDENTITY_SERVICE_HOST")
+	e3dbAuthHost                = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost             = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey                  = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret               = os.Getenv("E3DB_API_KEY_SECRET")
+	e3dbClientID                = os.Getenv("E3DB_CLIENT_ID")
+	bootstrapPublicSigningKey   = os.Getenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
+	bootstrapPrivateSigningKey  = os.Getenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
 	ValidAccountClientConfig    = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
