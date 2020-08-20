@@ -171,6 +171,17 @@ func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName s
 	return err
 }
 
+func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params InternalSearchBySharingTupleRequest) (*InternalSearchBySharingTupleResponse, error) {
+	var result *InternalSearchBySharingTupleResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/search/sharing-group"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"
