@@ -68,7 +68,7 @@ type AllowedRead struct {
 
 // InternalSearchRequest represents a valid request to the internal records search endpoint
 type InternalSearchRequest struct {
-	NextToken    int                    `json:"next_token,omitempty"`
+	NextToken    int64                  `json:"next_token,omitempty"`
 	Range        *InternalModifiedRange `json:"range,omitempty"`
 	WriterIDs    []string               `json:"writer_ids,omitempty"`    //If not empty, limit results to records written by the given set of IDs.
 	UserIDs      []string               `json:"user_ids,omitempty"`      //If not null, limit results to records about given set of IDs.
@@ -77,7 +77,7 @@ type InternalSearchRequest struct {
 
 // InternalSearchResponse represents a response from calling the internal records search endpoint
 type InternalSearchResponse struct {
-	NextToken int      `json:"next_token"`
+	NextToken int64    `json:"next_token"`
 	Records   []Record `json:"records"`
 }
 
@@ -87,7 +87,7 @@ type InternalSearchAllowedReadsRequest = InternalSearchRequest
 
 // InternalSearchAllowedReadsResponse represents a response from calling the internal allowed reads search endpoint
 type InternalSearchAllowedReadsResponse struct {
-	NextToken    int           `json:"next_token"`
+	NextToken    int64         `json:"next_token"`
 	AllowedReads []AllowedRead `json:"allowed_reads"`
 }
 
