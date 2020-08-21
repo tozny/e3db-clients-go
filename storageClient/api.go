@@ -178,4 +178,5 @@ type SharingTuple struct {
 // primarily used by the reconciler
 type InternalSearchBySharingTupleResponse struct {
 	RecordIDs []string `json:"record_ids"`
+	NextToken int64    `json:"next_token"`
 }
