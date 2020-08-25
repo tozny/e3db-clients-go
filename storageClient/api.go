@@ -158,3 +158,25 @@ type PendingFileResponse struct {
 	PendingFileID uuid.UUID `json:"id"`
 	FileURL       string    `json:"file_url"`
 }
+
+// InternalSearchBySharingTupleRequest internal request to v2 search for record ids by sharing group
+// primarily used by the reconciler
+type InternalSearchBySharingTupleRequest struct {
+	SharingTuples []SharingTuple `json:"sharing_tuples"`
+	NextToken     int64          `json:"next_token"`
+	Limit         int            `json:"limit"`
+}
+
+// SharingTuple sharing tuple for writers that each record falls within
+type SharingTuple struct {
+	UserID      string `json:"user_id"`
+	WriterID    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
+// InternalSearchBySharingTupleResponse response from internal request for v2 search for record ids by sharing group
+// primarily used by the reconciler
+type InternalSearchBySharingTupleResponse struct {
+	RecordIDs []string `json:"record_ids"`
+	NextToken int64    `json:"next_token"`
+}

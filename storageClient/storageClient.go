@@ -171,6 +171,20 @@ func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName s
 	return err
 }
 
+// InternalSearchBySharingGroup performs an internal search to return the recordIDs for a particular sharing group.
+// Sharing group defined as a subset of the access tuple: (writer_id, user_id, content_type)
+// For all current uses, writer_id and user_id are the same, but must be included to take advantage of indices.
+func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params InternalSearchBySharingTupleRequest) (*InternalSearchBySharingTupleResponse, error) {
+	var result *InternalSearchBySharingTupleResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/search/sharing-group"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"
