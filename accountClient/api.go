@@ -149,7 +149,14 @@ type CreateRegistrationTokenRequest struct {
 // CreateRegTokenResponse  represents the result of calling the account service's /tokens POST endpoint.
 type CreateRegTokenResponse struct {
 	Token       string           `json:"token"`
+	Name        string           `json:"name,omitempty"` // Optional name used for identifying tokens
 	Permissions TokenPermissions `json:"permissions"`
+}
+
+// DeleteRegistrationTokenRequest wraps values needed to issue a delete registration request
+type DeleteRegistrationTokenRequest struct {
+	Token               string
+	AccountServiceToken string
 }
 
 // TokenPermissions permissions associated with a registration token.

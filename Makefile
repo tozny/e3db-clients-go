@@ -41,3 +41,10 @@ testone: lint
 clean :
 	go clean ./...
 	go mod tidy
+
+# target for tagging and publishing a new version of the SDK
+# run like make version=X.Y.Z
+version:
+	git tag v${version}
+	git push origin v${version}
+

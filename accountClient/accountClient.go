@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -110,6 +111,16 @@ func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params 
 	// Consider a renaming of MakeProxiedUserCall
 	err = e3dbClients.MakeProxiedUserCall(ctx, params.AccountServiceToken, request, &result)
 	return result, err
+}
+
+// DeleteRegistrationToken attempts to delete the specified registration token, returning error (if any).
+func (c *E3dbAccountClient) DeleteRegistrationToken(ctx context.Context, params DeleteRegistrationTokenRequest) error {
+	path := c.Host + "/" + AccountServiceBasePath + fmt.Sprintf("/tokens/%s", params.Token)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, 0)
+	}
+	return e3dbClients.MakeProxiedUserCall(ctx, params.AccountServiceToken, request, nil)
 }
 
 // RegistrationToken validates a registration token with the account service and fetches its permissions
