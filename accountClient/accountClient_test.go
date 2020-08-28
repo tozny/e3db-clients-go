@@ -25,6 +25,69 @@ var (
 	}
 )
 
+func TestCreatingRegistrationTokens(t *testing.T) {
+	// Create internal account client
+	accounter := accountClient.New(ValidClientConfig)
+	ctx := context.Background()
+	accountTag := uuid.New().String()
+	_, response, err := test.MakeE3DBAccount(t, &accounter, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Failure Creating New Account\n")
+	}
+	// create registration token
+	createRegistrationTokenParams := accountClient.CreateRegistrationTokenRequest{
+		AccountServiceToken: response.AccountServiceToken,
+		TokenPermissions: accountClient.TokenPermissions{
+			Enabled:      true,
+			OneTime:      false,
+			AllowedTypes: []string{"general"},
+		},
+		Name: "General Admission",
+	}
+	_, err = accounter.CreateRegistrationToken(ctx, createRegistrationTokenParams)
+	if err != nil {
+		t.Fatalf("Error %+v creating registration token %+v", err, createRegistrationTokenParams)
+	}
+}
+
+func TestDeletingRegistrationTokens(t *testing.T) {
+	// Create internal account client
+	accounter := accountClient.New(ValidClientConfig)
+	ctx := context.Background()
+	accountTag := uuid.New().String()
+	_, createAccountResponse, err := test.MakeE3DBAccount(t, &accounter, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Failure Creating New Account\n")
+	}
+
+	accountServiceToken := createAccountResponse.AccountServiceToken
+
+	// create registration token
+	createRegistrationTokenParams := accountClient.CreateRegistrationTokenRequest{
+		AccountServiceToken: accountServiceToken,
+		TokenPermissions: accountClient.TokenPermissions{
+			Enabled:      true,
+			OneTime:      false,
+			AllowedTypes: []string{"general"},
+		},
+		Name: "General Admission",
+	}
+	createRegistrationTokenResponse, err := accounter.CreateRegistrationToken(ctx, createRegistrationTokenParams)
+	if err != nil {
+		t.Fatalf("Error %+v creating registration token %+v", err, createRegistrationTokenParams)
+	}
+
+	// deleted created registration token
+	deleteRegistrationTokenParams := accountClient.DeleteRegistrationTokenRequest{
+		AccountServiceToken: accountServiceToken,
+		Token:               createRegistrationTokenResponse.Token,
+	}
+	err = accounter.DeleteRegistrationToken(ctx, deleteRegistrationTokenParams)
+	if err != nil {
+		t.Fatalf("Error %+v \n deleting registration token %+v\n with params %+v\n", err, createRegistrationTokenResponse, deleteRegistrationTokenParams)
+	}
+}
+
 func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	// Create internal account client
 	accounter := accountClient.New(ValidClientConfig)
