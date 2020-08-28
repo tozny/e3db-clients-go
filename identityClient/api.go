@@ -38,17 +38,19 @@ type ListRealmsResponse struct {
 
 // Identity wraps a user of a given realm along with its authentication information.
 type Identity struct {
-	ID           int64             `json:"id"`
-	ToznyID      uuid.UUID         `json:"tozny_id"` // Tozny Client ID
-	RealmID      int64             `json:"realm_id"`
-	RealmName    string            `json:"realm_name"`
-	Name         string            `json:"name"`
-	FirstName    string            `json:"first_name"`
-	LastName     string            `json:"last_name"`
-	APIKeyID     string            `json:"api_key_id"`
-	APIKeySecret string            `json:"api_secret_key"`
-	PublicKeys   map[string]string `json:"public_key"`
-	SigningKeys  map[string]string `json:"signing_key"`
+	ID                    int64             `json:"id"`
+	ToznyID               uuid.UUID         `json:"tozny_id"` // Tozny Client ID
+	RealmID               int64             `json:"realm_id"`
+	RealmName             string            `json:"realm_name"`
+	Name                  string            `json:"name"`
+	FirstName             string            `json:"first_name"`
+	LastName              string            `json:"last_name"`
+	APIKeyID              string            `json:"api_key_id"`
+	APIKeySecret          string            `json:"api_secret_key"`
+	PublicKeys            map[string]string `json:"public_key"`
+	PrivateEncryptionKeys map[string]string `json:"private_key"` // Never returned or held server side
+	SigningKeys           map[string]string `json:"signing_key"`
+	PrivateSigningKeys    map[string]string `json:"private_signing_key"` // Never returned or held server side
 }
 
 // RegisterIdentityRequest wraps parameters needed to create and register an identity with a realm.
