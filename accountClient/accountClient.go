@@ -113,6 +113,18 @@ func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params 
 	return result, err
 }
 
+// ListRegistrationTokens returns the list of registration tokens for an account and error (if any)
+func (c *E3dbAccountClient) ListRegistrationTokens(ctx context.Context, accountServiceToken string) (*ListRegistrationTokensResponse, error) {
+	var result *ListRegistrationTokensResponse
+	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeProxiedUserCall(ctx, accountServiceToken, request, &result)
+	return result, err
+}
+
 // DeleteRegistrationToken attempts to delete the specified registration token, returning error (if any).
 func (c *E3dbAccountClient) DeleteRegistrationToken(ctx context.Context, params DeleteRegistrationTokenRequest) error {
 	path := c.Host + "/" + AccountServiceBasePath + fmt.Sprintf("/tokens/%s", params.Token)
