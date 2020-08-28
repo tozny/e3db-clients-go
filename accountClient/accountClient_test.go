@@ -34,9 +34,12 @@ func TestCreatingRegistrationTokens(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failure Creating New Account\n")
 	}
+
+	accountServiceToken := response.AccountServiceToken
+
 	// create registration token
 	createRegistrationTokenParams := accountClient.CreateRegistrationTokenRequest{
-		AccountServiceToken: response.AccountServiceToken,
+		AccountServiceToken: accountServiceToken,
 		TokenPermissions: accountClient.TokenPermissions{
 			Enabled:      true,
 			OneTime:      false,
@@ -44,9 +47,29 @@ func TestCreatingRegistrationTokens(t *testing.T) {
 		},
 		Name: "General Admission",
 	}
-	_, err = accounter.CreateRegistrationToken(ctx, createRegistrationTokenParams)
+	createdRegistrationToken, err := accounter.CreateRegistrationToken(ctx, createRegistrationTokenParams)
 	if err != nil {
 		t.Fatalf("Error %+v creating registration token %+v", err, createRegistrationTokenParams)
+	}
+
+	listedRegistrationTokens, err := accounter.ListRegistrationTokens(ctx, accountServiceToken)
+
+	if err != nil {
+		t.Fatalf("Error %+v listing registration tokens", err)
+	}
+
+	var listed bool
+	for _, listedRegistrationToken := range *listedRegistrationTokens {
+		if listedRegistrationToken.Name == createdRegistrationToken.Name {
+			if listedRegistrationToken.Token == createdRegistrationToken.Token {
+				listed = true
+				break
+			}
+		}
+	}
+
+	if !listed {
+		t.Fatalf("Created token%+v \n not listed in accounts registration tokens %+v", createdRegistrationToken, *listedRegistrationTokens)
 	}
 }
 
@@ -85,6 +108,26 @@ func TestDeletingRegistrationTokens(t *testing.T) {
 	err = accounter.DeleteRegistrationToken(ctx, deleteRegistrationTokenParams)
 	if err != nil {
 		t.Fatalf("Error %+v \n deleting registration token %+v\n with params %+v\n", err, createRegistrationTokenResponse, deleteRegistrationTokenParams)
+	}
+	// verify its deleted from the api
+	listedRegistrationTokens, err := accounter.ListRegistrationTokens(ctx, accountServiceToken)
+
+	if err != nil {
+		t.Fatalf("Error %+v listing registration tokens", err)
+	}
+
+	var listed bool
+	for _, listedRegistrationToken := range *listedRegistrationTokens {
+		if listedRegistrationToken.Name == createRegistrationTokenResponse.Name {
+			if listedRegistrationToken.Token == createRegistrationTokenResponse.Token {
+				listed = true
+				break
+			}
+		}
+	}
+
+	if listed {
+		t.Fatalf("Deleted token%+v \n listed in accounts registration tokens %+v", createRegistrationTokenResponse, *listedRegistrationTokens)
 	}
 }
 

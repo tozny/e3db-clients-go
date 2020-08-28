@@ -146,12 +146,20 @@ type CreateRegistrationTokenRequest struct {
 	Uses                int    `json:"uses"`
 }
 
-// CreateRegTokenResponse  represents the result of calling the account service's /tokens POST endpoint.
-type CreateRegTokenResponse struct {
-	Token       string           `json:"token"`
-	Name        string           `json:"name,omitempty"` // Optional name used for identifying tokens
-	Permissions TokenPermissions `json:"permissions"`
+// CreateRegTokenResponse represents the result of calling the account service's /tokens POST endpoint.
+type CreateRegTokenResponse = ClientRegistrationToken
+
+// ClientRegistrationToken wraps values related to a client registration token
+type ClientRegistrationToken struct {
+	Token            string           `json:"token"`
+	Name             string           `json:"name,omitempty"` // Optional name used for identifying tokens
+	Permissions      TokenPermissions `json:"permissions"`
+	Uses             int              `json:"uses"` // The number of times the token has been used
+	TotalAllowedUses int              `json:"total_uses_allowed"`
 }
+
+// ListRegistrationTokensResponse wraps the response from listing an accounts registration tokens
+type ListRegistrationTokensResponse = []ClientRegistrationToken
 
 // DeleteRegistrationTokenRequest wraps values needed to issue a delete registration request
 type DeleteRegistrationTokenRequest struct {
