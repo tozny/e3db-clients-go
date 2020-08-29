@@ -556,3 +556,27 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 		t.Fatalf("error %s setting realm backup identity using %+v %+v", err, identityServiceClient, realmBackupIdentityParams)
 	}
 }
+
+func TestGetToznyHostedBrokerInfo(t *testing.T) {
+	accountTag := uuid.New().String()
+
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+
+	queenClientInfo.Host = e3dbIdentityHost
+
+	identityServiceClient := New(queenClientInfo)
+
+	toznyHostedBrokerInfo, err := identityServiceClient.GetToznyHostedBrokerInfo(testContext)
+
+	if err != nil {
+		t.Fatalf("Error %s fetching tozny hosted broker info", err)
+	}
+
+	if toznyHostedBrokerInfo.ClientID.String() == "" || toznyHostedBrokerInfo.PublicSigningKey == "" || toznyHostedBrokerInfo.PublicKey == "" {
+		t.Fatalf("Incomplete Tozny hosted broker info %+v", toznyHostedBrokerInfo)
+	}
+}

@@ -231,3 +231,10 @@ type LDAPCache struct {
 	// A set of Keycloak role IDs the user had at the time of caching
 	Roles []string `json:"roles"`
 }
+
+// BrokerInfoResponse wraps the public info for the Tozny Hosted Broker
+type ToznyHostedBrokerInfoResponse struct {
+	ClientID         uuid.UUID `json:"client_id"`
+	PublicKey        string    `json:"public_key"`
+	PublicSigningKey string    `json:"public_signing_key"`
+}
