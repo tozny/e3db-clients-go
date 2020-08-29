@@ -20,6 +20,8 @@ const (
 	// https://security.stackexchange.com/questions/50878/ecdsa-vs-ecdh-vs-ed25519-vs-curve25519
 	DefaultEncryptionKeyType = "curve25519"
 	DefaultSigningKeyType    = "ed25519"
+	DefaultCryptographicMode = "Sodium"
+	NISTCryptographicMode    = "NIST"
 	SymmetricKeySize         = 32
 	NonceSize                = 24
 	SaltSize                 = 16

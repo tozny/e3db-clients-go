@@ -26,10 +26,11 @@ var (
 
 //StorageClient implements an http client for communication with the storage service.
 type StorageClient struct {
-	ClientID    string
-	SigningKeys e3dbClients.SigningKeys
-	Host        string // host will generally need to be cyclops service to get the X-Tozny-Auth header
-	httpClient  *http.Client
+	ClientID       string
+	SigningKeys    e3dbClients.SigningKeys
+	EncryptionKeys e3dbClients.EncryptionKeys
+	Host           string // host will generally need to be cyclops service to get the X-Tozny-Auth header
+	httpClient     *http.Client
 	*authClient.E3dbAuthClient
 }
 
@@ -224,6 +225,7 @@ func New(config e3dbClients.ClientConfig) StorageClient {
 	return StorageClient{
 		Host:           config.Host,
 		SigningKeys:    config.SigningKeys,
+		EncryptionKeys: config.EncryptionKeys,
 		ClientID:       config.ClientID,
 		httpClient:     &http.Client{},
 		E3dbAuthClient: &authService,
