@@ -81,6 +81,19 @@ func (c *E3dbIdentityClient) RegisterRealmBrokerIdentity(ctx context.Context, pa
 	return identity, err
 }
 
+// GetToznyHostedBrokerInfo returns info about the Tozny Hosted Broker,
+// or error (if any).
+func (c *E3dbIdentityClient) GetToznyHostedBrokerInfo(ctx context.Context) (*ToznyHostedBrokerInfoResponse, error) {
+	var toznyHostedBrokerInfo *ToznyHostedBrokerInfoResponse
+	path := c.Host + identityServiceBasePath + "/broker/info"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return toznyHostedBrokerInfo, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.httpClient, request, &toznyHostedBrokerInfo)
+	return toznyHostedBrokerInfo, err
+}
+
 // IdentityLogin logs in the client identity to the specified realm,
 // returning the identities realm authentication info and error (if any).
 func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string) (*IdentityLoginResponse, error) {
