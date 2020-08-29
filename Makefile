@@ -48,3 +48,5 @@ version:
 	git tag v${version}
 	git push origin v${version}
 
+it : lint
+	go test -count=1 -v -cover --race ./... -run=TestGetToznyHostedBrokerInfo
