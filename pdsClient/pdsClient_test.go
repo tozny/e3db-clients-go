@@ -347,6 +347,82 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	}
 }
 
+func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
+	// Create a client to share records with
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	if err != nil {
+		t.Errorf("Error creating client to share records with: %s", err)
+	}
+	// Create records to share with this client
+	ctx := context.TODO()
+	data := map[string]string{"data": "unencrypted"}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     defaultPDSUserRecordType,
+			WriterID: validPDSUserID,
+			UserID:   validPDSUserID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
+	if err != nil {
+		t.Errorf("Error writing record to share %s\n", err)
+	}
+	// Share records of type created with sharee client
+	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	// Verify sharee can fetch records of type shared
+	params := pdsClient.BatchGetRecordsRequest{
+		RecordIDs: []string{createdRecord.Metadata.RecordID},
+	}
+	batchRecords, err := sharee.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	var found bool
+	for _, record := range batchRecords.Records {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Failed to find shared records in batch get records results %+v\n", batchRecords)
+	}
+	// unShare records of type created with sharee client
+	err = validPDSUser.UnshareRecords(ctx, pdsClient.ShareRecordsRequest{
+		UserID:     validPDSUserID,
+		WriterID:   validPDSUserID,
+		ReaderID:   shareeID,
+		RecordType: defaultPDSUserRecordType,
+	})
+	if err != nil {
+		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+	}
+	batchRecords, err = sharee.BatchGetRecords(ctx, params)
+	if err != nil {
+		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	}
+	found = false
+	for _, record := range batchRecords.Records {
+		if record.Metadata.RecordID == createdRecord.Metadata.RecordID {
+			found = true
+			break
+		}
+	}
+	if found {
+		t.Errorf("Found unshared records in batch get records results %+v\n", batchRecords)
+	}
+}
+
 func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	var createdRecordIDs []string
 	ctx := context.TODO()
