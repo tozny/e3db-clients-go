@@ -111,6 +111,34 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 	return err
 }
 
+// UnshareRecords revokes another Tozny's client permission to read records of the
+// specified record type, returning error (if any).
+func (c *E3dbPDSClient) UnshareRecords(ctx context.Context, params ShareRecordsRequest) error {
+	err := c.DeleteAccessKey(ctx, DeleteAccessKeyRequest{
+		UserID:     params.UserID,
+		WriterID:   params.WriterID,
+		ReaderID:   params.ReaderID,
+		RecordType: params.RecordType})
+	if err != nil {
+		return err
+	}
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.ReaderID + "/" + params.RecordType
+	// Create a policy to apply for the reader to be denied to read records of type specified in params
+	sharePolicy := denyReadPolicy{
+		Deny: []readPolicy{
+			readPolicy{
+				Read: make(map[string]interface{}),
+			},
+		},
+	}
+	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
 // AuthorizerShareRecords attempts to grants another e3db client permission to read records of the
 // specified record type the authorizer is authorized to share, returning error (if any).
 func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params AuthorizerShareRecordsRequest) error {
