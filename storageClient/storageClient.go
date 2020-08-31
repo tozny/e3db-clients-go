@@ -264,10 +264,41 @@ type AuthorizationsProxiedPolicy struct {
 	ContentType  string    `json:"content_type"`
 }
 
-// ProxiedAuthorization get incoming shares
+// ProxiedAuthorization
 func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
 	var result *SearchAuthorizationsProxiedResponse
 	path := c.Host + storageServiceBasePath + "/authorizer/proxied"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+type SearchAuthorizedGrantedRequest struct {
+	NextToken    int64  `json:"next_token"`
+	Limit        int    `json:"limit"`
+	AuthorizedBy string `json:"authorized_by"`
+	ContentType  string `json:"content_type"`
+}
+
+type SearchAuthorizedGrantedResponse struct {
+	Authorizations []AuthorizedGrantedPolicy `json:"authorizations"`
+	NextToken      int64                     `json:"next_token"`
+}
+
+type AuthorizedGrantedPolicy struct {
+	AuthorizedBy string    `json:"authorized_by"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastModified time.Time `json:"last_modified"`
+	ContentType  string    `json:"content_type"`
+}
+
+// GrantedAuthorizations
+func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params SearchAuthorizedGrantedRequest) (*SearchAuthorizedGrantedResponse, error) {
+	var result *SearchAuthorizedGrantedResponse
+	path := c.Host + storageServiceBasePath + "/authorizer/granted"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
