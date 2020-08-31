@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/tozny/e3db-clients-go/authClient"
 
@@ -236,6 +237,37 @@ type IncomingSharePolicy struct {
 func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
 	var result *SearchIncomingSharesResponse
 	path := c.Host + storageServiceBasePath + "/share/in"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+type SearchAuthorizationsProxiedRequest struct {
+	NextToken    int64  `json:"next_token"`
+	Limit        int    `json:"limit"`
+	AuthorizerID string `json:"authorizer_id"`
+	ContentType  string `json:"content_type"`
+}
+
+type SearchAuthorizationsProxiedResponse struct {
+	Authorizations []AuthorizationsProxiedPolicy `json:"authorizations"`
+	NextToken      int64                         `json:"next_token"`
+}
+
+type AuthorizationsProxiedPolicy struct {
+	AuthorizerID string    `json:"authorizer_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastModified time.Time `json:"last_modified"`
+	ContentType  string    `json:"content_type"`
+}
+
+// ProxiedAuthorization get incoming shares
+func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
+	var result *SearchAuthorizationsProxiedResponse
+	path := c.Host + storageServiceBasePath + "/authorizer/proxied"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
