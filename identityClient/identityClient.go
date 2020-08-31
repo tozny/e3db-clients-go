@@ -14,6 +14,7 @@ import (
 const (
 	identityServiceBasePath = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
 	realmResourceName       = "realm"
+	applicationResourceName = "application"
 	realmLoginPathPrefix    = "/auth/realms"
 	realmLoginPathPostfix   = "/protocol/openid-connect/token"
 )
@@ -28,6 +29,53 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// ListRealmApplications lists the applications for a given realm or error (if any).
+func (c *E3dbIdentityClient) ListRealmApplications(ctx context.Context, realmName string) (*ListRealmApplicationsResponse, error) {
+	var applications *ListRealmApplicationsResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + applicationResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return applications, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applications)
+	return applications, err
+}
+
+// DeleteRealmApplication deletes the specified realm application, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmApplication(ctx context.Context, params DeleteRealmApplicationRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmApplication describes the realm application with the specified id, returning the application or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmApplication(ctx context.Context, params DescribeRealmApplicationRequest) (*Application, error) {
+	var application *Application
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return application, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &application)
+	return application, err
+}
+
+// CreateRealmApplication creates a realm application using the specified parameters,
+// returning the created realm application or error (if any).
+func (c *E3dbIdentityClient) CreateRealmApplication(ctx context.Context, params CreateRealmApplicationRequest) (*Application, error) {
+	var application *Application
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.Application)
+	if err != nil {
+		return application, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &application)
+	return application, err
 }
 
 // ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)

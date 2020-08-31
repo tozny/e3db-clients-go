@@ -4,6 +4,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	ProtocolOIDC = "openid-connect"
+	ProtocolSAML = "saml"
+)
+
 // Realm represents the top level identity management resource for grouping and managing
 // authentication and authorization of consuming application, identities, and sovereigns within a realm.
 type Realm struct {
@@ -237,4 +242,56 @@ type ToznyHostedBrokerInfoResponse struct {
 	ClientID         uuid.UUID `json:"client_id"`
 	PublicKey        string    `json:"public_key"`
 	PublicSigningKey string    `json:"public_signing_key"`
+}
+
+// Application wraps API level values for a (client) application of a TozID realm.
+type Application struct {
+	// Server defined unique identifier for the application
+	ID string `json:"id"`
+	// Client facing identifier for the application
+	ClientID string `json:"client_id"`
+	// Human facing name of the application
+	Name string `json:"name"`
+	// Whether this consumer is allowed to authenticate and authorize identities
+	Active bool `json:"active"`
+	// Locations from which this application is allowed to consume realm data for authentication and authorization
+	// (e.g. the login title has an allowed origin of * which is reflected in the CORS response)
+	AllowedOrigins []string `json:"allowed_origins"`
+	// What protocol (e.g. OpenIDConnect or SAML) is used to authenticate with the application
+	Protocol     string                  `json:"protocol"`
+	OIDCSettings ApplicationOIDCSettings `json:"application_oidc_settings"`
+	SAMLSettings ApplicationSAMLSettings `json:"application_saml_settings"`
+}
+
+// ApplicationOIDCSettings wraps settings for an OpenID Connect enabled application
+type ApplicationOIDCSettings struct {
+	// (Optional) The URL to append to any relative URLs
+	RootURL string `json:"root_url"`
+}
+
+// ApplicationSAMLSettings wraps settings for a SAML enabled application
+type ApplicationSAMLSettings struct {
+	// (Optional) URL used for every binding to both the SP's Assertion Consumer and Single Logout Services.
+	// This can be individually overridden for each binding and service
+	DefaultSAMLEndpoint string `json:"default_saml_endpoint"`
+}
+
+// CreateRealmApplicationRequest wraps parameters for creating a realm application
+type CreateRealmApplicationRequest struct {
+	RealmName   string
+	Application Application
+}
+
+// DeleteRealmApplicationRequest wraps parameters for deleting a realm application
+type DeleteRealmApplicationRequest struct {
+	RealmName     string
+	ApplicationID string
+}
+
+// DescribeRealmApplicationRequest wraps parameters for describing a realm application
+type DescribeRealmApplicationRequest = DeleteRealmApplicationRequest
+
+// ListRealmApplicationsResponse wraps the listing of applications for a realm
+type ListRealmApplicationsResponse struct {
+	Applications []Application `json:"applications"`
 }
