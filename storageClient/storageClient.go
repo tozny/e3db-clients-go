@@ -233,8 +233,8 @@ type IncomingSharePolicy struct {
 }
 
 // IncomingShares get incoming shares
-func (c *StorageClient) IncomingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
-	var result *OutgoingShareResponse
+func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
+	var result *SearchIncomingSharesResponse
 	path := c.Host + storageServiceBasePath + "/share/in"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
