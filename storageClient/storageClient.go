@@ -215,6 +215,35 @@ func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShare
 	return result, err
 }
 
+type SearchIncomingSharesRequest struct {
+	NextToken  int64  `json:"next_token"`
+	Limit      int    `json:"limit"`
+	WriterID   string `json:"writer_id"`
+	RecordType string `json:"record_type"`
+}
+
+type SearchIncomingSharesResponse struct {
+	Shares    []IncomingSharePolicy `json:"shares"`
+	NextToken int64                 `json:"next_token"`
+}
+
+type IncomingSharePolicy struct {
+	WriterID   string `json:"writer_id"`
+	RecordType string `json:"record_type"`
+}
+
+// IncomingShares get incoming shares
+func (c *StorageClient) IncomingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
+	var result *OutgoingShareResponse
+	path := c.Host + storageServiceBasePath + "/share/in"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"
