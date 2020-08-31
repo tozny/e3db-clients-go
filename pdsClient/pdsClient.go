@@ -55,6 +55,12 @@ type allowAuthorizerPolicy struct {
 	Allow []authorizePolicy `json:"allow"`
 }
 
+// denyAuthorizerPolicy wraps an e3db API object revoking authorization to share
+// records of a specified type on behalf of the granting client
+type denyAuthorizerPolicy struct {
+	Deny []authorizePolicy `json:"deny"`
+}
+
 // AddAuthorizedSharer attempts to authorize another e3db client to share
 // records of the specified record type, returning error (if any).
 func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAuthorizedWriterRequest) error {
@@ -70,6 +76,36 @@ func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAutho
 	// Create a policy to apply for the authorizer to be allowed to share records of type specified in params
 	authorizerPolicy := allowAuthorizerPolicy{
 		Allow: []authorizePolicy{
+			authorizePolicy{
+				Authorize: make(map[string]interface{}),
+			},
+		},
+	}
+	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	return err
+}
+
+// RemoveAuthorizedSharer attempts to remove another e3db clients ability to share
+// records of the specified record type, returning error (if any).
+func (c *E3dbPDSClient) RemoveAuthorizedSharer(ctx context.Context, params AddAuthorizedWriterRequest) error {
+	err := c.DeleteAccessKey(ctx, DeleteAccessKeyRequest{
+		UserID:     params.UserID,
+		WriterID:   params.WriterID,
+		ReaderID:   params.AuthorizerID,
+		RecordType: params.RecordType})
+
+	if err != nil {
+		return err
+	}
+
+	path := c.Host + "/" + PDSServiceBasePath + "/policy/" + params.UserID + "/" + params.WriterID + "/" + params.AuthorizerID + "/" + params.RecordType
+	// Create a policy to apply for the authorizer to be denied sharing records of type specified in params
+	authorizerPolicy := denyAuthorizerPolicy{
+		Deny: []authorizePolicy{
 			authorizePolicy{
 				Authorize: make(map[string]interface{}),
 			},
