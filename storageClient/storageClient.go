@@ -207,7 +207,7 @@ type OutgoingSharePolicy struct {
 // OutgoingShares get outgoing shares
 func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
 	var result *OutgoingShareResponse
-	path := c.Host + storageServiceBasePath + "/share/out"
+	path := c.Host + storageServiceBasePath + "/share/outgoing"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
@@ -236,7 +236,7 @@ type IncomingSharePolicy struct {
 // IncomingShares get incoming shares
 func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
 	var result *SearchIncomingSharesResponse
-	path := c.Host + storageServiceBasePath + "/share/in"
+	path := c.Host + storageServiceBasePath + "/share/incoming"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
@@ -267,7 +267,7 @@ type AuthorizationsProxiedPolicy struct {
 // ProxiedAuthorization
 func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
 	var result *SearchAuthorizationsProxiedResponse
-	path := c.Host + storageServiceBasePath + "/authorizer/proxied"
+	path := c.Host + storageServiceBasePath + "/authorizer/outgoing"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
@@ -298,7 +298,7 @@ type AuthorizedGrantedPolicy struct {
 // GrantedAuthorizations
 func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params SearchAuthorizedGrantedRequest) (*SearchAuthorizedGrantedResponse, error) {
 	var result *SearchAuthorizedGrantedResponse
-	path := c.Host + storageServiceBasePath + "/authorizer/granted"
+	path := c.Host + storageServiceBasePath + "/authorizer/incoming"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
