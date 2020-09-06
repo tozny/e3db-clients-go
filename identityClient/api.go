@@ -5,8 +5,16 @@ import (
 )
 
 const (
-	ProtocolOIDC = "openid-connect"
-	ProtocolSAML = "saml"
+	ProtocolOIDC                                            = "openid-connect"
+	ProtocolSAML                                            = "saml"
+	LDAPProviderType                                        = "ldap"
+	ActiveDirectoryProviderType                             = "ad"
+	ProviderConnectionSimpleType                            = "simple"
+	LDAPGroupProviderMapperType                             = "group-ldap-mapper"
+	ProviderMapperReadOnlyMode                              = "READ_ONLY"
+	ProviderMappperGroupsByMemberAttributeRetrievalStrategy = "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"
+	ProviderTrustStoreLDAPOnlyMode                          = "ldapsOnly"
+	ProviderDefaultMemberOfAttribute                        = "memberOf"
 )
 
 // Realm represents the top level identity management resource for grouping and managing
@@ -294,4 +302,102 @@ type DescribeRealmApplicationRequest = DeleteRealmApplicationRequest
 // ListRealmApplicationsResponse wraps the listing of applications for a realm
 type ListRealmApplicationsResponse struct {
 	Applications []Application `json:"applications"`
+}
+
+// Provider wraps values related to a realm identity provider
+type Provider struct {
+	ID                 string                     `json:"id"`
+	Type               string                     `json:"type"`
+	Name               string                     `json:"name"`
+	Active             bool                       `json:"active"`
+	Priority           int                        `json:"priority"`
+	ImportIdentities   bool                       `json:"import_identities"`
+	SyncMode           string                     `json:"sync_mode"`
+	SyncOnRegistration bool                       `json:"sync_on_registration"`
+	ConnectionSettings ProviderConnectionSettings `json:"connection_settings"`
+}
+
+// ProviderConnectionSettings wraps settings for connecting a realm to an identity provider
+type ProviderConnectionSettings struct {
+	Type                  string   `json:"type"`
+	IdentityNameAttribute string   `json:"identity_name_attribute"`
+	RDNAttribute          string   `json:"rdn_attribute"`
+	UUIDAttribute         string   `json:"uuid_attribute"`
+	IdentityObjectClasses []string `json:"identity_object_classes"`
+	ConnectionURL         string   `json:"connection_url"`
+	IdentityDN            string   `json:"identity_dn"`
+	AuthenticationType    string   `json:"authentication_type"`
+	BindDN                string   `json:"bind_dn"`
+	BindCredential        string   `json:"bind_credential"`
+	SearchScope           int      `json:"search_scope"`
+	TrustStoreSPIMode     string   `json:"truststore_spi_mode"`
+	ConnectionPooling     bool     `json:"connection_pooling"`
+	Pagination            bool     `json:"pagination"`
+}
+
+// CreateRealmProviderRequest wraps parameters for creating a realm provider
+type CreateRealmProviderRequest struct {
+	RealmName string
+	Provider  Provider
+}
+
+// DeleteRealmProviderRequest wraps parameters for deleting a realm provider
+type DeleteRealmProviderRequest struct {
+	RealmName  string
+	ProviderID string
+}
+
+// DescribeRealmProviderRequest wraps parameters for describing a realm provider
+type DescribeRealmProviderRequest = DeleteRealmProviderRequest
+
+// ListRealmProvidersResponse wraps the listing of providers for a realm
+type ListRealmProvidersResponse struct {
+	Providers []Provider `json:"providers"`
+}
+
+// Provider wraps values related to a realm identity provider mapper
+type ProviderMapper struct {
+	ID                              string   `json:"id"`
+	Type                            string   `json:"type"`
+	Name                            string   `json:"name"`
+	GroupsDN                        string   `json:"groups_dn"`
+	GroupNameAttribute              string   `json:"group_name_attribute"`
+	GroupObjectClasses              []string `json:"group_object_classes"`
+	PreserveGroupInheritance        bool     `json:"preserve_group_inheritance"`
+	IgnoreMissingGroups             bool     `json:"ignore_missing_groups"`
+	MemberOfAttribute               string   `json:"member_of_attribute"`
+	MembershipAttribute             string   `json:"membership_attribute"`
+	MembershipAttributeType         string   `json:"membership_attribute_type"`
+	MembershipIdentityAttribute     string   `json:"membership_identity_attribute"`
+	Mode                            string   `json:"mode"`
+	IdentityGroupsRetrievalStrategy string   `json:"identity_groups_retrieval_strategy"`
+	DropMissingGroupsOnSync         bool     `json:"drop_missing_groups_on_sync"`
+}
+
+// CreateRealmProviderMapperRequest wraps parameters for creating a realm provider mapper
+type CreateRealmProviderMapperRequest struct {
+	RealmName      string
+	ProviderID     string
+	ProviderMapper ProviderMapper
+}
+
+// DeleteRealmProviderMapperRequest wraps parameters for deleting a realm provider's mapper
+type DeleteRealmProviderMapperRequest struct {
+	RealmName        string
+	ProviderID       string
+	ProviderMapperID string
+}
+
+// DescribeRealmProviderMapperRequest wraps parameters for describing a realm provider's mapper
+type DescribeRealmProviderMapperRequest = DeleteRealmProviderMapperRequest
+
+// ListRealmProviderMappersRequest wraps parameters for listing the mappers for a realm provider
+type ListRealmProviderMappersRequest struct {
+	RealmName  string
+	ProviderID string
+}
+
+// ListRealmProviderMappersResponse wraps the listing of provider mappers for a realm's provider
+type ListRealmProviderMappersResponse struct {
+	ProviderMappers []ProviderMapper `json:"provider_mappers"`
 }

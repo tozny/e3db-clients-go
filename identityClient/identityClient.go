@@ -12,11 +12,13 @@ import (
 )
 
 const (
-	identityServiceBasePath = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
-	realmResourceName       = "realm"
-	applicationResourceName = "application"
-	realmLoginPathPrefix    = "/auth/realms"
-	realmLoginPathPostfix   = "/protocol/openid-connect/token"
+	identityServiceBasePath    = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
+	realmResourceName          = "realm"
+	providerResourceName       = "provider"
+	providerMapperResourceName = "mapper"
+	applicationResourceName    = "application"
+	realmLoginPathPrefix       = "/auth/realms"
+	realmLoginPathPostfix      = "/protocol/openid-connect/token"
 )
 
 var (
@@ -29,6 +31,100 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// ListRealmProviderMappers lists the mappers for a given realm provider or error (if any).
+func (c *E3dbIdentityClient) ListRealmProviderMappers(ctx context.Context, params ListRealmProviderMappersRequest) (*ListRealmProviderMappersResponse, error) {
+	var providerMappers *ListRealmProviderMappersResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID + "/" + providerMapperResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return providerMappers, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &providerMappers)
+	return providerMappers, err
+}
+
+// DeleteRealmProviderMapper deletes the specified realm provider mapper, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmProviderMapper(ctx context.Context, params DeleteRealmProviderMapperRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID + "/" + providerMapperResourceName + "/" + params.ProviderMapperID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmProviderMapper describes the realm provider mapper with the specified id, returning the provider mapper or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmProviderMapper(ctx context.Context, params DescribeRealmProviderMapperRequest) (*ProviderMapper, error) {
+	var providerMapper *ProviderMapper
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID + "/" + providerMapperResourceName + "/" + params.ProviderMapperID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return providerMapper, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &providerMapper)
+	return providerMapper, err
+}
+
+// CreateRealmProviderMapper creates a realm provider mapper using the specified parameters,
+// returning the created realm provider mapper or error (if any).
+func (c *E3dbIdentityClient) CreateRealmProviderMapper(ctx context.Context, params CreateRealmProviderMapperRequest) (*ProviderMapper, error) {
+	var providerMapper *ProviderMapper
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID + "/" + providerMapperResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.ProviderMapper)
+	if err != nil {
+		return providerMapper, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &providerMapper)
+	return providerMapper, err
+}
+
+// ListRealmProviders lists the providers for a given realm or error (if any).
+func (c *E3dbIdentityClient) ListRealmProviders(ctx context.Context, realmName string) (*ListRealmProvidersResponse, error) {
+	var providers *ListRealmProvidersResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + providerResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return providers, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &providers)
+	return providers, err
+}
+
+// DeleteRealmProvider deletes the specified realm provider, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmProvider(ctx context.Context, params DeleteRealmProviderRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmProvider describes the realm provider with the specified id, returning the provider or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmProvider(ctx context.Context, params DescribeRealmProviderRequest) (*Provider, error) {
+	var provider *Provider
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName + "/" + params.ProviderID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return provider, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &provider)
+	return provider, err
+}
+
+// CreateRealmProvider creates a realm provider using the specified parameters,
+// returning the created realm provider or error (if any).
+func (c *E3dbIdentityClient) CreateRealmProvider(ctx context.Context, params CreateRealmProviderRequest) (*Provider, error) {
+	var provider *Provider
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + providerResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.Provider)
+	if err != nil {
+		return provider, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &provider)
+	return provider, err
 }
 
 // ListRealmApplications lists the applications for a given realm or error (if any).
