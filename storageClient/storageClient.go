@@ -186,25 +186,7 @@ func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params
 	return result, err
 }
 
-type OutgoingShareRequest struct {
-	NextToken  int64  `json:"next_token"`
-	Limit      int    `json:"limit"`
-	ReaderID   string `json:"reader_id"`
-	RecordType string `json:"record_type"`
-}
-
-type OutgoingShareResponse struct {
-	Shares    []OutgoingSharePolicy `json:"shares"`
-	NextToken int64                 `json:"next_token"`
-}
-
-type OutgoingSharePolicy struct {
-	ReaderID   string `json:"reader_id"`
-	ReaderName string `json:"reader_name"` // what?
-	RecordType string `json:"record_type"`
-}
-
-// OutgoingShares get outgoing shares
+// OutgoingShares get outgoing shares for a given client.
 func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
 	var result *OutgoingShareResponse
 	path := c.Host + storageServiceBasePath + "/share/outgoing"
@@ -216,24 +198,7 @@ func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShare
 	return result, err
 }
 
-type SearchIncomingSharesRequest struct {
-	NextToken  int64  `json:"next_token"`
-	Limit      int    `json:"limit"`
-	WriterID   string `json:"writer_id"`
-	RecordType string `json:"record_type"`
-}
-
-type SearchIncomingSharesResponse struct {
-	Shares    []IncomingSharePolicy `json:"shares"`
-	NextToken int64                 `json:"next_token"`
-}
-
-type IncomingSharePolicy struct {
-	WriterID   string `json:"writer_id"`
-	RecordType string `json:"record_type"`
-}
-
-// IncomingShares get incoming shares
+// IncomingShares get incoming shares for a given client.
 func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
 	var result *SearchIncomingSharesResponse
 	path := c.Host + storageServiceBasePath + "/share/incoming"
@@ -245,26 +210,7 @@ func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomin
 	return result, err
 }
 
-type SearchAuthorizationsProxiedRequest struct {
-	NextToken    int64  `json:"next_token"`
-	Limit        int    `json:"limit"`
-	AuthorizerID string `json:"authorizer_id"`
-	ContentType  string `json:"content_type"`
-}
-
-type SearchAuthorizationsProxiedResponse struct {
-	Authorizations []AuthorizationsProxiedPolicy `json:"authorizations"`
-	NextToken      int64                         `json:"next_token"`
-}
-
-type AuthorizationsProxiedPolicy struct {
-	AuthorizerID string    `json:"authorizer_id"`
-	CreatedAt    time.Time `json:"created_at"`
-	LastModified time.Time `json:"last_modified"`
-	ContentType  string    `json:"content_type"`
-}
-
-// ProxiedAuthorization
+// ProxiedAuthorization gives a list of authorizations the user has proxied out.
 func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
 	var result *SearchAuthorizationsProxiedResponse
 	path := c.Host + storageServiceBasePath + "/authorizer/outgoing"
@@ -276,26 +222,7 @@ func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchA
 	return result, err
 }
 
-type SearchAuthorizedGrantedRequest struct {
-	NextToken    int64  `json:"next_token"`
-	Limit        int    `json:"limit"`
-	AuthorizedBy string `json:"authorized_by"`
-	ContentType  string `json:"content_type"`
-}
-
-type SearchAuthorizedGrantedResponse struct {
-	Authorizations []AuthorizedGrantedPolicy `json:"authorizations"`
-	NextToken      int64                     `json:"next_token"`
-}
-
-type AuthorizedGrantedPolicy struct {
-	AuthorizedBy string    `json:"authorized_by"`
-	CreatedAt    time.Time `json:"created_at"`
-	LastModified time.Time `json:"last_modified"`
-	ContentType  string    `json:"content_type"`
-}
-
-// GrantedAuthorizations
+// GrantedAuthorizations gives a list of authorizations granted to the user.
 func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params SearchAuthorizedGrantedRequest) (*SearchAuthorizedGrantedResponse, error) {
 	var result *SearchAuthorizedGrantedResponse
 	path := c.Host + storageServiceBasePath + "/authorizer/incoming"
