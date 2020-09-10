@@ -186,6 +186,54 @@ func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params
 	return result, err
 }
 
+// OutgoingShares get outgoing shares for a given client.
+func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
+	var result *OutgoingShareResponse
+	path := c.Host + storageServiceBasePath + "/share/outgoing"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// IncomingShares get incoming shares for a given client.
+func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
+	var result *SearchIncomingSharesResponse
+	path := c.Host + storageServiceBasePath + "/share/incoming"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// ProxiedAuthorization gives a list of authorizations the user has proxied out.
+func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
+	var result *SearchAuthorizationsProxiedResponse
+	path := c.Host + storageServiceBasePath + "/authorizer/outgoing"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// GrantedAuthorizations gives a list of authorizations granted to the user.
+func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params SearchAuthorizedGrantedRequest) (*SearchAuthorizedGrantedResponse, error) {
+	var result *SearchAuthorizedGrantedResponse
+	path := c.Host + storageServiceBasePath + "/authorizer/incoming"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"

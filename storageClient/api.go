@@ -180,3 +180,87 @@ type InternalSearchBySharingTupleResponse struct {
 	RecordIDs []string `json:"record_ids"`
 	NextToken int64    `json:"next_token"`
 }
+
+// SearchAuthorizationsProxiedRequest request to search proxied authorizations (outgoing).
+type SearchAuthorizationsProxiedRequest struct {
+	NextToken    int64  `json:"next_token"`
+	Limit        int    `json:"limit"`
+	AuthorizerID string `json:"authorizer_id"`
+	RecordType   string `json:"record_type"`
+}
+
+// SearchAuthorizationsProxiedResponse response returned from a search proxied authorizations call.
+type SearchAuthorizationsProxiedResponse struct {
+	Authorizations []AuthorizationsProxiedPolicy `json:"authorizations"`
+	NextToken      int64                         `json:"next_token"`
+}
+
+// AuthorizationsProxiedPolicy single proxied out policy definition.
+type AuthorizationsProxiedPolicy struct {
+	AuthorizerID string    `json:"authorizer_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastModified time.Time `json:"last_modified"`
+	RecordType   string    `json:"record_type"`
+}
+
+// SearchAuthorizedGrantedRequest request to search for granted authorizations (incoming).
+type SearchAuthorizedGrantedRequest struct {
+	NextToken    int64  `json:"next_token"`
+	Limit        int    `json:"limit"`
+	AuthorizedBy string `json:"authorized_by"`
+	RecordType   string `json:"record_type"`
+}
+
+// SearchAuthorizedGrantedResponse response returned from a search granted authorizations call.
+type SearchAuthorizedGrantedResponse struct {
+	Authorizations []AuthorizedGrantedPolicy `json:"authorizations"`
+	NextToken      int64                     `json:"next_token"`
+}
+
+// AuthorizedGrantedPolicy single granted policy definition.
+type AuthorizedGrantedPolicy struct {
+	AuthorizedBy string    `json:"authorized_by"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastModified time.Time `json:"last_modified"`
+	RecordType   string    `json:"record_type"`
+}
+
+// SearchIncomingSharesRequest search request for getting incoming shares.
+type SearchIncomingSharesRequest struct {
+	NextToken  int64  `json:"next_token"`
+	Limit      int    `json:"limit"`
+	WriterID   string `json:"writer_id"`
+	RecordType string `json:"record_type"`
+}
+
+// SearchIncomingSharesResponse search response for incoming shares.
+type SearchIncomingSharesResponse struct {
+	Shares    []IncomingSharePolicy `json:"shares"`
+	NextToken int64                 `json:"next_token"`
+}
+
+// IncomingSharePolicy policy for single incoming share.
+type IncomingSharePolicy struct {
+	WriterID   string `json:"writer_id"`
+	RecordType string `json:"record_type"`
+}
+
+// OutgoingShareRequest search request for getting outgoing shares.
+type OutgoingShareRequest struct {
+	NextToken  int64  `json:"next_token"`
+	Limit      int    `json:"limit"`
+	ReaderID   string `json:"reader_id"`
+	RecordType string `json:"record_type"`
+}
+
+// OutgoingShareResponse response to getting outgoing shares.
+type OutgoingShareResponse struct {
+	Shares    []OutgoingSharePolicy `json:"shares"`
+	NextToken int64                 `json:"next_token"`
+}
+
+// OutgoingSharePolicy policy for single outgoing share
+type OutgoingSharePolicy struct {
+	ReaderID   string `json:"reader_id"`
+	RecordType string `json:"record_type"`
+}
