@@ -61,6 +61,19 @@ type denyAuthorizerPolicy struct {
 	Deny []authorizePolicy `json:"deny"`
 }
 
+// FileCommit finalized a pending file write, returning the commited file record
+// or error (if any)
+func (c *E3dbPDSClient) FileCommit(ctx context.Context, pendingFileID string) (*WriteRecordResponse, error) {
+	var result *WriteRecordResponse
+	path := c.Host + "/" + PDSServiceBasePath + "/files/" + pendingFileID
+	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // AddAuthorizedSharer attempts to authorize another e3db client to share
 // records of the specified record type, returning error (if any).
 func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAuthorizedWriterRequest) error {
