@@ -183,6 +183,9 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	}
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
 		t.Fatalf("error %s generating identity signing keys", err)
@@ -203,8 +206,12 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
+			Email:       identityEmail,
 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material}},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
 		Host: e3dbIdentityHost,
