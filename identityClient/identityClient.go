@@ -19,6 +19,7 @@ const (
 	providerMapperResourceName = "mapper"
 	applicationResourceName    = "application"
 	identityResourceName       = "identity"
+	roleResourceName           = "role"
 	realmLoginPathPrefix       = "/auth/realms"
 	realmLoginPathPostfix      = "/protocol/openid-connect/token"
 )
@@ -202,6 +203,41 @@ func (c *E3dbIdentityClient) CreateRealmApplication(ctx context.Context, params 
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &application)
 	return application, err
+}
+
+// DeleteRealmApplicationRole deletes the specified realm application role, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmApplicationRole(ctx context.Context, params DeleteRealmApplicationRoleRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + params.ApplicationRoleID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmApplicationRole describes the realm application role with the specified id, returning the application or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmApplicationRole(ctx context.Context, params DescribeRealmApplicationRoleRequest) (*ApplicationRole, error) {
+	var applicationRole *ApplicationRole
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + params.ApplicationRoleID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return applicationRole, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationRole)
+	return applicationRole, err
+}
+
+// CreateRealmApplicationRole creates a realm application role using the specified parameters,
+// returning the created realm application role or error (if any).
+func (c *E3dbIdentityClient) CreateRealmApplicationRole(ctx context.Context, params CreateRealmApplicationRoleRequest) (*ApplicationRole, error) {
+	var applicationRole *ApplicationRole
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.ApplicationRole)
+	if err != nil {
+		return applicationRole, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationRole)
+	return applicationRole, err
 }
 
 // ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)
