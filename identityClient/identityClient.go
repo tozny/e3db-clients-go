@@ -17,7 +17,8 @@ const (
 	providerResourceName       = "provider"
 	providerMapperResourceName = "mapper"
 	applicationResourceName    = "application"
-	roleResourceName          = "role"
+	roleResourceName           = "role"
+	groupResourceName          = "group"
 	realmLoginPathPrefix       = "/auth/realms"
 	realmLoginPathPostfix      = "/protocol/openid-connect/token"
 )
@@ -208,6 +209,41 @@ func (c *E3dbIdentityClient) CreateRealmApplicationRole(ctx context.Context, par
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationRole)
 	return applicationRole, err
+}
+
+// DeleteRealmGroup deletes the specified realm group, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmGroup(ctx context.Context, params DeleteRealmGroupRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmGroup describes the realm group with the specified id, returning the realm group or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmGroup(ctx context.Context, params DescribeRealmGroupRequest) (*Group, error) {
+	var group *Group
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return group, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &group)
+	return group, err
+}
+
+// CreateRealmGroup creates a realm group using the specified parameters,
+// returning the created realm group or error (if any).
+func (c *E3dbIdentityClient) CreateRealmGroup(ctx context.Context, params CreateRealmGroupRequest) (*Group, error) {
+	var group *Group
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.Group)
+	if err != nil {
+		return group, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &group)
+	return group, err
 }
 
 // ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)
