@@ -253,6 +253,21 @@ type ToznyHostedBrokerInfoResponse struct {
 	PublicSigningKey string    `json:"public_signing_key"`
 }
 
+// CreateRealmGroupRequest wraps parameters for creating a realm group
+type CreateRealmGroupRequest struct {
+	RealmName string
+	Group     Group
+}
+
+// DeleteRealmGroupRequest wraps parameters for deleting a realm group
+type DeleteRealmGroupRequest struct {
+	RealmName string
+	GroupID   string
+}
+
+// DescribeRealmApplicationRequest wraps parameters for describing a realm application
+type DescribeRealmGroupRequest = DeleteRealmGroupRequest
+
 // Application wraps API level values for a (client) application of a TozID realm.
 type Application struct {
 	// Server defined unique identifier for the application
@@ -306,34 +321,33 @@ type ListRealmApplicationsResponse struct {
 }
 
 type ApplicationRole struct {
-	ID string `json:"id"`
-	Name string `json:"name"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
 type CreateRealmApplicationRoleRequest struct {
-	RealmName string
-	ApplicationID string
+	RealmName       string
+	ApplicationID   string
 	ApplicationRole ApplicationRole
 }
 
 type DeleteRealmApplicationRoleRequest struct {
-	RealmName string
-	ApplicationID string
+	RealmName         string
+	ApplicationID     string
 	ApplicationRoleID string
 }
 
 type DescribeRealmApplicationRoleRequest = DeleteRealmApplicationRoleRequest
 
 type ListRealmApplicationRolesRequest struct {
-	RealmName  string
+	RealmName     string
 	ApplicationID string
 }
 
 type ListRealmApplicationRolesResponse struct {
 	ApplicationRoles []ApplicationRole `json:"application_roles"`
 }
-
 
 // Provider wraps values related to a realm identity provider
 type Provider struct {
