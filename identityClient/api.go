@@ -325,6 +325,16 @@ type DeleteRealmApplicationRoleRequest struct {
 
 type DescribeRealmApplicationRoleRequest = DeleteRealmApplicationRoleRequest
 
+type ListRealmApplicationRolesRequest struct {
+	RealmName  string
+	ApplicationID string
+}
+
+type ListRealmApplicationRolesResponse struct {
+	ApplicationRoles []ApplicationRole `json:"application_roles"`
+}
+
+
 // Provider wraps values related to a realm identity provider
 type Provider struct {
 	ID                 string                     `json:"id"`
