@@ -205,6 +205,18 @@ func (c *E3dbIdentityClient) CreateRealmApplication(ctx context.Context, params 
 	return application, err
 }
 
+// ListRealmApplicationRoles lists the realm application roles of the specified realm, returning the application roles or error (if any).
+func (c *E3dbIdentityClient) ListRealmApplicationRoles(ctx context.Context, params ListRealmApplicationRolesRequest) (*ListRealmApplicationRolesResponse, error) {
+	var applicationRoles *ListRealmApplicationRolesResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return applicationRoles, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationRoles)
+	return applicationRoles, err
+}
+
 // DeleteRealmApplicationRole deletes the specified realm application role, returning error (if any).
 func (c *E3dbIdentityClient) DeleteRealmApplicationRole(ctx context.Context, params DeleteRealmApplicationRoleRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + params.ApplicationRoleID
