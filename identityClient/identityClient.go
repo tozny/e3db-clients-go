@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -17,6 +18,7 @@ const (
 	providerResourceName       = "provider"
 	providerMapperResourceName = "mapper"
 	applicationResourceName    = "application"
+	identityResourceName       = "identity"
 	realmLoginPathPrefix       = "/auth/realms"
 	realmLoginPathPostfix      = "/protocol/openid-connect/token"
 )
@@ -31,6 +33,34 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// ListIdentities in a given realm in a paginated way.
+func (c *E3dbIdentityClient) ListIdentities(ctx context.Context, params ListIdentitiesRequest) (*ListIdentitiesResponse, error) {
+	var identities *ListIdentitiesResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identities, err
+	}
+	urlParams := request.URL.Query()
+	urlParams.Set("first", strconv.Itoa(int(params.First)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	request.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &identities)
+	return identities, err
+}
+
+// DescribeIdentity gets detailed information for an identity in a given realm.
+func (c *E3dbIdentityClient) DescribeIdentity(ctx context.Context, realmName string, clientID string) (*IdentityDetails, error) {
+	var identity *IdentityDetails
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + identityResourceName + "/" + clientID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identity, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &identity)
+	return identity, err
 }
 
 // ListRealmProviderMappers lists the mappers for a given realm provider or error (if any).
