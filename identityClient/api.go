@@ -402,3 +402,64 @@ type ListRealmProviderMappersRequest struct {
 type ListRealmProviderMappersResponse struct {
 	ProviderMappers []ProviderMapper `json:"provider_mappers"`
 }
+
+// BasicIdentity wraps a subset of information about an identity within a given realm
+type BasicIdentity struct {
+	ID        string `json:"subject_id"` // Keycloak User UUID
+	Name      string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Active    bool   `json:"active"`
+	Federated bool   `json:"federated"`
+}
+
+// ListIdentitiesRequest wraps the data to request a list of identities in a realm
+type ListIdentitiesRequest struct {
+	RealmName string
+	First     int
+	Max       int
+}
+
+// ListIdentitiesResponse wraps the listing of realm identities and includes a next token
+type ListIdentitiesResponse struct {
+	Identities []BasicIdentity `json:"identities"`
+	Next       int             `json:"next"`
+}
+
+// IdentityDetails wraps the detailed information about an identity, including roles and groups
+type IdentityDetails struct {
+	ID         string              `json:"subject_id"`
+	Name       string              `json:"username"`
+	Email      string              `json:"email"`
+	FirstName  string              `json:"first_name"`
+	LastName   string              `json:"last_name"`
+	Active     bool                `json:"active"`
+	Federated  bool                `json:"federated"`
+	Roles      RoleMapping         `json:"roles"`
+	Groups     []Group             `json:"groups"`
+	Attributes map[string][]string `json:"attributes"`
+}
+
+// RoleMapping wraps a full test of roles for a realm and its clients
+type RoleMapping struct {
+	ClientRoles map[string][]Role `json:"client"`
+	RealmRoles  []Role            `json:"realm"`
+}
+
+// Role wraps a single role representation in a realm
+type Role struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Composite   bool   `json:"composite"`
+	ClientRole  bool   `json:"clientRole"`
+	ContainerID string `json:"containerID"`
+}
+
+// Group wraps a single group representation in a realm
+type Group struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Path      string  `json:"path"`
+	SubGroups []Group `json:"subGroups"`
+}

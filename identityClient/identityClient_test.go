@@ -960,3 +960,257 @@ func TestProviderMapperCRD(t *testing.T) {
 		t.Fatalf("expected deleted provider mapper %+v not to be listed, got %+v", providerMapper, listedProviderMappers)
 	}
 }
+
+func TestListIdentitiesPaginates(t *testing.T) {
+	// Test Parameters
+	pages := 2
+	perPage := 2
+	totalIdentities := pages * perPage
+	// New Account
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+
+	// Registration Token
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Client for registration calls
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+
+	// New Realm
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	// Register multiple identities
+	// These identities can use the same keys...
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %q generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	for i := 0; i < totalIdentities; i++ {
+		identityName := fmt.Sprintf("testListIDs%d", i)
+		identityEmail := fmt.Sprintf("testListID+%d@example.com", i)
+		identityFirstName := fmt.Sprintf("Test%d", i)
+		identityLastName := "User"
+		registerParams := RegisterIdentityRequest{
+			RealmRegistrationToken: registrationToken,
+			RealmName:              realm.Name,
+			Identity: Identity{
+				Name:        identityName,
+				Email:       identityEmail,
+				PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+				SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+				FirstName:   identityFirstName,
+				LastName:    identityLastName,
+			},
+		}
+		_, err = anonClient.RegisterIdentity(testContext, registerParams)
+		if err != nil {
+			t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
+		}
+	}
+	// Verify initial pages
+	first := 0
+	for i := 0; i < pages; i++ {
+		listRequest := ListIdentitiesRequest{
+			RealmName: realmName,
+			First:     first,
+			Max:       perPage,
+		}
+		identities, err := identityServiceClient.ListIdentities(testContext, listRequest)
+		first = identities.Next
+		if err != nil {
+			t.Fatalf("unable to fetch identity list from realm %q - first %d max %d: %+v", realmName, first, perPage, err)
+		}
+		if len(identities.Identities) != perPage {
+			t.Fatalf("identity count incorrect with first %d in realm %q mismatch, expected 1, got %d", first, realmName, len(identities.Identities))
+		}
+	}
+	// Verify last page (there will always be one more because of the admin user)
+	listRequest := ListIdentitiesRequest{
+		RealmName: realmName,
+		First:     1,
+		Max:       1,
+	}
+	identities, err := identityServiceClient.ListIdentities(testContext, listRequest)
+	if err != nil {
+		t.Fatalf("unable to fetch the last identity list page from realm %q: %+v", realmName, err)
+	}
+	if len(identities.Identities) != 1 {
+		t.Fatalf("identity count incorrect with in realm %q  for the last page, expected 1, got %d", realmName, len(identities.Identities))
+	}
+}
+
+func TestListIdentitiesRespectsOffest(t *testing.T) {
+	// Test Parameters
+	createdIdentities := 3
+	// New Account
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+
+	// Registration Token
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Client for registration calls
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+
+	// New Realm
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	// Register multiple identities
+	// These identities can use the same keys...
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %q generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	for i := 0; i < createdIdentities; i++ {
+		identityName := fmt.Sprintf("testListIDs%d", i)
+		identityEmail := fmt.Sprintf("testListID+%d@example.com", i)
+		identityFirstName := fmt.Sprintf("Test%d", i)
+		identityLastName := "User"
+		registerParams := RegisterIdentityRequest{
+			RealmRegistrationToken: registrationToken,
+			RealmName:              realm.Name,
+			Identity: Identity{
+				Name:        identityName,
+				Email:       identityEmail,
+				PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+				SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+				FirstName:   identityFirstName,
+				LastName:    identityLastName,
+			},
+		}
+		_, err = anonClient.RegisterIdentity(testContext, registerParams)
+		if err != nil {
+			t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
+		}
+	}
+	// Verify each page fetched returns different identities
+	found := map[string]BasicIdentity{}
+	first := 0
+	for i := 0; i < createdIdentities+1; i++ {
+		startLength := len(found)
+		listRequest := ListIdentitiesRequest{
+			RealmName: realmName,
+			First:     first,
+			Max:       1,
+		}
+		identities, err := identityServiceClient.ListIdentities(testContext, listRequest)
+		first = identities.Next
+		if err != nil {
+			t.Fatalf("unable to fetch identity list from realm %q: %+v", realmName, err)
+		}
+		if len(identities.Identities) != 1 {
+			t.Fatalf("expected to find a single identity but got %d", len(identities.Identities))
+		}
+		found[identities.Identities[0].ID] = identities.Identities[0]
+		if len(found)-startLength != 1 {
+			t.Fatalf("expected found length to increase by one from %d now %d. %+v %+v", startLength, len(found), identities.Identities[0], found)
+		}
+	}
+}
+
+func TestIdentityDetails(t *testing.T) {
+	// New Account
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+
+	// New Realm
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	sovereignName := "yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	// Fetch Identity Details for SovereignIdentity
+	details, err := identityServiceClient.DescribeIdentity(testContext, realmName, sovereignName)
+	if err != nil {
+		t.Fatalf("Error %+v while fetching identity %q", err, sovereignName)
+	}
+	// Validate data is present
+	if details.Name != sovereignName {
+		t.Errorf("Unexpected name for sovereign: expected %q got %q", sovereignName, details.Name)
+	}
+	if details.Active != true {
+		t.Error("Expected sovereign to be active, but it was not")
+	}
+	if len(details.Roles.RealmRoles) < 1 {
+		t.Errorf("Expected realm roles to have at least one role in it, but it had %d", len(details.Roles.RealmRoles))
+	}
+	realmManagementRoles, ok := details.Roles.ClientRoles["realm-management"]
+	if !ok {
+		t.Fatalf("Expected sovereign to have realm-management roles, but they are not found: %+v", details.Roles.ClientRoles)
+	}
+	found := false
+	for _, role := range realmManagementRoles {
+		if role.Name == "realm-admin" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected sovereign to have the realm-admin role in the realm-management client, but it was not found: %+v", realmManagementRoles)
+	}
+
+	// In the future, perhaps add the sovereign to groups and set some attributes, but those tools
+	// are not yet readily present.
+}
