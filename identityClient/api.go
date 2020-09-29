@@ -268,6 +268,15 @@ type DeleteRealmGroupRequest struct {
 // DescribeRealmApplicationRequest wraps parameters for describing a realm application
 type DescribeRealmGroupRequest = DeleteRealmGroupRequest
 
+
+type ListRealmGroupsRequest struct {
+	RealmName  string
+}
+
+type ListRealmGroupsResponse struct {
+	Groups []Group `json:"groups"`
+}
+
 // Application wraps API level values for a (client) application of a TozID realm.
 type Application struct {
 	// Server defined unique identifier for the application

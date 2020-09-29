@@ -253,6 +253,18 @@ func (c *E3dbIdentityClient) CreateRealmApplicationRole(ctx context.Context, par
 	return applicationRole, err
 }
 
+// ListRealmGroups lists the realm application roles of the specified realm, returning the application roles or error (if any).
+func (c *E3dbIdentityClient) ListRealmGroups(ctx context.Context, params ListRealmGroupsRequest) (*ListRealmGroupsResponse, error) {
+	var groups *ListRealmGroupsResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return groups, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &groups)
+	return groups, err
+}
+
 // DeleteRealmGroup deletes the specified realm group, returning error (if any).
 func (c *E3dbIdentityClient) DeleteRealmGroup(ctx context.Context, params DeleteRealmGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID
