@@ -1463,3 +1463,158 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 		t.Errorf("expected 0 application roles after deleting the one created")
 	}
 }
+
+func createRealmGroup(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, groupName string) *Group {
+	params := CreateRealmGroupRequest{
+		RealmName: realmName,
+		Group: Group {
+			Name: groupName,
+		},
+	}
+
+	group, err := identityServiceClient.CreateRealmGroup(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error creating realm group %+v: %+v", params, err)
+	}
+
+	return group
+}
+
+func listRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
+	params := ListRealmGroupsRequest{
+		RealmName: realmName,
+	}
+
+	groups, err := identityServiceClient.ListRealmGroups(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing realm application roles: %+v", err);
+	}
+
+	return groups.Groups;
+}
+
+func TestDescribeGroupReturnsCreatedGroup(t *testing.T) {
+	client := createIdentityServiceClient(t);
+
+	realm := createRealm(t, client);
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	group := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: group.ID,
+	});
+
+	actual, err := client.DescribeRealmGroup(testContext, DescribeRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: group.ID,
+	});
+
+	if err != nil {
+		t.Fatalf("error %s describing realm group %s using %+v", err, group.ID, client)
+	}
+
+	if len(actual.ID) == 0 {
+		t.Errorf("expected result to have ID")
+	}
+	if actual.Name != groupName {
+		t.Errorf("expected result group name to be '%s', was '%s'", groupName, actual.Name)
+	}
+}
+
+func TestListGroupsReturnsNoGroupsWhenThereAreNone(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	actual := listRealmGroups(t, client, realm.Name);
+
+	if len(actual) != 0 {
+		t.Errorf("expected 0 groups before creating one")
+	}
+}
+
+func TestListGroupsReturnsCreatedGroups(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: groupCreated.ID,
+	});
+
+	actual := listRealmGroups(t, client, realm.Name);
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	group := actual[0];
+
+	if group.Name != groupName {
+		t.Errorf("expected result group name to be '%s', was '%s'", groupName, group.Name)
+	}
+}
+
+func TestDeletedGroupIsUndescribable(t *testing.T) {
+	client := createIdentityServiceClient(t);
+
+	realm := createRealm(t, client);
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	group := createRealmGroup(t, client, realm.Name, groupName)
+	err := client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: group.ID,
+	});
+
+	if err != nil {
+		t.Errorf("expected no error deleting group, got: %+v", err)
+	}
+
+	actual, err := client.DescribeRealmGroup(testContext, DescribeRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: group.ID,
+	});
+
+	if actual != nil {
+		t.Errorf("expected no result when describing deleted group, got %+v", actual)
+	}
+
+	if err == nil {
+		t.Errorf("expected error when describing deleted group");
+	}
+}
+
+func TestDeletedGroupIsNotListed(t *testing.T) {
+	client := createIdentityServiceClient(t);
+
+	realm := createRealm(t, client);
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	group := createRealmGroup(t, client, realm.Name, groupName)
+	err := client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID: group.ID,
+	});
+
+	if err != nil {
+		t.Errorf("expected no error deleting realm group, got: %+v", err)
+	}
+
+	actual := listRealmGroups(t, client, realm.Name);
+
+	if len(actual) != 0 {
+		t.Errorf("expected 0 application roles after deleting the one created")
+	}
+}
