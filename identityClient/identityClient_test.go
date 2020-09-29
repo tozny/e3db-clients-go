@@ -1210,7 +1210,256 @@ func TestIdentityDetails(t *testing.T) {
 	if !found {
 		t.Errorf("Expected sovereign to have the realm-admin role in the realm-management client, but it was not found: %+v", realmManagementRoles)
 	}
+}
 
-	// In the future, perhaps add the sovereign to groups and set some attributes, but those tools
-	// are not yet readily present.
+func createIdentityServiceClient(t *testing.T) E3dbIdentityClient {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	return identityServiceClient
+}
+
+func uniqueString(prefix string) string {
+	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
+}
+
+func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
+	unique := uniqueString("realm")
+	params := CreateRealmRequest{
+		RealmName:     unique,
+		SovereignName: "realmsovereign",
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	return realm
+}
+
+func createRealmApplication(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) *Application {
+	unique := uniqueString("realmapplication")
+	params := CreateRealmApplicationRequest{
+		RealmName: realmName,
+		Application: Application{
+			ClientID: unique,
+			Name:     unique,
+			Active:   true,
+			Protocol: ProtocolOIDC,
+			OIDCSettings: ApplicationOIDCSettings{
+				RootURL: "https://jenkins.acme.com",
+			},
+		},
+	}
+
+	application, err := identityServiceClient.CreateRealmApplication(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error %s creating realm %s application %+v using %+v", err, realmName, params, identityServiceClient)
+	}
+
+	return application
+}
+
+func createRealmApplicationRole(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string, roleName string) *ApplicationRole {
+	params := CreateRealmApplicationRoleRequest{
+		RealmName:     realmName,
+		ApplicationID: applicationID,
+		ApplicationRole: ApplicationRole{
+			Name:        roleName,
+			Description: fmt.Sprintf("%s description", roleName),
+		},
+	}
+
+	applicationRole, err := identityServiceClient.CreateRealmApplicationRole(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error %s creating realm application role %+v using %+v", err, params, identityServiceClient)
+	}
+
+	return applicationRole
+}
+
+func listRealmApplicationRoles(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string) []ApplicationRole {
+	params := ListRealmApplicationRolesRequest{
+		RealmName:     realmName,
+		ApplicationID: applicationID,
+	}
+	applicationRoles, err := identityServiceClient.ListRealmApplicationRoles(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing realm application roles: %+v", err)
+	}
+
+	return applicationRoles.ApplicationRoles
+}
+
+func TestDescribeApplicationRoleReturnsCreatedApplicationRole(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	application := createRealmApplication(t, client, realm.Name)
+	defer client.DeleteRealmApplication(testContext, DeleteRealmApplicationRequest{
+		RealmName:     realm.Name,
+		ApplicationID: application.ID,
+	})
+
+	roleName := uniqueString("realm application role")
+	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	defer client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	actual, err := client.DescribeRealmApplicationRole(testContext, DescribeRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	if err != nil {
+		t.Fatalf("error %s describing realm application role %s using %+v", err, realmApplicationRole.ID, client)
+	}
+
+	if len(actual.ID) == 0 {
+		t.Errorf("expected result to have ID")
+	}
+	if actual.Name != roleName {
+		t.Errorf("expected result role name to be '%s', was '%s'", roleName, actual.Name)
+	}
+
+	roleDescription := (roleName + " description")
+
+	if actual.Description != roleDescription {
+		t.Errorf("expected result role description to be '%s', was '%s'", roleDescription, actual.Description)
+	}
+}
+
+func TestListApplicationRoleReturnsNoApplicationRolesWhenApplicationHasNone(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	application := createRealmApplication(t, client, realm.Name)
+	defer client.DeleteRealmApplication(testContext, DeleteRealmApplicationRequest{
+		RealmName:     realm.Name,
+		ApplicationID: application.ID,
+	})
+
+	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
+
+	if len(actual) != 0 {
+		t.Errorf("expected 0 application roles before creating one")
+	}
+}
+
+func TestListApplicationRoleReturnsCreatedApplicationRoles(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	application := createRealmApplication(t, client, realm.Name)
+	defer client.DeleteRealmApplication(testContext, DeleteRealmApplicationRequest{
+		RealmName:     realm.Name,
+		ApplicationID: application.ID,
+	})
+
+	roleName := uniqueString("realm application role")
+	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	defer client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	role := actual[0]
+
+	if role.Name != roleName {
+		t.Errorf("expected result role name to be '%s', was '%s'", roleName, role.Name)
+	}
+
+	roleDescription := (roleName + " description")
+
+	if role.Description != roleDescription {
+		t.Errorf("expected result role description to be '%s', was '%s'", roleDescription, role.Description)
+	}
+}
+
+func TestDeletedApplicationRoleIsUndescribable(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	application := createRealmApplication(t, client, realm.Name)
+	defer client.DeleteRealmApplication(testContext, DeleteRealmApplicationRequest{
+		RealmName:     realm.Name,
+		ApplicationID: application.ID,
+	})
+
+	roleName := uniqueString("realm application role")
+	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	err := client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	if err != nil {
+		t.Errorf("expected no error deleting realm application role, got: %+v", err)
+	}
+
+	actual, err := client.DescribeRealmApplicationRole(testContext, DescribeRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	if actual != nil {
+		t.Errorf("expected no result when describing deleted realm application role, got %+v", actual)
+	}
+
+	if err == nil {
+		t.Errorf("expected error when describing deleted realm application role")
+	}
+}
+
+func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	application := createRealmApplication(t, client, realm.Name)
+	defer client.DeleteRealmApplication(testContext, DeleteRealmApplicationRequest{
+		RealmName:     realm.Name,
+		ApplicationID: application.ID,
+	})
+
+	roleName := uniqueString("realm application role")
+	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	err := client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
+		RealmName:         realm.Name,
+		ApplicationID:     application.ID,
+		ApplicationRoleID: realmApplicationRole.ID,
+	})
+
+	if err != nil {
+		t.Errorf("expected no error deleting realm application role, got: %+v", err)
+	}
+
+	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
+
+	if len(actual) != 0 {
+		t.Errorf("expected 0 application roles after deleting the one created")
+	}
 }
