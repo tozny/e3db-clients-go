@@ -300,6 +300,8 @@ type Application struct {
 type ApplicationOIDCSettings struct {
 	// (Optional) The URL to append to any relative URLs
 	RootURL string `json:"root_url"`
+	StandardFlowEnabled bool `json:"standard_flow_enabled"`
+	BaseURL string `json:"base_url"`
 }
 
 // ApplicationSAMLSettings wraps settings for a SAML enabled application
