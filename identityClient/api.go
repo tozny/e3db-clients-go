@@ -268,9 +268,8 @@ type DeleteRealmGroupRequest struct {
 // DescribeRealmApplicationRequest wraps parameters for describing a realm application
 type DescribeRealmGroupRequest = DeleteRealmGroupRequest
 
-
 type ListRealmGroupsRequest struct {
-	RealmName  string
+	RealmName string
 }
 
 type ListRealmGroupsResponse struct {
@@ -299,17 +298,27 @@ type Application struct {
 // ApplicationOIDCSettings wraps settings for an OpenID Connect enabled application
 type ApplicationOIDCSettings struct {
 	// (Optional) The URL to append to any relative URLs
-	AccessType string `json:"access_type"`
-	RootURL string `json:"root_url"`
-	StandardFlowEnabled bool `json:"standard_flow_enabled"`
-	BaseURL string `json:"base_url"`
+	AccessType          string `json:"access_type"`
+	RootURL             string `json:"root_url"`
+	StandardFlowEnabled bool   `json:"standard_flow_enabled"`
+	BaseURL             string `json:"base_url"`
 }
 
 // ApplicationSAMLSettings wraps settings for a SAML enabled application
 type ApplicationSAMLSettings struct {
 	// (Optional) URL used for every binding to both the SP's Assertion Consumer and Single Logout Services.
 	// This can be individually overridden for each binding and service
-	DefaultSAMLEndpoint string `json:"default_saml_endpoint"`
+	DefaultEndpoint                        string `json:"default_endpoint"`
+	IncludeAuthnStatement                  bool   `json:"include_authn_statement"`
+	IncludeOneTimeUseCondition             bool   `json:"include_one_time_use_condition"`
+	SignDocuments                          bool   `json:"sign_documents"`
+	SignAssertions                         bool   `json:"sign_assertions"`
+	ClientSignatureRequired                bool   `json:"client_signature_required"`
+	ForcePostBinding                       bool   `json:"force_post_binding"`
+	ForceNameIDFormat                      bool   `json:"force_name_id_format"`
+	NameIDFormat                           string `json:"name_id_format"`
+	IDPInitiatedSSOURLName                 string `json:"idp_initiated_sso_url_name"`
+	AssertionConsumerServicePOSTBindingURL string `json:"assertion_consumer_service_post_binding_url"`
 }
 
 // CreateRealmApplicationRequest wraps parameters for creating a realm application
