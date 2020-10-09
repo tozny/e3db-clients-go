@@ -341,11 +341,7 @@ type ListRealmApplicationsResponse struct {
 	Applications []Application `json:"applications"`
 }
 
-type ApplicationRole struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
+type ApplicationRole = Role
 
 type CreateRealmApplicationRoleRequest struct {
 	RealmName       string
@@ -354,9 +350,9 @@ type CreateRealmApplicationRoleRequest struct {
 }
 
 type DeleteRealmApplicationRoleRequest struct {
-	RealmName         string
-	ApplicationID     string
-	ApplicationRoleID string
+	RealmName           string
+	ApplicationID       string
+	ApplicationRoleName string
 }
 
 type DescribeRealmApplicationRoleRequest = DeleteRealmApplicationRoleRequest
@@ -505,7 +501,7 @@ type IdentityDetails struct {
 	Attributes map[string][]string `json:"attributes"`
 }
 
-// RoleMapping wraps a full test of roles for a realm and its clients
+// RoleMapping wraps a full set of roles for a realm and its clients
 type RoleMapping struct {
 	ClientRoles map[string][]Role `json:"client"`
 	RealmRoles  []Role            `json:"realm"`
@@ -517,8 +513,8 @@ type Role struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Composite   bool   `json:"composite"`
-	ClientRole  bool   `json:"clientRole"`
-	ContainerID string `json:"containerID"`
+	ClientRole  bool   `json:"client_role"`
+	ContainerID string `json:"container_id"`
 }
 
 // Group wraps a single group representation in a realm
@@ -528,3 +524,22 @@ type Group struct {
 	Path      string  `json:"path"`
 	SubGroups []Group `json:"subGroups"`
 }
+
+// ListGroupRoleMappingsRequest wraps parameters for
+// retrieving the role mapping for a group
+type ListGroupRoleMappingsRequest struct {
+	RealmName string
+	GroupID   string
+}
+
+// AddGroupRoleMappingsRequest wraps request parameters for
+// adding role mappings to a group.
+type AddGroupRoleMappingsRequest struct {
+	RealmName   string
+	GroupID     string
+	RoleMapping RoleMapping
+}
+
+// RemoveGroupRoleMappingsRequest wraps request parameters for
+// removing role mappings from a group.
+type RemoveGroupRoleMappingsRequest = AddGroupRoleMappingsRequest
