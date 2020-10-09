@@ -21,6 +21,7 @@ const (
 	identityResourceName       = "identity"
 	roleResourceName           = "role"
 	groupResourceName          = "group"
+	roleMapperResourceName     = "role_mapping"
 	realmLoginPathPrefix       = "/auth/realms"
 	realmLoginPathPostfix      = "/protocol/openid-connect/token"
 )
@@ -35,6 +36,39 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// ListGroupRoleMappings lists all the realm and application role mappings for a group or error (if any).
+func (c *E3dbIdentityClient) ListGroupRoleMappings(ctx context.Context, params ListGroupRoleMappingsRequest) (*RoleMapping, error) {
+	var roleMappings *RoleMapping
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID + "/" + roleMapperResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return roleMappings, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &roleMappings)
+	return roleMappings, err
+}
+
+// DeleteRealmProviderMapper deletes the specified realm provider mapper, returning error (if any).
+func (c *E3dbIdentityClient) RemoveGroupRoleMappings(ctx context.Context, params RemoveGroupRoleMappingsRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID + "/" + roleMapperResourceName
+	request, err := e3dbClients.CreateRequest("DELETE", path, params.RoleMapping)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// CreateRealmProviderMapper creates a realm provider mapper using the specified parameters,
+// returning nil on success or error (if any).
+func (c *E3dbIdentityClient) AddGroupRoleMappings(ctx context.Context, params AddGroupRoleMappingsRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID + "/" + roleMapperResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.RoleMapping)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
 }
 
 // ListIdentities in a given realm in a paginated way.
@@ -220,7 +254,7 @@ func (c *E3dbIdentityClient) ListRealmApplicationRoles(ctx context.Context, para
 
 // DeleteRealmApplicationRole deletes the specified realm application role, returning error (if any).
 func (c *E3dbIdentityClient) DeleteRealmApplicationRole(ctx context.Context, params DeleteRealmApplicationRoleRequest) error {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + params.ApplicationRoleID
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + url.QueryEscape(params.ApplicationRoleName)
 	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
@@ -231,7 +265,7 @@ func (c *E3dbIdentityClient) DeleteRealmApplicationRole(ctx context.Context, par
 // DescribeRealmApplicationRole describes the realm application role with the specified id, returning the application or error (if any).
 func (c *E3dbIdentityClient) DescribeRealmApplicationRole(ctx context.Context, params DescribeRealmApplicationRoleRequest) (*ApplicationRole, error) {
 	var applicationRole *ApplicationRole
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + params.ApplicationRoleID
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + roleResourceName + "/" + url.QueryEscape(params.ApplicationRoleName)
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return applicationRole, err

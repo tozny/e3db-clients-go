@@ -1311,15 +1311,15 @@ func TestDescribeApplicationRoleReturnsCreatedApplicationRole(t *testing.T) {
 	roleName := uniqueString("realm application role")
 	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	defer client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	actual, err := client.DescribeRealmApplicationRole(testContext, DescribeRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	if err != nil {
@@ -1370,11 +1370,11 @@ func TestListApplicationRoleReturnsCreatedApplicationRoles(t *testing.T) {
 	})
 
 	roleName := uniqueString("realm application role")
-	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	_ = createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	defer client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
@@ -1408,11 +1408,11 @@ func TestDeletedApplicationRoleIsUndescribable(t *testing.T) {
 	})
 
 	roleName := uniqueString("realm application role")
-	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	_ = createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	err := client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	if err != nil {
@@ -1420,9 +1420,9 @@ func TestDeletedApplicationRoleIsUndescribable(t *testing.T) {
 	}
 
 	actual, err := client.DescribeRealmApplicationRole(testContext, DescribeRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	if actual != nil {
@@ -1446,11 +1446,11 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 	})
 
 	roleName := uniqueString("realm application role")
-	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	_ = createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	err := client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
-		RealmName:         realm.Name,
-		ApplicationID:     application.ID,
-		ApplicationRoleID: realmApplicationRole.ID,
+		RealmName:           realm.Name,
+		ApplicationID:       application.ID,
+		ApplicationRoleName: roleName,
 	})
 
 	if err != nil {
@@ -1467,7 +1467,7 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 func createRealmGroup(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, groupName string) *Group {
 	params := CreateRealmGroupRequest{
 		RealmName: realmName,
-		Group: Group {
+		Group: Group{
 			Name: groupName,
 		},
 	}
@@ -1489,29 +1489,29 @@ func listRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, rea
 	groups, err := identityServiceClient.ListRealmGroups(testContext, params)
 
 	if err != nil {
-		t.Fatalf("error listing realm application roles: %+v", err);
+		t.Fatalf("error listing realm application roles: %+v", err)
 	}
 
-	return groups.Groups;
+	return groups.Groups
 }
 
 func TestDescribeGroupReturnsCreatedGroup(t *testing.T) {
-	client := createIdentityServiceClient(t);
+	client := createIdentityServiceClient(t)
 
-	realm := createRealm(t, client);
+	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
 	groupName := uniqueString("realm group")
 	group := createRealmGroup(t, client, realm.Name, groupName)
 	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: group.ID,
-	});
+		GroupID:   group.ID,
+	})
 
 	actual, err := client.DescribeRealmGroup(testContext, DescribeRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: group.ID,
-	});
+		GroupID:   group.ID,
+	})
 
 	if err != nil {
 		t.Fatalf("error %s describing realm group %s using %+v", err, group.ID, client)
@@ -1531,7 +1531,7 @@ func TestListGroupsReturnsNoGroupsWhenThereAreNone(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	actual := listRealmGroups(t, client, realm.Name);
+	actual := listRealmGroups(t, client, realm.Name)
 
 	if len(actual) != 0 {
 		t.Errorf("expected 0 groups before creating one")
@@ -1548,16 +1548,16 @@ func TestListGroupsReturnsCreatedGroups(t *testing.T) {
 	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
 	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: groupCreated.ID,
-	});
+		GroupID:   groupCreated.ID,
+	})
 
-	actual := listRealmGroups(t, client, realm.Name);
+	actual := listRealmGroups(t, client, realm.Name)
 
 	if len(actual) != 1 {
 		t.Errorf("expected result to have one element")
 	}
 
-	group := actual[0];
+	group := actual[0]
 
 	if group.Name != groupName {
 		t.Errorf("expected result group name to be '%s', was '%s'", groupName, group.Name)
@@ -1565,17 +1565,17 @@ func TestListGroupsReturnsCreatedGroups(t *testing.T) {
 }
 
 func TestDeletedGroupIsUndescribable(t *testing.T) {
-	client := createIdentityServiceClient(t);
+	client := createIdentityServiceClient(t)
 
-	realm := createRealm(t, client);
+	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
 	groupName := uniqueString("realm group")
 	group := createRealmGroup(t, client, realm.Name, groupName)
 	err := client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: group.ID,
-	});
+		GroupID:   group.ID,
+	})
 
 	if err != nil {
 		t.Errorf("expected no error deleting group, got: %+v", err)
@@ -1583,38 +1583,115 @@ func TestDeletedGroupIsUndescribable(t *testing.T) {
 
 	actual, err := client.DescribeRealmGroup(testContext, DescribeRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: group.ID,
-	});
+		GroupID:   group.ID,
+	})
 
 	if actual != nil {
 		t.Errorf("expected no result when describing deleted group, got %+v", actual)
 	}
 
 	if err == nil {
-		t.Errorf("expected error when describing deleted group");
+		t.Errorf("expected error when describing deleted group")
 	}
 }
 
 func TestDeletedGroupIsNotListed(t *testing.T) {
-	client := createIdentityServiceClient(t);
+	client := createIdentityServiceClient(t)
 
-	realm := createRealm(t, client);
+	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
 	groupName := uniqueString("realm group")
 	group := createRealmGroup(t, client, realm.Name, groupName)
 	err := client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
 		RealmName: realm.Name,
-		GroupID: group.ID,
-	});
+		GroupID:   group.ID,
+	})
 
 	if err != nil {
 		t.Errorf("expected no error deleting realm group, got: %+v", err)
 	}
 
-	actual := listRealmGroups(t, client, realm.Name);
+	actual := listRealmGroups(t, client, realm.Name)
 
 	if len(actual) != 0 {
 		t.Errorf("expected 0 application roles after deleting the one created")
+	}
+}
+
+func TestGroupRoleMappingCRD(t *testing.T) {
+	// Set up identity service client
+	client := createIdentityServiceClient(t)
+	// Create realm
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	// Create a realm group
+	groupName := uniqueString("realm group")
+	group := createRealmGroup(t, client, realm.Name, groupName)
+	// Create a realm application
+	application := createRealmApplication(t, client, realm.Name)
+	// Create a role for the application
+	roleName := uniqueString("realm application role")
+	realmApplicationRole := createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
+	// Cache the current role mapping
+	groupRoleMapping, err := client.ListGroupRoleMappings(testContext, ListGroupRoleMappingsRequest{
+		RealmName: realm.Domain,
+		GroupID:   group.ID,
+	})
+	if err != nil {
+		t.Fatalf("Error %s listing role mapping for group %+v", err, group)
+	}
+	// Verify it doesn't have any assigned
+	// role mappings for the application yet
+	if val, ok := groupRoleMapping.ClientRoles[application.ID]; ok {
+		t.Fatalf("Expected group %+v not to have role mappings %+v for application %+v", group, val, application)
+	}
+	// Add role mapping for application
+	addRoleMappingRequest := AddGroupRoleMappingsRequest{
+		RealmName: realm.Domain,
+		GroupID:   group.ID,
+		RoleMapping: RoleMapping{
+			ClientRoles: map[string][]Role{
+				application.ID: []Role{
+					*realmApplicationRole,
+				},
+			},
+		},
+	}
+	err = client.AddGroupRoleMappings(testContext, addRoleMappingRequest)
+	if err != nil {
+		t.Fatalf("Error %s adding role mapping %+v to group %+v", err, addRoleMappingRequest, group)
+	}
+	// Verify application role mapping was added
+	groupRoleMapping, err = client.ListGroupRoleMappings(testContext, ListGroupRoleMappingsRequest{
+		RealmName: realm.Domain,
+		GroupID:   group.ID,
+	})
+	if err != nil {
+		t.Fatalf("Error %s listing role mapping for group %+v", err, group)
+	}
+	applicationRoleMappings, ok := groupRoleMapping.ClientRoles[application.ID]
+	if !ok {
+		t.Fatalf("Expected group %+v to have role mappings %+v for application %+v", group, groupRoleMapping, application)
+	}
+	mappedApplicationRole := applicationRoleMappings[0]
+	if mappedApplicationRole.ID != realmApplicationRole.ID || mappedApplicationRole.Name != realmApplicationRole.Name || mappedApplicationRole.Description != realmApplicationRole.Description {
+		t.Fatalf("Expected mapped group application role %+v to equal application group role %+v", mappedApplicationRole, realmApplicationRole)
+	}
+	// Remove role mapping for application
+	err = client.RemoveGroupRoleMappings(testContext, addRoleMappingRequest)
+	if err != nil {
+		t.Fatalf("Error %s removing role mapping %+v to group %+v", err, addRoleMappingRequest, group)
+	}
+	// Verify application role mapping was removed
+	groupRoleMapping, err = client.ListGroupRoleMappings(testContext, ListGroupRoleMappingsRequest{
+		RealmName: realm.Domain,
+		GroupID:   group.ID,
+	})
+	if err != nil {
+		t.Fatalf("Error %s listing role mapping for group %+v", err, group)
+	}
+	if val, ok := groupRoleMapping.ClientRoles[application.ID]; ok {
+		t.Fatalf("Expected group %+v not to have role mappings %+v for application %+v", group, val, application)
 	}
 }
