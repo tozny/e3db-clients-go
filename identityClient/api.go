@@ -543,3 +543,23 @@ type AddGroupRoleMappingsRequest struct {
 // RemoveGroupRoleMappingsRequest wraps request parameters for
 // removing role mappings from a group.
 type RemoveGroupRoleMappingsRequest = AddGroupRoleMappingsRequest
+
+// CreateRealmRoleRequest wraps parameters for creating a realm role
+type CreateRealmRoleRequest struct {
+	RealmName string
+	Role      Role
+}
+
+// DeleteRealmRoleRequest wraps parameters for deleting a realm role
+type DeleteRealmRoleRequest struct {
+	RealmName string
+	RoleID    string
+}
+
+// DescribeRealmRoleRequest wraps parameters for describing a realm role
+type DescribeRealmRoleRequest = DeleteRealmRoleRequest
+
+// ListRealmRolesResponse wraps the listing of roles for a realm
+type ListRealmRolesResponse struct {
+	Roles []Role `json:"roles"`
+}

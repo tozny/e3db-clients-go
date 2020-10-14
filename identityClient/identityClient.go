@@ -38,6 +38,53 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// ListRealmRoles lists the roles for a given realm or error (if any).
+func (c *E3dbIdentityClient) ListRealmRoles(ctx context.Context, realmName string) (*ListRealmRolesResponse, error) {
+	var roles *ListRealmRolesResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + roleResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return roles, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &roles)
+	return roles, err
+}
+
+// DeleteRealmRole deletes the specified realm role, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmRole(ctx context.Context, params DeleteRealmRoleRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + roleResourceName + "/" + params.RoleID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmRole describes the realm role with the specified id, returning the role or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmRole(ctx context.Context, params DescribeRealmRoleRequest) (*Role, error) {
+	var role *Role
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + roleResourceName + "/" + params.RoleID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return role, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &role)
+	return role, err
+}
+
+// CreateRealmRole creates a realm role using the specified parameters,
+// returning the created realm role or error (if any).
+func (c *E3dbIdentityClient) CreateRealmRole(ctx context.Context, params CreateRealmRoleRequest) (*Role, error) {
+	var role *Role
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + roleResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.Role)
+	if err != nil {
+		return role, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &role)
+	return role, err
+}
+
 // ListGroupRoleMappings lists all the realm and application role mappings for a group or error (if any).
 func (c *E3dbIdentityClient) ListGroupRoleMappings(ctx context.Context, params ListGroupRoleMappingsRequest) (*RoleMapping, error) {
 	var roleMappings *RoleMapping
@@ -50,7 +97,8 @@ func (c *E3dbIdentityClient) ListGroupRoleMappings(ctx context.Context, params L
 	return roleMappings, err
 }
 
-// DeleteRealmProviderMapper deletes the specified realm provider mapper, returning error (if any).
+// RemoveGroupRoleMappings removes the specified role mappings from a group
+// returning nil on success or error (if any).
 func (c *E3dbIdentityClient) RemoveGroupRoleMappings(ctx context.Context, params RemoveGroupRoleMappingsRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID + "/" + roleMapperResourceName
 	request, err := e3dbClients.CreateRequest("DELETE", path, params.RoleMapping)
@@ -60,7 +108,7 @@ func (c *E3dbIdentityClient) RemoveGroupRoleMappings(ctx context.Context, params
 	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
 }
 
-// CreateRealmProviderMapper creates a realm provider mapper using the specified parameters,
+// AddGroupRoleMappings adds the specified role mappings to the group
 // returning nil on success or error (if any).
 func (c *E3dbIdentityClient) AddGroupRoleMappings(ctx context.Context, params AddGroupRoleMappingsRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID + "/" + roleMapperResourceName
