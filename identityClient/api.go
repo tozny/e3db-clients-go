@@ -563,3 +563,14 @@ type DescribeRealmRoleRequest = DeleteRealmRoleRequest
 type ListRealmRolesResponse struct {
 	Roles []Role `json:"roles"`
 }
+
+// FetchApplicationSecretRequest wraps parameters for retrieving the OIDC client secret for an application
+type FetchApplicationSecretRequest struct {
+	RealmName     string
+	ApplicationID string
+}
+
+// ApplicationSecret wraps values for the configured OIDC client secret for an Application
+type ApplicationSecret struct {
+	Secret string `json:"secret"`
+}

@@ -38,6 +38,18 @@ type E3dbIdentityClient struct {
 	httpClient  *http.Client
 }
 
+// FetchApplicationSecret retrieves the secret (if any) for the application or error (if any).
+func (c *E3dbIdentityClient) FetchApplicationSecret(ctx context.Context, params FetchApplicationSecretRequest) (*ApplicationSecret, error) {
+	var secret *ApplicationSecret
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/secret"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return secret, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &secret)
+	return secret, err
+}
+
 // ListRealmRoles lists the roles for a given realm or error (if any).
 func (c *E3dbIdentityClient) ListRealmRoles(ctx context.Context, realmName string) (*ListRealmRolesResponse, error) {
 	var roles *ListRealmRolesResponse

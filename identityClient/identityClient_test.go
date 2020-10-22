@@ -1781,3 +1781,57 @@ func TestRealmRoleCRD(t *testing.T) {
 		t.Fatalf("expected deleted role %+v not to be listed, got %+v", role, listedRoles)
 	}
 }
+
+func TestFetchApplicationSecret(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+
+	realmName := fmt.Sprintf("TestFetchApplicationSecret%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	realmApplicationCreateParams := CreateRealmApplicationRequest{
+		RealmName: realm.Name,
+		Application: Application{
+			ClientID: "jenkins-oidc-app",
+			Name:     "Jenkins Your Build Is Ready",
+			Active:   true,
+			Protocol: ProtocolOIDC,
+			OIDCSettings: ApplicationOIDCSettings{
+				RootURL: "https://jenkins.acme.com",
+			},
+		},
+	}
+	application, err := identityServiceClient.CreateRealmApplication(testContext, realmApplicationCreateParams)
+	if err != nil {
+		t.Fatalf("error %s creating realm %+v application %+v using %+v", err, realm, realmApplicationCreateParams, identityServiceClient)
+	}
+
+	secret, err := identityServiceClient.FetchApplicationSecret(testContext, FetchApplicationSecretRequest{
+		RealmName:     realm.Domain,
+		ApplicationID: application.ID,
+	})
+
+	if err != nil {
+		t.Fatalf("error %s fetching application %+v secret using %+v", err, application, identityServiceClient)
+	}
+
+	if secret.Secret == "" {
+		t.Fatalf("expected OIDC configured application %+v secret to not be empty, got %+v", application, secret)
+	}
+}
