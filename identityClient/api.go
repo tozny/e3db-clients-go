@@ -298,10 +298,12 @@ type Application struct {
 // ApplicationOIDCSettings wraps settings for an OpenID Connect enabled application
 type ApplicationOIDCSettings struct {
 	// (Optional) The URL to append to any relative URLs
-	AccessType          string `json:"access_type"`
-	RootURL             string `json:"root_url"`
-	StandardFlowEnabled bool   `json:"standard_flow_enabled"`
-	BaseURL             string `json:"base_url"`
+	AccessType                string `json:"access_type"`
+	RootURL                   string `json:"root_url"`
+	StandardFlowEnabled       bool   `json:"standard_flow_enabled"`
+	ImplicitFlowEnabled       bool   `json:"implicit_flow_enabled"`
+	DirectAccessGrantsEnabled bool   `json:"direct_access_grants_enabled"`
+	BaseURL                   string `json:"base_url"`
 }
 
 // ApplicationSAMLSettings wraps settings for a SAML enabled application
