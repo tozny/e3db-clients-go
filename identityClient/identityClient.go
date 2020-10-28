@@ -506,8 +506,8 @@ func (c *E3dbIdentityClient) InternalUpdateIdentityActiveByKeycloakUserID(ctx co
 	return err
 }
 
-func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmName string, keycloakUserID string) error {
-	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + realmName + "/" + keycloakUserID
+func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmName string, keycloakUserID string, username string) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + realmName + "/" + keycloakUserID + "?username=" + username
 	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
