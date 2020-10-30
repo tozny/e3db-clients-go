@@ -1835,3 +1835,68 @@ func TestFetchApplicationSecret(t *testing.T) {
 		t.Fatalf("expected OIDC configured application %+v secret to not be empty, got %+v", application, secret)
 	}
 }
+
+func TestFetchApplicationSAMLSDescription(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+
+	realmName := fmt.Sprintf("TestFetchApplicationSAMLSDescription%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
+	}
+
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	realmApplicationCreateParams := CreateRealmApplicationRequest{
+		RealmName: realm.Name,
+		Application: Application{
+			ClientID: "aws-saml-app",
+			Name:     "Jeff's Cloud",
+			Active:   true,
+			Protocol: ProtocolSAML,
+			SAMLSettings: ApplicationSAMLSettings{
+				DefaultEndpoint:                        "https://aws.com",
+				IncludeAuthnStatement:                  true,
+				IncludeOneTimeUseCondition:             false,
+				SignDocuments:                          true,
+				SignAssertions:                         true,
+				ClientSignatureRequired:                true,
+				ForcePostBinding:                       true,
+				ForceNameIDFormat:                      false,
+				NameIDFormat:                           "transient",
+				IDPInitiatedSSOURLName:                 "amazon-aws",
+				AssertionConsumerServicePOSTBindingURL: "https://signin.aws.amazon.com/saml",
+			},
+		},
+	}
+	application, err := identityServiceClient.CreateRealmApplication(testContext, realmApplicationCreateParams)
+	if err != nil {
+		t.Fatalf("error %s creating realm %+v application %+v using %+v", err, realm, realmApplicationCreateParams, identityServiceClient)
+	}
+
+	description, err := identityServiceClient.FetchApplicationSAMLDescription(testContext, FetchApplicationSAMLDescriptionRequest{
+		RealmName:     realm.Domain,
+		ApplicationID: application.ID,
+		Format:        SAMLIdentityProviderDescriptionFormat,
+	})
+
+	if err != nil {
+		t.Fatalf("error %s fetching application %+v secret using %+v", err, application, identityServiceClient)
+	}
+
+	if description.Description == "" {
+		t.Fatalf("expected SAML configured application %+v description for format %s to not be empty, got %+v", application, SAMLIdentityProviderDescriptionFormat, description)
+	}
+}

@@ -50,6 +50,18 @@ func (c *E3dbIdentityClient) FetchApplicationSecret(ctx context.Context, params 
 	return secret, err
 }
 
+// FetchApplicationSAMLDescription retrieves the SAML description (if any) for the application in the specified format or error (if any).
+func (c *E3dbIdentityClient) FetchApplicationSAMLDescription(ctx context.Context, params FetchApplicationSAMLDescriptionRequest) (*ApplicationSAMLDescription, error) {
+	var description *ApplicationSAMLDescription
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/installation/providers/" + params.Format
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return description, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &description)
+	return description, err
+}
+
 // ListRealmRoles lists the roles for a given realm or error (if any).
 func (c *E3dbIdentityClient) ListRealmRoles(ctx context.Context, realmName string) (*ListRealmRolesResponse, error) {
 	var roles *ListRealmRolesResponse
