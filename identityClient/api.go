@@ -15,6 +15,10 @@ const (
 	ProviderMappperGroupsByMemberAttributeRetrievalStrategy = "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"
 	ProviderTrustStoreLDAPOnlyMode                          = "ldapsOnly"
 	ProviderDefaultMemberOfAttribute                        = "memberOf"
+	SAMLIdentityProviderDescriptionFormat                   = "saml-idp-descriptor"
+	SAMLKeycloakDescriptionFormat                           = "keycloak-saml"
+	SAMLServiceProviderDescriptionFormat                    = "saml-sp-descriptor"
+	SAMLKeycloakSubsystemDescriptionFormat                  = "keycloak-saml-subsystem"
 )
 
 // Realm represents the top level identity management resource for grouping and managing
@@ -580,4 +584,17 @@ type ApplicationSecret struct {
 type InternalDeleteIdentitiesByProviderRequest struct {
 	RealmName  string
 	ProviderID uuid.UUID
+}
+
+// FetchApplicationSAMLDescriptionRequest wraps parameters for retrieving the SAML client XML configuration for an application
+type FetchApplicationSAMLDescriptionRequest struct {
+	RealmName     string
+	ApplicationID string
+	Format        string
+}
+
+// ApplicationSAMLDescription wraps values for the SAML XML description for an Application
+type ApplicationSAMLDescription struct {
+	// Raw XML description for a SAML application
+	Description string `json:"description"`
 }
