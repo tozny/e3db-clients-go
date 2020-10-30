@@ -516,6 +516,16 @@ func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmNa
 	return err
 }
 
+func (c *E3dbIdentityClient) InternalDeleteIdentitiesByProvider(ctx context.Context, params InternalDeleteIdentitiesByProviderRequest) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.RealmName + "/id-provider/" + params.ProviderID.String()
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // InternalSetLDAPCache stores LDAP information for a specific user by ID in a specific realm
 func (c *E3dbIdentityClient) InternalSetLDAPCache(ctx context.Context, realmName string, params LDAPCache) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmName + "/ldap-cache"

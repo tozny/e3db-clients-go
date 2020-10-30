@@ -576,3 +576,8 @@ type FetchApplicationSecretRequest struct {
 type ApplicationSecret struct {
 	Secret string `json:"secret"`
 }
+
+type InternalDeleteIdentitiesByProviderRequest struct {
+	RealmName  string
+	ProviderID uuid.UUID
+}
