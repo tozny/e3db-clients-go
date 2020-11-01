@@ -13,17 +13,18 @@ import (
 )
 
 const (
-	identityServiceBasePath    = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
-	realmResourceName          = "realm"
-	providerResourceName       = "provider"
-	providerMapperResourceName = "mapper"
-	applicationResourceName    = "application"
-	identityResourceName       = "identity"
-	roleResourceName           = "role"
-	groupResourceName          = "group"
-	roleMapperResourceName     = "role_mapping"
-	realmLoginPathPrefix       = "/auth/realms"
-	realmLoginPathPostfix      = "/protocol/openid-connect/token"
+	identityServiceBasePath       = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
+	realmResourceName             = "realm"
+	providerResourceName          = "provider"
+	providerMapperResourceName    = "mapper"
+	applicationResourceName       = "application"
+	identityResourceName          = "identity"
+	roleResourceName              = "role"
+	groupResourceName             = "group"
+	roleMapperResourceName        = "role_mapping"
+	realmLoginPathPrefix          = "/auth/realms"
+	realmLoginPathPostfix         = "/protocol/openid-connect/token"
+	applicationMapperResourceName = "mapper"
 )
 
 var (
@@ -36,6 +37,53 @@ type E3dbIdentityClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	httpClient  *http.Client
+}
+
+// ListRealmApplicationMappers lists the applicationMappers for a given realm or error (if any).
+func (c *E3dbIdentityClient) ListRealmApplicationMappers(ctx context.Context, params ListRealmApplicationMappersRequest) (*ListRealmApplicationMappersResponse, error) {
+	var applicationMappers *ListRealmApplicationMappersResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + applicationMapperResourceName
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return applicationMappers, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationMappers)
+	return applicationMappers, err
+}
+
+// DeleteRealmApplicationMapper deletes the specified realm application mapper, returning error (if any).
+func (c *E3dbIdentityClient) DeleteRealmApplicationMapper(ctx context.Context, params DeleteRealmApplicationMapperRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + applicationMapperResourceName + "/" + params.ApplicationMapperID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+}
+
+// DescribeRealmApplicationMapper describes the realm application mapper with the specified id, returning the application mapper or error (if any).
+func (c *E3dbIdentityClient) DescribeRealmApplicationMapper(ctx context.Context, params DescribeRealmApplicationMapperRequest) (*ApplicationMapper, error) {
+	var applicationMapper *ApplicationMapper
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + applicationMapperResourceName + "/" + params.ApplicationMapperID
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return applicationMapper, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationMapper)
+	return applicationMapper, err
+}
+
+// CreateRealmApplicationMapper creates a realm application mapper using the specified parameters,
+// returning the created realm application mapper or error (if any).
+func (c *E3dbIdentityClient) CreateRealmApplicationMapper(ctx context.Context, params CreateRealmApplicationMapperRequest) (*ApplicationMapper, error) {
+	var applicationMapper *ApplicationMapper
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + applicationMapperResourceName
+	request, err := e3dbClients.CreateRequest("POST", path, params.ApplicationMapper)
+	if err != nil {
+		return applicationMapper, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &applicationMapper)
+	return applicationMapper, err
 }
 
 // FetchApplicationSecret retrieves the secret (if any) for the application or error (if any).
