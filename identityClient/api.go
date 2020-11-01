@@ -19,6 +19,25 @@ const (
 	SAMLKeycloakDescriptionFormat                           = "keycloak-saml"
 	SAMLServiceProviderDescriptionFormat                    = "saml-sp-descriptor"
 	SAMLKeycloakSubsystemDescriptionFormat                  = "keycloak-saml-subsystem"
+	UserSessionNoteOIDCApplicationMapperType                = "oidc-user-session-note-mapper"
+	UserAttributeOIDCApplicationMapperType                  = "oidc-user-attribute-mapper"
+	RoleListSAMLApplicationMapperType                       = "saml-role-list-mapper"
+	UserPropertySAMLApplicationMapperType                   = "saml-user-property-mapper"
+	ClaimJSONStringType                                     = "String"
+	ClaimJSONLongType                                       = "long"
+	ClaimJSONIntType                                        = "int"
+	ClaimJSONBooleanType                                    = "boolean"
+	BasicSAMLAttributeNameFormat                            = "Basic"
+	UnspecifiedSAMLAttributeNameFormat                      = "Unspecified"
+	URIReferenceSAMLAttributeNameFormat                     = "URI Reference"
+)
+
+var (
+	ValidSAMLDescriptionFormats = []string{
+		SAMLIdentityProviderDescriptionFormat,
+		SAMLKeycloakDescriptionFormat,
+		SAMLServiceProviderDescriptionFormat,
+		SAMLKeycloakSubsystemDescriptionFormat}
 )
 
 // Realm represents the top level identity management resource for grouping and managing
@@ -593,8 +612,78 @@ type FetchApplicationSAMLDescriptionRequest struct {
 	Format        string
 }
 
+// ApplicationMapper wraps related values related to an application mapper for auth flows of a given protocol.
+type ApplicationMapper struct {
+	// The UUID assigned to the application mapper
+	ID string `json:"id"`
+	// User defined name for the application mapper
+	Name string `json:"name"`
+	// The identity protocol that this mapper will be applied to flows of
+	Protocol string `json:"protocol"`
+	// The category of data this mapper is applied to
+	MapperType string `json:"mapper_type"`
+	// Name of stored user session note within the UserSessionModel.note map
+	UserSessionNote string `json:"user_session_note"`
+	// Name of stored user attribute within the UserModel.attribute map
+	UserAttribute string `json:"user_attribute"`
+	// Name of the claim to insert into the token. This can be a fully qualified name like 'address.street'. In this case, a nested json object will be created. To prevent nesting and use dot literally, escape the dot with backslash (\.)
+	TokenClaimName string `json:"token_claim_name"`
+	// JSON type that should be used to populate the json claim in the token
+	ClaimJSONType string `json:"claim_json_type"`
+	// Indicates if the claim should be added to the access token
+	AddToIDToken bool `json:"add_to_id_token"`
+	// Indicates if the claim should be added to the access token
+	AddToAccessToken bool `json:"add_to_access_token"`
+	// Indicates if the claim should be added to the user info
+	AddToUserInfo bool `json:"add_to_user_info"`
+	// Indicates if attribute supports multiple values. If true, then the list of all values of this attribute will be set as claim. If false, then just first value will be set as claim
+	Multivalued bool `json:"multivalued"`
+	// Indicates if attribute values should be aggregated with the group attributes. If using OpenID Connect mapper the multivalued option needs to be enabled too in order to get all the values. Duplicated values are discarded and the order of values is not guaranteed with this option
+	AggregateAttributeValues bool `json:"aggregate_attribute_values"`
+	// Name of the SAML attribute you want to put your roles into. i.e. 'Role', 'memberOf'
+	RoleAttributeName string `json:"role_attribute_name"`
+	// Name of the property method in the UserModel interface. For example, a value of 'email' would reference the UserModel.getEmail() method
+	Property string `json:"property"`
+	// Standard SAML attribute setting. An optional, more human-readable form of the attribute's name that can be provided if the actual attribute name is cryptic
+	FriendlyName string `json:"friendly_name"`
+	// Name of the SAML attribute that should be used for mapping an identities name
+	SAMLAttributeName string `json:"saml_attribute_name"`
+	// Format to use for the name attribute for the SAML protocol
+	SAMLAttributeNameFormat string `json:"saml_attribute_name_format"`
+	// If true, all roles will be stored under one attribute with multiple attribute values
+	SingleRoleAttribute bool `json:"single_role_attribute"`
+}
+
 // ApplicationSAMLDescription wraps values for the SAML XML description for an Application
 type ApplicationSAMLDescription struct {
 	// Raw XML description for a SAML application
 	Description string `json:"description"`
+}
+
+// CreateRealmApplicationMapperRequest wraps parameters for creating a realm application mapper
+type CreateRealmApplicationMapperRequest struct {
+	RealmName         string
+	ApplicationID     string
+	ApplicationMapper ApplicationMapper
+}
+
+// DeleteRealmApplicationMapperRequest wraps parameters for deleting a realm application mapper
+type DeleteRealmApplicationMapperRequest struct {
+	RealmName           string
+	ApplicationID       string
+	ApplicationMapperID string
+}
+
+// DescribeRealmApplicationMapperRequest wraps parameters for describing a realm application mapper
+type DescribeRealmApplicationMapperRequest = DeleteRealmApplicationMapperRequest
+
+// ListRealmApplicationMappersRequest wraps parameters for listing the protocol mappers for an application
+type ListRealmApplicationMappersRequest struct {
+	RealmName     string
+	ApplicationID string
+}
+
+// ListRealmApplicationMappersResponse wraps the listing of application mappers for an application
+type ListRealmApplicationMappersResponse struct {
+	ApplicationMappers []ApplicationMapper `json:"application_mappers"`
 }
