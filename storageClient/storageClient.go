@@ -45,8 +45,8 @@ func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, erro
 	return result, err
 }
 
-func (c *StorageClient) CreateGroup(ctx context.Context, params GroupRequest) (*GroupRespond, error) {
-	var result *GroupRespond
+func (c *StorageClient) CreateGroup(ctx context.Context, params GroupRequest) (*GroupResponse, error) {
+	var result *GroupResponse
 	path := c.Host + storageServiceBasePath + "/groups"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
