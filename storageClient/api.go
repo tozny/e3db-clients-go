@@ -33,7 +33,7 @@ type GroupRequest struct {
 	Name      string `json:"group_name"`
 	PublicKey string `json:"public_key"`
 }
-type GroupRespond struct {
+type GroupResponse struct {
 	GroupID      uuid.UUID `json:"group_id"`
 	Name         string    `json:"group_name"`
 	AccountID    uuid.UUID `json:"account_id"`
