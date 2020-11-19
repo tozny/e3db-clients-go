@@ -29,8 +29,11 @@ type Note struct {
 	Expires             bool              `json:"expires,omitempty"`
 }
 
-//Group wraps values related to managing client membership and capabilities for resources such as records.
-type Group struct {
+type GroupRequest struct {
+	Name      string `json:"group_name"`
+	PublicKey string `json:"public_key"`
+}
+type GroupRespond struct {
 	GroupID      uuid.UUID `json:"group_id"`
 	Name         string    `json:"group_name"`
 	AccountID    uuid.UUID `json:"account_id"`
@@ -38,7 +41,6 @@ type Group struct {
 	CreatedAt    time.Time `json:"created_at"`
 	LastModified time.Time `json:"last_modified"`
 }
-
 type EACP struct {
 	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
 	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
