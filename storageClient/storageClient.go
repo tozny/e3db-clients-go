@@ -45,6 +45,17 @@ func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, erro
 	return result, err
 }
 
+func (c *StorageClient) CreateGroup(ctx context.Context, params GroupRequest) (*GroupRespond, error) {
+	var result *GroupRespond
+	path := c.Host + storageServiceBasePath + "/groups"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
