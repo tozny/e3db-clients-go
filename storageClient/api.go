@@ -29,11 +29,14 @@ type Note struct {
 	Expires             bool              `json:"expires,omitempty"`
 }
 
-type GroupRequest struct {
+// CreateGroupRequest wraps parameters needed to request creation of a group
+type CreateGroupRequest struct {
 	Name      string `json:"group_name"`
 	PublicKey string `json:"public_key"`
 }
-type GroupResponse struct {
+
+// Group wraps values related to managing client membership and capabilities for resources such as records.
+type Group struct {
 	GroupID      uuid.UUID `json:"group_id"`
 	Name         string    `json:"group_name"`
 	AccountID    uuid.UUID `json:"account_id"`
