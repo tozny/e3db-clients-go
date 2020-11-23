@@ -46,7 +46,7 @@ func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, erro
 }
 
 // CreateGroup creates a group using the specified parameters,
-//returning the created group and error (if any)
+// returning the created group and error (if any).
 func (c *StorageClient) CreateGroup(ctx context.Context, params CreateGroupRequest) (*Group, error) {
 	var result *Group
 	path := c.Host + storageServiceBasePath + "/groups"
@@ -54,6 +54,20 @@ func (c *StorageClient) CreateGroup(ctx context.Context, params CreateGroupReque
 	if err != nil {
 		return result, err
 	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// DescribeGroup fetches a group using the specified parameters,
+// returning the group and error (if any).
+func (c *StorageClient) DescribeGroup(ctx context.Context, params DescribeGroupRequest) (*Group, error) {
+	var result *Group
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
