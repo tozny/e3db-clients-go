@@ -44,6 +44,11 @@ type Group struct {
 	CreatedAt    time.Time `json:"created_at"`
 	LastModified time.Time `json:"last_modified"`
 }
+
+// DescribeGroupRequest wraps values used to look up Groups
+type DescribeGroupRequest struct {
+	GroupID uuid.UUID `json:"group_id"`
+}
 type EACP struct {
 	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
 	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
