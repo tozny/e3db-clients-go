@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -262,5 +263,178 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 	_, err = pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v and with field value of length %d", err, numberOfMetadataFieldCharacters)
+	}
+}
+
+// Tests creating a group with valid authorization and valid group name.
+func TestCreateGroupSucceedsWithValidInput(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	group := CreateGroupRequest{
+		Name:      "TestGroup1" + uuid.New().String(),
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	response, err := StorageClient.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", group, err)
+	}
+	if response.Name != group.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
+	}
+}
+
+// Create a group with a groupname already in namespace.
+func TestCreateGroupWithInvalidInputFails(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	groupName := "TestGroup1" + uuid.New().String()
+	group := CreateGroupRequest{
+		Name:      groupName,
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	group2 := CreateGroupRequest{
+		Name:      groupName,
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	response, err := StorageClient.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Logf("Group: %+v Failed to be Created\n error %+v \n response %+v", group, err, response)
+	}
+
+	response, err = StorageClient.CreateGroup(testCtx, group2)
+	if err == nil {
+		t.Fatalf("Expected create for Group: %+v to fail but it succeeded %+v", group2, response)
+	}
+
+	tozError, ok := err.(*e3dbClients.RequestError)
+
+	if !ok {
+		t.Fatalf("Expected tozny request error %s creating group \n ", err)
+
+	}
+	if tozError.StatusCode != http.StatusConflict {
+		t.Fatalf("Expected 409 error %s creating group %+v", err, group)
+	}
+
+}
+
+// Creates a group without authorization, expected to fail.
+func TestCreateGroupWithInvalidAuthorizationFails(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+
+	if err != nil {
+		t.Fatalf("Failed generating encryption key pair %s", err)
+		return
+	}
+	group := CreateGroupRequest{
+		Name:      "TestGroup1" + uuid.New().String(),
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	StorageClient.ClientID = "123"
+	_, err = StorageClient.CreateGroup(testCtx, group)
+	if err == nil {
+		t.Logf("Expected request to fail with invalid authorization for client %+v \n but it succeeded with", StorageClient)
+	}
+	tozError, ok := err.(*e3dbClients.RequestError)
+	if !ok {
+		t.Fatalf("Expected tozny request error %s creating group with invalid client\n ", err)
+	}
+	if tozError.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Expected 401 error %s creating group with invalid client %+v", err, StorageClient)
+	}
+
+}
+
+// Test Reads a Group that has not been created.
+func TestReadGroupNotCreatedReturnNotFound(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+	group := DescribeGroupRequest{
+		GroupID: uuid.New(),
+	}
+	response, err := StorageClient.DescribeGroup(testCtx, group)
+	if err == nil {
+		t.Fatalf("Group GET: Group found: %+v ", response)
+	}
+	var tozError *e3dbClients.RequestError
+	if errors.As(err, &tozError) {
+		if tozError.StatusCode != http.StatusNotFound {
+			t.Fatalf("Expected 404 error %s creating group %+v", err, group)
+		}
+	} else {
+		t.Fatalf("Expected 404 error %s creating group %+v", err, group)
+	}
+
+}
+
+// Creates a group and then fetches it.
+func TestReadGroupWithValidInputSucceeds(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+	//Insert A Group To Look up
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	group := CreateGroupRequest{
+		Name:      "TestGroup1" + uuid.New().String(),
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	response, err := StorageClient.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", group, err)
+	}
+	if response.Name != group.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
+	}
+	//Look Up Group Created
+	groupID := DescribeGroupRequest{
+		GroupID: response.GroupID,
+	}
+	response, err = StorageClient.DescribeGroup(testCtx, groupID)
+	if err != nil {
+		t.Logf("Group: %+v Failed to be Found\n error %+v \n response %+v", group, err, response)
+	}
+	if groupID.GroupID != response.GroupID {
+		t.Fatalf("GroupID (%+v) passed in, does not match GroupID(%+v) returned for Group( %+v) \n", groupID.GroupID, response.GroupID, response)
 	}
 }
