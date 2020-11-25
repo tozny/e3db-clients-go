@@ -72,6 +72,17 @@ func (c *StorageClient) DescribeGroup(ctx context.Context, params DescribeGroupR
 	return result, err
 }
 
+// DeleteGroup deletes a specified group, returning an error (if any).
+func (c *StorageClient) DeleteGroup(ctx context.Context, params DeleteGroupRequest) error {
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
+	request, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
