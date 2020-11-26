@@ -49,6 +49,46 @@ type Group struct {
 type DescribeGroupRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
 }
+
+// AddingCapabilityRequest wraps values used to add a capability for Groups.
+type AddingCapabilityRequest struct {
+	ClientID       uuid.UUID `json:"client_id"`
+	Name           string    `json:"group_name"`
+	CapabilityName string    `json:"capability_name"`
+	AccountID      uuid.UUID `json:"account_id"`
+}
+
+// AddingClientToGroupRequest wraps values used to add a client to a Group.
+type AddingClientToGroupRequest struct {
+	ClientID       uuid.UUID `json:"client_id"`
+	Name           string    `json:"group_name"`
+	CapabilityName string    `json:"capability_name"`
+	AccountID      uuid.UUID `json:"account_id"`
+}
+
+// DeleteGroupRequest wraps values used to delete a Group.
+type DeleteGroupRequest struct {
+	GroupID   uuid.UUID `json:"group_id"`
+	AccountID uuid.UUID `json:"account_id"`
+	ClientID  uuid.UUID `json:"client_id"`
+}
+
+// ClientGroup wraps values managing client membership
+type ClientGroup struct {
+	GroupID       uuid.UUID `json:"group_id"`
+	MembershipKey string    `json:"encrypted_membership_key"`
+	ClientID      uuid.UUID `json:"client_id"`
+}
+
+// CapabilityMap wraps values managing client capabilities for resources
+type CapabilityMap struct {
+	SubjectID      uuid.UUID `json:"subject_id"`
+	ResourceID     uuid.UUID `json:"resource_id"`
+	SubjectType    string    `json:"subject_type"`
+	ResourceType   string    `json:"resource_type"`
+	CapabilityName string    `json:"capability_name"`
+}
+
 type EACP struct {
 	EmailEACP      *EmailEACP      `json:"email_eacp,omitempty"`
 	LastAccessEACP *LastAccessEACP `json:"last_access_eacp,omitempty"`
