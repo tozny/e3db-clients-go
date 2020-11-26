@@ -11,11 +11,12 @@ import (
 	"github.com/tozny/e3db-clients-go/authClient"
 )
 
+// HTTP PATH prefix for calls to the e3db Account service for v1
 const (
-	AccountServiceBasePath = "v1/account" //HTTP PATH prefix for calls to the e3db Account service
+	AccountServiceBasePath = "v1/account"
 )
 
-//E3dbAccountClient implements an http client for communication with an e3db Account service.
+// E3dbAccountClient implements an http client for communication with an e3db Account service.
 type E3dbAccountClient struct {
 	APIKey    string
 	APISecret string
@@ -80,7 +81,7 @@ func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientReg
 	return result, err
 }
 
-// RegisterClient registers a client via a proxied call to client service by the account service.
+// ProxyiedRegisterClient registers a client via a proxied call to client service by the account service.
 // This method is intended for TESTING the functionality of the integrated client service. Not intended for future use.
 func (c *E3dbAccountClient) ProxyiedRegisterClient(ctx context.Context, params ProxiedClientRegistrationRequest) (*ProxiedClientRegisterationResponse, error) {
 	var result *ProxiedClientRegisterationResponse
