@@ -15,11 +15,13 @@ import (
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
 	"github.com/tozny/e3db-clients-go/test"
+	e3dbTest "github.com/tozny/e3db-clients-go/test"
 )
 
 var (
 	cyclopsServiceHost = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
 	testCtx            = context.Background()
+	ClientServiceHost  = os.Getenv("CLIENT_SERVICE_HOST")
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -280,8 +282,9 @@ func TestCreateGroupSucceedsWithValidInput(t *testing.T) {
 		return
 	}
 	group := CreateGroupRequest{
-		Name:      "TestGroup1" + uuid.New().String(),
-		PublicKey: encryptionKeyPair.Public.Material,
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, group)
 	if err != nil {
@@ -330,9 +333,10 @@ func TestReadGroupWithValidInputSucceeds(t *testing.T) {
 		t.Fatalf("GroupID (%+v) passed in, does not match GroupID(%+v) returned for Group( %+v) \n", groupID.GroupID, response.GroupID, response)
 	}
 }
-
 func TestDeleteGroupWithValidCapabilitySucceeds(t *testing.T) {
-	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Could not register account %s\n", err)
@@ -346,8 +350,9 @@ func TestDeleteGroupWithValidCapabilitySucceeds(t *testing.T) {
 		return
 	}
 	newGroup := CreateGroupRequest{
-		Name:      "TestGroup1" + uuid.New().String(),
-		PublicKey: encryptionKeyPair.Public.Material,
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, newGroup)
 	if err != nil {
@@ -364,6 +369,187 @@ func TestDeleteGroupWithValidCapabilitySucceeds(t *testing.T) {
 	}
 	err = StorageClient.DeleteGroup(testCtx, group)
 	if err != nil {
-		t.Logf("Group DELETE: Group was not Deleted: %+v ", group)
+		t.Fatalf("Group DELETE: Group was not Deleted: %+v Error: %+v ", group, err)
+	}
+}
+
+func TestListGroupsWithQueenClientForClientWithGroupsReturnsSuccess(t *testing.T) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	queenClient := New(queenClientConfig)
+	//Insert two Group To List
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	newGroup := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+	}
+	newGroup2 := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	groupCreatedID1 := response.GroupID
+	response, err = queenClient.CreateGroup(testCtx, newGroup2)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup2, err)
+	}
+	if response.Name != newGroup2.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup2.Name, response.Name, newGroup2)
+	}
+	groupCreatedID2 := response.GroupID
+	listRequest := ListGroupsRequest{
+		ClientID:  uuid.MustParse(queenClient.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseList, err := queenClient.ListGroups(testCtx, listRequest)
+
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
+	}
+	for _, clientID := range []string{groupCreatedID1.String(), groupCreatedID2.String()} {
+		var found bool = false
+		for _, group := range responseList.Groups {
+			if group.GroupID.String() == clientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Failed to list correct Group: Response( %+v) \n", responseList)
+		}
+	}
+
+}
+
+func TestListGroupsWithQueenClientAllAccountReturnsSuccess(t *testing.T) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenClient := New(queenClientInfo)
+	queenClient2 := New(queenClientInfo)
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenClient, accountToken)
+	}
+	// Create Another Accouunt under the queen client to list groups, Each create a group
+	group := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+	}
+	response, err := queenClient2.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", group, err)
+	}
+	if response.Name != group.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
+	}
+	groupCreatedID1 := response.GroupID
+	group = CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+	}
+	response, err = queenClient.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", group, err)
+	}
+	if response.Name != group.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
+	}
+	groupCreatedID2 := response.GroupID
+	// List The Groups Under the Account
+	listRequest := ListGroupsRequest{}
+	responseList, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
+	}
+	for _, clientID := range []string{groupCreatedID1.String(), groupCreatedID2.String()} {
+		var found bool = false
+		for _, group := range responseList.Groups {
+			if group.GroupID.String() == clientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Failed to list correct Group: Response( %+v) \n", responseList)
+		}
+	}
+
+}
+
+func TestListGroupsWithClientForClientWithGroupsReturnsSuccess(t *testing.T) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+
+	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	regClient := New(ClientConfig)
+
+	//Create A group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	group := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+	}
+	response, err := regClient.CreateGroup(testCtx, group)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", group, err)
+	}
+	if response.Name != group.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
+	}
+	groupCreatedID1 := response.GroupID
+	listRequest := ListGroupsRequest{}
+	responseList, err := regClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Group LIST: Group was Not Found: %+v Error: %+v ", responseList, err)
+	}
+	for _, clientID := range []string{groupCreatedID1.String()} {
+		var found bool = false
+		for _, group := range responseList.Groups {
+			if group.GroupID.String() == clientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Failed to list correct Group: Response( %+v) \n", responseList)
+		}
 	}
 }
