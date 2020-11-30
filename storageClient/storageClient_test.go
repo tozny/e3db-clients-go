@@ -330,3 +330,40 @@ func TestReadGroupWithValidInputSucceeds(t *testing.T) {
 		t.Fatalf("GroupID (%+v) passed in, does not match GroupID(%+v) returned for Group( %+v) \n", groupID.GroupID, response.GroupID, response)
 	}
 }
+
+func TestDeleteGroupWithValidCapabilitySucceeds(t *testing.T) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := New(queenClientConfig)
+
+	//Insert A Group To Delete
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	newGroup := CreateGroupRequest{
+		Name:      "TestGroup1" + uuid.New().String(),
+		PublicKey: encryptionKeyPair.Public.Material,
+	}
+	response, err := StorageClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	// Attempt to delete group
+	group := DeleteGroupRequest{
+		GroupID:   response.GroupID,
+		AccountID: response.AccountID,
+		ClientID:  uuid.MustParse(StorageClient.ClientID),
+	}
+	err = StorageClient.DeleteGroup(testCtx, group)
+	if err != nil {
+		t.Logf("Group DELETE: Group was not Deleted: %+v ", group)
+	}
+}
