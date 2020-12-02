@@ -14,13 +14,19 @@ import (
 var (
 	e3dbAuthHost      = os.Getenv("E3DB_AUTH_SERVICE_HOST")
 	e3dbAccountHost   = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAccountHostV2 = os.Getenv("E3DB_ACCOUNT2_SERVICE_HOST")
 	e3dbAPIKey        = os.Getenv("E3DB_API_KEY_ID")
 	e3dbAPISecret     = os.Getenv("E3DB_API_KEY_SECRET")
-	e3dbClientID      = os.Getenv("E3DB_CLIENT_ID")
 	ValidClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
 		Host:      e3dbAccountHost,
+		AuthNHost: e3dbAuthHost,
+	}
+	ValidClientConfigV2 = e3dbClients.ClientConfig{
+		APIKey:    e3dbAPIKey,
+		APISecret: e3dbAPISecret,
+		Host:      e3dbAccountHostV2,
 		AuthNHost: e3dbAuthHost,
 	}
 )

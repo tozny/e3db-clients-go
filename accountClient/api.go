@@ -97,7 +97,7 @@ type ProxiedClientRegisterationInfo struct {
 	Name        string            `json:"name"`
 	Type        string            `json:"type"`
 	PublicKeys  map[string]string `json:"public_key"`
-	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
+	SigningKeys map[string]string `json:"signing_key,omitempty"`
 }
 
 // ProxiedClientRegisterationResponse wraps the client information for a newly registered client.
@@ -116,7 +116,7 @@ type ProxyiedRegisteredClient struct {
 	Enabled     bool              `json:"enabled"`
 	HasBackup   bool              `json:"has_backup"`
 	PublicKeys  map[string]string `json:"public_key"`
-	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
+	SigningKeys map[string]string `json:"signing_key,omitempty"`
 	Meta        map[string]string `json:"meta,omitempty"`
 }
 
