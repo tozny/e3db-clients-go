@@ -281,10 +281,14 @@ func TestCreateGroupSucceedsWithValidInput(t *testing.T) {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, StorageClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, group)
 	if err != nil {
@@ -310,9 +314,14 @@ func TestReadGroupWithValidInputSucceeds(t *testing.T) {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, StorageClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group := CreateGroupRequest{
-		Name:      "TestGroup1" + uuid.New().String(),
-		PublicKey: encryptionKeyPair.Public.Material,
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, group)
 	if err != nil {
@@ -349,10 +358,14 @@ func TestDeleteGroupWithValidCapabilitySucceeds(t *testing.T) {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, StorageClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	newGroup := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, newGroup)
 	if err != nil {
@@ -386,15 +399,19 @@ func TestListGroupsWithQueenClientForClientWithGroupsReturnsSuccess(t *testing.T
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	newGroup := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	newGroup2 := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient.CreateGroup(testCtx, newGroup)
 	if err != nil {
@@ -451,11 +468,15 @@ func TestListGroupsWithQueenClientAllAccountReturnsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenClient, accountToken)
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient2.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	// Create Another Accouunt under the queen client to list groups, Each create a group
 	group := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient2.CreateGroup(testCtx, group)
 	if err != nil {
@@ -465,10 +486,14 @@ func TestListGroupsWithQueenClientAllAccountReturnsSuccess(t *testing.T) {
 		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
 	}
 	groupCreatedID1 := response.GroupID
+	eak, err = e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group = CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err = queenClient.CreateGroup(testCtx, group)
 	if err != nil {
@@ -522,10 +547,14 @@ func TestListGroupsWithClientForClientWithGroupsReturnsSuccess(t *testing.T) {
 
 	//Create A group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, regClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group := CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := regClient.CreateGroup(testCtx, group)
 	if err != nil {
@@ -553,4 +582,286 @@ func TestListGroupsWithClientForClientWithGroupsReturnsSuccess(t *testing.T) {
 		}
 	}
 
+}
+
+func TestCreateGroupMembershipKey(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	groupMemberToAdd := New(ClientConfig)
+	queenClient := New(queenClientInfo)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key
+	membershipKeyRequest := CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Verify that the group membership key for the client matches the output for the group raw privat key above
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(groupMemberToAdd.EncryptionKeys.Private.Material)
+	if err != nil {
+		t.Fatalf("Client to add to group Private key was not decoded correctly \n Client: %+v, err: %+v ", groupMemberToAdd, err)
+	}
+	groupKey, err := e3dbClients.DecryptEAK(membershipKeyResponse, queenClient.EncryptionKeys.Public.Material, rawEncryptionKey)
+	if err != nil {
+		t.Fatalf("The membership key was not decrypted correctly: MembershipKey: %+v, queenClient : %+v, group member to add private key: %+v ", membershipKeyResponse, queenClient.EncryptionKeys.Public.Material, rawEncryptionKey)
+
+	}
+	rawGroupPrivateKey := e3dbClients.Base64Encode(groupKey[:])
+	if rawGroupPrivateKey != encryptionKeyPair.Private.Material {
+		t.Fatalf("Raw Private key does not match: raw %+v client's raw private key %+v", encryptionKeyPair.Private.Material, rawGroupPrivateKey)
+	}
+}
+func TestAddOneGroupMemberWithValidInputReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	groupMemberToAdd := New(ClientConfig)
+	queenClient := New(queenClientInfo)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key
+	membershipKeyRequest := CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+
+	// Add client to group
+	groupMemberCapabilities := []string{ShareContentGroupCapability, ReadContentGroupCapability}
+	memberRequest := []GroupMember{}
+	memberRequest = append(memberRequest,
+		GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+
+	addMemberRequest := AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	addToGroupResponse, err := queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	for _, requestGroupMember := range addMemberRequest.GroupMembers {
+		var found bool
+		for _, responseGroupMember := range *addToGroupResponse {
+			if responseGroupMember.ClientID == requestGroupMember.ClientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Failed to add correct Group Members: Response( %+v) \n", addToGroupResponse)
+		}
+	}
+
+}
+func TestAddBulkGroupMemberWithValidInputReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// Clients to Add to Group
+	groupMemberToAdd1 := New(ClientConfig)
+	groupMemberToAdd2 := New(ClientConfig2)
+	queenClient := New(queenClientInfo)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for client1
+	membershipKeyRequest := CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd1.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for client2
+	membershipKeyRequest2 := CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Add clients  to group
+	groupMemberCapabilities := []string{ShareContentGroupCapability, ReadContentGroupCapability}
+	memberRequest := []GroupMember{}
+	//Adding First Client to Request
+	memberRequest = append(memberRequest,
+		GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd1.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	//Adding Second client to request
+	memberRequest = append(memberRequest,
+		GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd2.ClientID),
+			MembershipKey:   membershipKeyResponse2,
+			CapabilityNames: groupMemberCapabilities})
+	addMemberRequest := AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	AddToGroupResponse, err := queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	for _, requestGroupMember := range addMemberRequest.GroupMembers {
+		var found bool
+		for _, responseGroupMember := range *AddToGroupResponse {
+			if responseGroupMember.ClientID == requestGroupMember.ClientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Failed to add correct Group Members: Response( %+v) \n", AddToGroupResponse)
+		}
+	}
+}
+
+func CreateGroupMembershipKey(queenClient StorageClient, groupMember StorageClient, encryptedGroupKey string) (string, error) {
+	//Create a request to create a new membership key
+	membershipKeyRequest := CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: encryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	return membershipKeyResponse, err
 }
