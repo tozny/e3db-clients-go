@@ -102,6 +102,18 @@ func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest
 	return result, err
 }
 
+// AddMembersToGroup Adds Clients to a group and returns the succesfuly added clients (if any).
+func (c *StorageClient) AddMembersToGroup(ctx context.Context, params AddToGroupRequest) (*AddToGroupResponse, error) {
+	var result *AddToGroupResponse
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"

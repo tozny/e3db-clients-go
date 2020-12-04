@@ -73,12 +73,18 @@ type AddingCapabilityRequest struct {
 	AccountID      uuid.UUID `json:"account_id"`
 }
 
-// AddingClientToGroupRequest wraps values used to add a client to a Group.
-type AddingClientToGroupRequest struct {
+// AddToGroupRequest wraps values used to add a client to a Group.
+type AddToGroupRequest struct {
+	GroupID        uuid.UUID   `json:"group_id"`
+	ClientID       []uuid.UUID `json:"client_ids"`
+	CapabilityName []string    `json:"capability_names"`
+}
+
+// AddToGroupResponse wraps values for clients added to a Group.
+type AddToGroupResponse struct {
 	ClientID       uuid.UUID `json:"client_id"`
 	Name           string    `json:"group_name"`
 	CapabilityName string    `json:"capability_name"`
-	AccountID      uuid.UUID `json:"account_id"`
 }
 
 // DeleteGroupRequest wraps values used to delete a Group.
