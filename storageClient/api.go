@@ -31,23 +31,38 @@ type Note struct {
 
 // CreateGroupRequest wraps parameters needed to request creation of a group
 type CreateGroupRequest struct {
-	Name      string `json:"group_name"`
-	PublicKey string `json:"public_key"`
+	Name              string `json:"group_name"`
+	PublicKey         string `json:"public_key"`
+	EncryptedGroupKey string `json:"encrypted_group_key"`
 }
 
 // Group wraps values related to managing client membership and capabilities for resources such as records.
 type Group struct {
-	GroupID      uuid.UUID `json:"group_id"`
-	Name         string    `json:"group_name"`
-	AccountID    uuid.UUID `json:"account_id"`
-	PublicKey    string    `json:"public_key"`
-	CreatedAt    time.Time `json:"created_at"`
-	LastModified time.Time `json:"last_modified"`
+	GroupID           uuid.UUID `json:"group_id"`
+	Name              string    `json:"group_name"`
+	AccountID         uuid.UUID `json:"account_id"`
+	PublicKey         string    `json:"public_key"`
+	CreatedAt         time.Time `json:"created_at"`
+	LastModified      time.Time `json:"last_modified"`
+	EncryptedGroupKey string    `json:"encrypted_group_key"`
 }
 
 // DescribeGroupRequest wraps values used to look up Groups
 type DescribeGroupRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
+}
+
+// ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
+type ListGroupsRequest struct {
+	ClientID  uuid.UUID `json:"client_id"`
+	NextToken int64     `json:"next_token"`
+	Max       int       `json:"max"`
+}
+
+// ListGroupsResponse wraps a collection of groups
+type ListGroupsResponse struct {
+	Groups    []Group `json:"groups"`
+	NextToken int64   `json:"next_token"`
 }
 
 // AddingCapabilityRequest wraps values used to add a capability for Groups.
