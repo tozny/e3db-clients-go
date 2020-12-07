@@ -17,9 +17,12 @@ const (
 // SearchExecutorClient implements an http client for communication with an e3db Search Executor service.
 // currently this client only grabs meta information from e
 type SearchExecutorClient struct {
-	APIKey    string
-	APISecret string
-	Host      string
+	APIKey         string
+	APISecret      string
+	SigningKeys    e3dbClients.SigningKeys
+	EncryptionKeys e3dbClients.EncryptionKeys
+	ClientID       string
+	Host           string
 	*authClient.E3dbAuthClient
 }
 
@@ -36,12 +39,28 @@ func (c *SearchExecutorClient) Search(ctx context.Context, params ExecutorQueryR
 	return result, err
 }
 
+// ProtectedMetaSearch makes a protected meta search request to executor.
+// This data reflects what is currently present in elastic search.
+func (c *SearchExecutorClient) ProtectedMetaSearch(ctx context.Context, params ExecutorQueryRequest) (*ExecutorQueryResponse, error) {
+	var result *ExecutorQueryResponse
+	path := c.Host + "/v2/protected/search/meta"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // New returns searchExectorCient from generic config.
 func New(config e3dbClients.ClientConfig) SearchExecutorClient {
 	authService := authClient.New(config)
 	return SearchExecutorClient{
 		config.APIKey,
 		config.APISecret,
+		config.SigningKeys,
+		config.EncryptionKeys,
+		config.ClientID,
 		config.Host,
 		&authService,
 	}
