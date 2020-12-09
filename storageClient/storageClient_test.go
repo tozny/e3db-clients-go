@@ -311,8 +311,9 @@ func TestReadGroupWithValidInputSucceeds(t *testing.T) {
 		return
 	}
 	group := CreateGroupRequest{
-		Name:      "TestGroup1" + uuid.New().String(),
-		PublicKey: encryptionKeyPair.Public.Material,
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: encryptionKeyPair.Public.Material,
 	}
 	response, err := StorageClient.CreateGroup(testCtx, group)
 	if err != nil {
