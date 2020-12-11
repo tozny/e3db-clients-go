@@ -44,6 +44,18 @@ func (c *E3dbAccountClientV2) HealthCheck(ctx context.Context) error {
 	return err
 }
 
+// InitEmailUpdate attempts to start the email update process
+func (c *E3dbAccountClientV2) InitiateEmailUpdate(ctx context.Context, params InitiateUpdateEmailRequest) (*InitiateUpdateEmailResponse, error) {
+	var result *InitiateUpdateEmailResponse
+	path := c.Host + "/" + AccountServiceV2BasePath + "/profile/email"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	return result, err
+}
+
 // NewV2 returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func NewV2(config e3dbClients.ClientConfig) E3dbAccountClientV2 {
 	authService := authClient.New(config)

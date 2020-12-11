@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -17,6 +18,7 @@ var (
 	e3dbAccountHostV2 = os.Getenv("E3DB_ACCOUNT2_SERVICE_HOST")
 	e3dbAPIKey        = os.Getenv("E3DB_API_KEY_ID")
 	e3dbAPISecret     = os.Getenv("E3DB_API_KEY_SECRET")
+	testCtx           = context.Background()
 	ValidClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
@@ -156,5 +158,60 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	// Verify correct account id for this client is returned
 	if account.AccountID != accountID {
 		t.Errorf("Expected account id to be %s, got %s", accountID, account.AccountID)
+	}
+}
+
+func TestInitEmailUpdateWithValidAccountSucceeds(t *testing.T) {
+	// make internal account client (v1)
+	registrationClient := accountClient.New(ValidClientConfig)
+	_, resp, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	currentTime := time.Now().Local()
+	// make internal account client (v2)
+	updateClient := accountClient.NewV2(ValidClientConfigV2)
+	newEmailReq := accountClient.InitiateUpdateEmailRequest{
+		AccountID:    resp.Profile.AccountID,
+		CurrentEmail: resp.Profile.Email,
+		NewEmail:     "test" + uuid.New().String() + "@example.com",
+		CreatedAt:    currentTime,
+		CoolOffEnd:   currentTime.Add(time.Hour * 24),
+	}
+	// Make request to post / initiate the  email update
+	response, err := updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
+	if err != nil {
+		t.Fatalf("Failed to initiate email update \n Email Req: (%+v) \n error %+v", newEmailReq, err)
+	}
+	// Verify that the AccountID returned matches the client
+	if response.AccountID.String() != newEmailReq.AccountID {
+		t.Fatalf("AccountID (%+v) passed in does not match AccountID in response (%+v) for request (%+v)", response.AccountID.String(), newEmailReq.AccountID, newEmailReq)
+	}
+}
+
+func TestInitEmailUpdateWithTwoReqsFails(t *testing.T) {
+	registrationClient := accountClient.New(ValidClientConfig)
+	_, resp, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	currentTime := time.Now().Local()
+	updateClient := accountClient.NewV2(ValidClientConfigV2)
+	newEmailReq := accountClient.InitiateUpdateEmailRequest{
+		AccountID:    resp.Profile.AccountID,
+		CurrentEmail: resp.Profile.Email,
+		NewEmail:     "test" + uuid.New().String() + "@example.com",
+		CreatedAt:    currentTime,
+		CoolOffEnd:   currentTime.Add(time.Hour * 24),
+	}
+	// Make request to post / initiate the email update & verify it's successful
+	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
+	if err != nil {
+		t.Fatalf("Failed to initiate email update \n Email Req: (%+v) \n error %+v", newEmailReq, err)
+	}
+	// Make request to post / initiate the same email update again & verify it fails
+	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
+	if err == nil {
+		t.Fatalf("A second email update was initiated with same AccountID\n Email Req: (%+v) \n error %+v", newEmailReq, err)
 	}
 }
