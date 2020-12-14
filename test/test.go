@@ -11,6 +11,7 @@ import (
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
+	"github.com/tozny/e3db-clients-go/storageClient"
 )
 
 // MakeE3DBAccountWithEmail attempts to create a valid e3db account returning the root client config for the created account and error (if any).
@@ -213,4 +214,15 @@ func WriteRandomRecordForUser(user pdsClient.E3dbPDSClient, recordType string, w
 		},
 	}
 	return user.WriteRecord(ctx, recordToWrite)
+}
+func CreateGroupMembershipKey(ctx context.Context, queenClient storageClient.StorageClient, groupMember storageClient.StorageClient, encryptedGroupKey string) (string, error) {
+	//Create a request to create a new membership key
+	membershipKeyRequest := storageClient.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: encryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(ctx, membershipKeyRequest)
+	return membershipKeyResponse, err
 }

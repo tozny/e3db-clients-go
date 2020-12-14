@@ -208,6 +208,7 @@ type TozIDEACPChallengeResponse struct {
 	RealmName            string `json:"realm_name"`
 }
 
+// Record struct
 type Record struct {
 	Metadata        Meta              `json:"meta"`
 	Data            map[string]string `json:"data"`
