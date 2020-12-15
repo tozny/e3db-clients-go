@@ -88,7 +88,7 @@ func (c *StorageClient) DeleteGroup(ctx context.Context, params DeleteGroupReque
 	return err
 }
 
-// ListGroups returns all groups for the client's account by default or optionally filter by parameters such as client ID
+// ListGroups returns all groups for the client's account by default or optionally filter by parameters such as client ID, group name
 func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest) (*ListGroupsResponse, error) {
 	var result *ListGroupsResponse
 	path := c.Host + storageServiceBasePath + "/groups"
@@ -101,6 +101,9 @@ func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	if params.ClientID != uuid.Nil {
 		urlParams.Set("client_id", params.ClientID.String())
+	}
+	for _, groupName := range params.GroupNames {
+		urlParams.Add("group_names", groupName)
 	}
 	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)

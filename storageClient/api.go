@@ -54,9 +54,10 @@ type DescribeGroupRequest struct {
 
 // ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
 type ListGroupsRequest struct {
-	ClientID  uuid.UUID `json:"client_id"`
-	NextToken int64     `json:"next_token"`
-	Max       int       `json:"max"`
+	ClientID   uuid.UUID
+	GroupNames []string
+	NextToken  int64
+	Max        int
 }
 
 // ListGroupsResponse wraps a collection of groups
