@@ -158,6 +158,19 @@ func DecryptData(Data map[string]string, ak SymmetricKey) (*map[string]string, e
 	return &decryptedData, nil
 }
 
+// EncryptPrivateKey Encrypts a private key using a keypair.
+func EncryptPrivateKey(privateKey Key, encryptionKeys EncryptionKeys) (string, error) {
+	rawPrivateKeyBytes, err := Base64Decode(privateKey.Material)
+	if err != nil {
+		return "", err
+	}
+	eak, eakN, err := BoxEncryptToBase64(rawPrivateKeyBytes, encryptionKeys)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", eak, eakN), err
+}
+
 // EncryptAccessKey returns encrypted access key with nonce attached.
 func EncryptAccessKey(rawAK SymmetricKey, encryptionKeys EncryptionKeys) (string, error) {
 	eak, eakN, err := BoxEncryptToBase64(rawAK[:], encryptionKeys)

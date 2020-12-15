@@ -73,12 +73,25 @@ type AddingCapabilityRequest struct {
 	AccountID      uuid.UUID `json:"account_id"`
 }
 
-// AddingClientToGroupRequest wraps values used to add a client to a Group.
-type AddingClientToGroupRequest struct {
-	ClientID       uuid.UUID `json:"client_id"`
-	Name           string    `json:"group_name"`
-	CapabilityName string    `json:"capability_name"`
-	AccountID      uuid.UUID `json:"account_id"`
+// GroupMember wraps values for a client that is a member of a group.
+type GroupMember struct {
+	ClientID        uuid.UUID `json:"client_ids"`
+	MembershipKey   string    `json:"membership_key"`
+	CapabilityNames []string  `json:"capability_names"`
+}
+
+// AddGroupMembersRequest  wraps the information of all members being added.
+type AddGroupMembersRequest struct {
+	GroupID      uuid.UUID     `json:"group_id"`
+	GroupMembers []GroupMember `json:"group_members"`
+}
+
+// CreateMembershipKeyRequest wraps the values needed to create a membership key for clients.
+type CreateMembershipKeyRequest struct {
+	GroupAdminID      string
+	NewMemberID       string
+	EncryptedGroupKey string
+	ShareePublicKey   string
 }
 
 // DeleteGroupRequest wraps values used to delete a Group.
@@ -195,6 +208,7 @@ type TozIDEACPChallengeResponse struct {
 	RealmName            string `json:"realm_name"`
 }
 
+// Record struct
 type Record struct {
 	Metadata        Meta              `json:"meta"`
 	Data            map[string]string `json:"data"`

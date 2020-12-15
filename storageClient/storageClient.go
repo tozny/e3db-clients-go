@@ -2,10 +2,12 @@ package storageClient
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/clientServiceClient"
 
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -16,7 +18,10 @@ const (
 	EmailOTPQueryParam     = "email_otp"
 	ToznyOTPQueryParam     = "tozny_otp"
 	// The TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that contains the one time password as the `nonce` claim and TozID as the authorizing party (`azp`) claim.
-	TozIDLoginTokenHeader = "X-TOZID-LOGIN-TOKEN"
+	TozIDLoginTokenHeader           = "X-TOZID-LOGIN-TOKEN"
+	ReadContentGroupCapability      = "READ_CONTENT"
+	ShareContentGroupCapability     = "SHARE_CONTENT"
+	ManageMembershipGroupCapability = "MANAGE_MEMBERSHIP"
 )
 
 var (
@@ -102,6 +107,18 @@ func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest
 	return result, err
 }
 
+// AddGroupMembers Adds Clients to a group and returns the succesfuly added clients (if any).
+func (c *StorageClient) AddGroupMembers(ctx context.Context, params AddGroupMembersRequest) (*[]GroupMember, error) {
+	var result *[]GroupMember
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
@@ -111,6 +128,60 @@ func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
+}
+
+// CreateGroupMembershipKey creates an encrypted version of the provided groupkey for the specified group member.
+func (c *StorageClient) CreateGroupMembershipKey(ctx context.Context, params CreateMembershipKeyRequest) (string, error) {
+	var wrappedEncryptedMembershipKey string
+	// Decrypt the access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return wrappedEncryptedMembershipKey, err
+	}
+	groupKey, err := e3dbClients.DecryptEAK(params.EncryptedGroupKey, params.ShareePublicKey, rawEncryptionKey)
+	if err != nil {
+		return wrappedEncryptedMembershipKey, err
+	}
+	// Using the decrypted version of
+	// encrypted Group Key and the public key of
+	// the group admin specified in params,
+	// create an encrypted membership key that
+	// the new member can decrypt
+	wrappedEncryptedMembershipKey, err = c.EncryptMembershipKeyForGroupMember(ctx, groupKey, params.NewMemberID)
+	return wrappedEncryptedMembershipKey, err
+}
+
+// EncryptMembershipKeyForGroupMember tales the group key and wraps it for the new client
+func (c *StorageClient) EncryptMembershipKeyForGroupMember(ctx context.Context, groupKey e3dbClients.SymmetricKey, newMemberID string) (string, error) {
+	var wrappedMembershipKey string
+	clientServiceConfig := e3dbClients.ClientConfig{
+		APIKey:    c.APIKey,
+		APISecret: c.APISecret,
+		Host:      c.Host,
+		AuthNHost: c.Host,
+	}
+	clientClient := clientServiceClient.New(clientServiceConfig)
+	publicClient, err := clientClient.GetPublicClient(ctx, newMemberID)
+	if err != nil {
+		return wrappedMembershipKey, err
+	}
+	newMemberPubKey := publicClient.PublicClient.PublicKeys[e3dbClients.DefaultEncryptionKeyType]
+	// Use the group admin private key for signing (to allow this client to sign the key)
+	// and the new member public key for encryption (to allow the reader to decrypt)
+	encryptionKeys := e3dbClients.EncryptionKeys{
+		Public: e3dbClients.Key{
+			Type:     e3dbClients.DefaultEncryptionKeyType,
+			Material: newMemberPubKey,
+		},
+		Private: c.EncryptionKeys.Private,
+	}
+	eak, eakN, err := e3dbClients.BoxEncryptToBase64(groupKey[:], encryptionKeys)
+	if err != nil {
+		return wrappedMembershipKey, err
+	}
+	wrappedMembershipKey = fmt.Sprintf("%s.%s", eak, eakN)
+	return wrappedMembershipKey, nil
+
 }
 
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
