@@ -585,24 +585,24 @@ func TestListGroupsWithClientForClientWithGroupsReturnsSuccess(t *testing.T) {
 }
 func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsOnlyOneGroupSuccess(t *testing.T) {
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
-	queenClientInfo, _, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
 	queenClientInfo.Host = cyclopsServiceHost
-	queenClient := New(queenClientInfo)
+	queenClient := storageClientV2.New(queenClientInfo)
 	//Insert two Group To List
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
-	newGroup := CreateGroupRequest{
+	newGroup := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
-	newGroup2 := CreateGroupRequest{
+	newGroup2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
@@ -622,7 +622,7 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 	if response.Name != newGroup2.Name {
 		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup2.Name, response.Name, newGroup2)
 	}
-	listRequest := ListGroupsRequest{
+	listRequest := storageClientV2.ListGroupsRequest{
 		GroupNames: []string{response.Name},
 		ClientID:   uuid.MustParse(queenClient.ClientID),
 		NextToken:  0,
@@ -640,24 +640,24 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 }
 func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsOnlyAllGroupSuccess(t *testing.T) {
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
-	queenClientInfo, _, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
 	queenClientInfo.Host = cyclopsServiceHost
-	queenClient := New(queenClientInfo)
+	queenClient := storageClientV2.New(queenClientInfo)
 	//Insert two Group To List
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
-	newGroup := CreateGroupRequest{
+	newGroup := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
-	newGroup2 := CreateGroupRequest{
+	newGroup2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
@@ -678,7 +678,7 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup2.Name, response.Name, newGroup2)
 	}
 	groupCreatedID2 := response.GroupID
-	listRequest := ListGroupsRequest{
+	listRequest := storageClientV2.ListGroupsRequest{
 		GroupNames: []string{newGroup.Name, newGroup2.Name},
 		ClientID:   uuid.MustParse(queenClient.ClientID),
 		NextToken:  0,
@@ -703,33 +703,33 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 }
 func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsOneGroupSuccess(t *testing.T) {
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
-	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
 	queenClientInfo.Host = cyclopsServiceHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
 
-	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
 	if err != nil {
 		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
 	}
 	ClientConfig.Host = cyclopsServiceHost
-	regClient := New(ClientConfig)
+	regClient := storageClientV2.New(ClientConfig)
 
 	//Create A group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	group := CreateGroupRequest{
+	group := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
-	group2 := CreateGroupRequest{
+	group2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
@@ -750,7 +750,7 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsOneGro
 	if response.Name != group2.Name {
 		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
 	}
-	listRequest := ListGroupsRequest{
+	listRequest := storageClientV2.ListGroupsRequest{
 		GroupNames: []string{group.Name},
 	}
 	responseList, err := regClient.ListGroups(testCtx, listRequest)
@@ -765,33 +765,33 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsOneGro
 }
 func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsAllGroupSuccess(t *testing.T) {
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
-	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
 	queenClientInfo.Host = cyclopsServiceHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := e3dbTest.CreateRegistrationToken(&queenAccountClient, accountToken)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
 
-	reg, ClientConfig, err := e3dbTest.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
 	if err != nil {
 		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
 	}
 	ClientConfig.Host = cyclopsServiceHost
-	regClient := New(ClientConfig)
+	regClient := storageClientV2.New(ClientConfig)
 
 	//Create A group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	group := CreateGroupRequest{
+	group := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
 	}
-	group2 := CreateGroupRequest{
+	group2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
 		EncryptedGroupKey: encryptionKeyPair.Private.Material,
@@ -813,7 +813,7 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsAllGro
 		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", group.Name, response.Name, group)
 	}
 	groupCreatedID2 := response.GroupID
-	listRequest := ListGroupsRequest{
+	listRequest := storageClientV2.ListGroupsRequest{
 		GroupNames: []string{group.Name, group2.Name},
 	}
 	responseList, err := regClient.ListGroups(testCtx, listRequest)
