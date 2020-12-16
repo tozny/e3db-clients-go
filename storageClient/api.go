@@ -81,6 +81,9 @@ type GroupMember struct {
 	CapabilityNames []string  `json:"capability_names"`
 }
 
+// DeleteGroupMembersRequest  wraps the information of all members being removed from group provided.
+type DeleteGroupMembersRequest AddGroupMembersRequest
+
 // AddGroupMembersRequest  wraps the information of all members being added.
 type AddGroupMembersRequest struct {
 	GroupID      uuid.UUID     `json:"group_id"`
