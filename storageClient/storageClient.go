@@ -122,6 +122,18 @@ func (c *StorageClient) AddGroupMembers(ctx context.Context, params AddGroupMemb
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// DeleteGroupMembers removed clients form a group and returns success.
+func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGroupMembersRequest) error {
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
+	request, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
