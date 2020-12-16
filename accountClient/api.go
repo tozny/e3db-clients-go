@@ -220,23 +220,15 @@ type InternalSigClientInfoResponse struct {
 
 // InitUpdateEmailRequest wraps values needed to issue a request to start an email update
 type InitiateUpdateEmailRequest struct {
-	AccountID    string    `json:"account_id"`
+	AccountID    uuid.UUID `json:"account_id"`
 	CurrentEmail string    `json:"current_email"`
 	NewEmail     string    `json:"new_email"`
-	CreatedAt    time.Time `json:"created_at"`
-	CoolOffEnd   time.Time `json:"cool_off_end"`
 }
 
 // InitUpdateEmailResponse wraps data returned from /profile/email endpoint
 type InitiateUpdateEmailResponse struct {
-	AccountID      uuid.UUID `json:"account_id"`
-	CurrentEmail   string    `json:"current_email"`
-	NewEmail       string    `json:"new_email"`
-	NewEmailHash   string    `json:"new_email_hash"`
-	Verified       bool      `json:"email_verfied"`
-	UpdateComplete bool      `json:"update_complete"`
-	ExpiresAt      time.Time `json:"update"`
-	CreatedAt      time.Time `json:"created_at"`
-	CoolOffEnd     time.Time `json:"cool_off_end"`
-	ModifiedAt     time.Time `json:"modified_at"`
+	AccountID    uuid.UUID `json:"account_id"`
+	CurrentEmail string    `json:"current_email"`
+	NewEmail     string    `json:"new_email"`
+	CreatedAt    time.Time `json:"created_at"`
 }

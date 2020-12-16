@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -168,24 +167,27 @@ func TestInitEmailUpdateWithValidAccountSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not register account %s\n", err)
 	}
-	currentTime := time.Now().Local()
 	// make internal account client (v2)
 	updateClient := accountClient.NewV2(ValidClientConfigV2)
+	accountID, err := uuid.Parse(resp.Profile.AccountID)
+	if err != nil {
+		t.Fatalf("Could not parse AccountID %+v\n AccountID: %+v", err, resp.Profile.AccountID)
+	}
 	newEmailReq := accountClient.InitiateUpdateEmailRequest{
-		AccountID:    resp.Profile.AccountID,
+		AccountID:    accountID,
 		CurrentEmail: resp.Profile.Email,
 		NewEmail:     "test" + uuid.New().String() + "@example.com",
-		CreatedAt:    currentTime,
-		CoolOffEnd:   currentTime.Add(time.Hour * 24),
 	}
 	// Make request to post / initiate the  email update
 	response, err := updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
 	if err != nil {
 		t.Fatalf("Failed to initiate email update \n Email Req: (%+v) \n error %+v", newEmailReq, err)
 	}
-	// Verify that the AccountID returned matches the client
-	if response.AccountID.String() != newEmailReq.AccountID {
-		t.Fatalf("AccountID (%+v) passed in does not match AccountID in response (%+v) for request (%+v)", response.AccountID.String(), newEmailReq.AccountID, newEmailReq)
+	if response.CurrentEmail != newEmailReq.CurrentEmail {
+		t.Fatalf("CurrentEmail (%+v) passed in does not match CurrentEmail in response (%+v) for request (%+v)", response.CurrentEmail, newEmailReq.CurrentEmail, newEmailReq)
+	}
+	if response.NewEmail != newEmailReq.NewEmail {
+		t.Fatalf("NewEamil (%+v) passed in does not match NewEmail in response (%+v) for request (%+v)", response.NewEmail, newEmailReq.NewEmail, newEmailReq)
 	}
 }
 
@@ -195,14 +197,15 @@ func TestInitEmailUpdateWithTwoReqsFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not register account %s\n", err)
 	}
-	currentTime := time.Now().Local()
 	updateClient := accountClient.NewV2(ValidClientConfigV2)
+	accountID, err := uuid.Parse(resp.Profile.AccountID)
+	if err != nil {
+		t.Fatalf("Could not parse AccountID from response %+v\nAccountID: %+v", err, resp.Profile.AccountID)
+	}
 	newEmailReq := accountClient.InitiateUpdateEmailRequest{
-		AccountID:    resp.Profile.AccountID,
+		AccountID:    accountID,
 		CurrentEmail: resp.Profile.Email,
 		NewEmail:     "test" + uuid.New().String() + "@example.com",
-		CreatedAt:    currentTime,
-		CoolOffEnd:   currentTime.Add(time.Hour * 24),
 	}
 	// Make request to post / initiate the email update & verify it's successful
 	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
@@ -211,6 +214,7 @@ func TestInitEmailUpdateWithTwoReqsFails(t *testing.T) {
 	}
 	// Make request to post / initiate the same email update again & verify it fails
 	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
+	t.Logf("Error: %+v", err)
 	if err == nil {
 		t.Fatalf("A second email update was initiated with same AccountID\n Email Req: (%+v) \n error %+v", newEmailReq, err)
 	}
