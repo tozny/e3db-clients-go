@@ -26,6 +26,7 @@ const (
 	NonceSize                = 24
 	SaltSize                 = 16
 	AccountDerivationRounds  = 1000
+	IdentityDerivationRounds = 10000
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data

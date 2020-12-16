@@ -63,8 +63,9 @@ type Sovereign struct {
 
 // CreateRealmRequest wraps parameters needed to request creation of a realm.
 type CreateRealmRequest struct {
-	RealmName     string `json:"realm_name"`     // User defined realm identifier.
-	SovereignName string `json:"sovereign_name"` // User defined identifier for the realm's sovereign.
+	RealmName         string `json:"realm_name"`         // User defined realm identifier.
+	SovereignName     string `json:"sovereign_name"`     // User defined identifier for the realm's sovereign.
+	RegistrationToken string `json:"registration_token"` // Tozny Registration Token to associate with this realm.
 }
 
 // ListRealmsResponse wraps values returned from a list realms request.
