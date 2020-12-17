@@ -598,15 +598,19 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	newGroup := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	newGroup2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient.CreateGroup(testCtx, newGroup)
 	if err != nil {
@@ -629,6 +633,7 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 		NextToken:  0,
 		Max:        10,
 	}
+	groupCreatedID1 = response.GroupID
 	responseList, err := queenClient.ListGroups(testCtx, listRequest)
 	if err != nil {
 		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
@@ -653,15 +658,19 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 		t.Errorf("Failed generating encryption key pair %s", err)
 		return
 	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	newGroup := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	newGroup2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient.CreateGroup(testCtx, newGroup)
 	if err != nil {
@@ -725,15 +734,19 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsOneGro
 
 	//Create A group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, regClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	group2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 
 	response, err := regClient.CreateGroup(testCtx, group)
@@ -787,15 +800,19 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsAllGro
 
 	//Create A group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, regClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
 	group := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 	group2 := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
-		EncryptedGroupKey: encryptionKeyPair.Private.Material,
+		EncryptedGroupKey: eak,
 	}
 
 	response, err := regClient.CreateGroup(testCtx, group)
