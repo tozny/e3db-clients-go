@@ -134,6 +134,18 @@ func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGro
 	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+// ListGroupMembers returns the group members and capabilites based on the groupID
+func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*[]GroupMember, error) {
+	var result *[]GroupMember
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"

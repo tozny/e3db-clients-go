@@ -52,6 +52,9 @@ type DescribeGroupRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
 }
 
+// ListGroupMembersRequest wraps the group id needed to look up group members
+type ListGroupMembersRequest DescribeGroupRequest
+
 // ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
 type ListGroupsRequest struct {
 	ClientID   uuid.UUID
