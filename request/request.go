@@ -19,7 +19,7 @@ func (f RequesterFunc) Do(r *http.Request) (*http.Response, error) {
 //
 // The interceptor can determine whether to pass the request down the line using
 // the Do method, or perform some kind of operation on it, before or after it is
-// sent. I could even short circuit the req, sending back a valid http Response,
+// sent. One could even short circuit the req, sending back a valid http Response,
 // never calling the Do method on the next Requester.
 type Interceptor func(Requester) Requester
 
