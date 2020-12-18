@@ -2,6 +2,7 @@ package request
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/tozny/utils-go/logging"
 	"golang.org/x/oauth2"
@@ -23,7 +24,9 @@ func ApplyTokenInterceptor(s oauth2.TokenSource) Interceptor {
 // LoggingInterceptor logs out request details when a logger in debug mode is supplied
 func LoggingInterceptor(l logging.Logger) Interceptor {
 	return InterceptorFunc(func(c Requester, r *http.Request) (*http.Response, error) {
-		l.Debugf("Making request to %s", r.URL)
-		return c.Do(r)
+		startTime := time.Now()
+		resp, err := c.Do(r)
+		l.Debugf("%s request to %s at %s took %s", r.Method, r.URL, r.Header.Get("Date"), time.Now().Sub(startTime))
+		return resp, err
 	})
 }
