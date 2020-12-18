@@ -892,6 +892,7 @@ func TestCreateGroupMembershipKey(t *testing.T) {
 		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	t.Logf("%+v", response)
 	if err != nil {
 		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
 	}
@@ -1586,5 +1587,131 @@ func TestDeleteGroupMemberWithoutGroupManageCapabilityReturnsForbidden(t *testin
 		}
 	} else {
 		t.Fatalf("Expected 403 error %s removing group member %+v", err, deleteMemberRequest)
+	}
+}
+func TestListGroupMembersReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// Clients to Add to Group
+	groupMemberToAdd1 := storageClientV2.New(ClientConfig)
+	groupMemberToAdd2 := storageClientV2.New(ClientConfig2)
+	queenClient := storageClientV2.New(queenClientInfo)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClientV2.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for client1
+	membershipKeyRequest := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd1.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for client2
+	membershipKeyRequest2 := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Add clients  to group
+	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}
+	memberRequest := []storageClientV2.GroupMember{}
+	//Adding First Client to Request
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd1.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	//Adding Second client to request
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd2.ClientID),
+			MembershipKey:   membershipKeyResponse2,
+			CapabilityNames: groupMemberCapabilities})
+
+	addMemberRequest := storageClientV2.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	addToGroupResponse, err := queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	listMemberRequest := storageClientV2.ListGroupMembersRequest{GroupID: response.GroupID}
+	listMemberResponse, err := queenClient.ListGroupMembers(testCtx, listMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to List Group Members: Request:  %+v Err: %+v", listMemberRequest, err)
+	}
+	for _, member := range *addToGroupResponse {
+		var foundMember bool
+		for _, responseMember := range *listMemberResponse {
+			if member.ClientID == responseMember.ClientID {
+				foundMember = true
+			}
+			for _, capabilityExpected := range groupMemberCapabilities {
+				var foundCapability bool
+				for _, capabilityReturned := range member.CapabilityNames {
+					if capabilityReturned == capabilityExpected {
+						foundCapability = true
+					}
+				}
+				if foundCapability == false {
+					t.Fatalf("Failed to List Group Member Capabilities: ClientID: %+v Returned: %+v Expected  %+v", member.ClientID, groupMemberCapabilities, member.CapabilityNames)
+				}
+			}
+		}
+		if foundMember == false {
+			t.Fatalf("Failed to List Group Member: ClientID:  %+v", member.ClientID)
+		}
 	}
 }
