@@ -100,8 +100,8 @@ type ProxiedClientRegisterationInfo struct {
 	SigningKeys map[string]string `json:"signing_key,omitempty"`
 }
 
-// ProxiedClientRegisterationResponse wraps the client information for a newly registered client.
-type ProxiedClientRegisterationResponse struct {
+// ProxiedClientRegistrationResponse wraps the client information for a newly registered client.
+type ProxiedClientRegistrationResponse struct {
 	ProxyiedRegisteredClient
 	APISecret    string `json:"api_secret"`
 	RootClientID string

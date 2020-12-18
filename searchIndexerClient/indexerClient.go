@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/authClient"
 	"net/http"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 const (
@@ -19,6 +21,7 @@ type E3dbSearchIndexerClient struct {
 	APISecret string
 	Host      string
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 // IndexRecord attempts to index the provided record by calling the indexer index endpoint.
@@ -29,11 +32,11 @@ func (c *E3dbSearchIndexerClient) IndexRecord(ctx context.Context, params IndexR
 	if err != nil {
 		return result, err
 	}
-	request, err := http.NewRequest("POST", c.Host+"/"+SearchIndexerServiceBasePath, &buf)
+	req, err := http.NewRequest("POST", c.Host+"/"+SearchIndexerServiceBasePath, &buf)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -45,11 +48,11 @@ func (c *E3dbSearchIndexerClient) BatchIndexRecord(ctx context.Context, params B
 	if err != nil {
 		return result, err
 	}
-	request, err := http.NewRequest("POST", c.Host+"/"+SearchIndexerServiceBasePath+"/batch", &buf)
+	req, err := http.NewRequest("POST", c.Host+"/"+SearchIndexerServiceBasePath+"/batch", &buf)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -61,5 +64,6 @@ func New(config e3dbClients.ClientConfig) E3dbSearchIndexerClient {
 		config.APISecret,
 		config.Host,
 		&authService,
+		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

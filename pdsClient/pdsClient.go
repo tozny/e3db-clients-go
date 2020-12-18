@@ -11,6 +11,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 const (
@@ -25,6 +26,7 @@ type E3dbPDSClient struct {
 	Host           string
 	EncryptionKeys e3dbClients.EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 // readPolicy wraps an e3db API object
@@ -61,16 +63,16 @@ type denyAuthorizerPolicy struct {
 	Deny []authorizePolicy `json:"deny"`
 }
 
-// FileCommit finalized a pending file write, returning the commited file record
+// FileCommit finalized a pending file write, returning the committed file record
 // or error (if any)
 func (c *E3dbPDSClient) FileCommit(ctx context.Context, pendingFileID string) (*WriteRecordResponse, error) {
 	var result *WriteRecordResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/files/" + pendingFileID
-	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	req, err := e3dbClients.CreateRequest("PATCH", path, nil)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -89,16 +91,16 @@ func (c *E3dbPDSClient) AddAuthorizedSharer(ctx context.Context, params AddAutho
 	// Create a policy to apply for the authorizer to be allowed to share records of type specified in params
 	authorizerPolicy := allowAuthorizerPolicy{
 		Allow: []authorizePolicy{
-			authorizePolicy{
+			{
 				Authorize: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -119,16 +121,16 @@ func (c *E3dbPDSClient) RemoveAuthorizedSharer(ctx context.Context, params AddAu
 	// Create a policy to apply for the authorizer to be denied sharing records of type specified in params
 	authorizerPolicy := denyAuthorizerPolicy{
 		Deny: []authorizePolicy{
-			authorizePolicy{
+			{
 				Authorize: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, authorizerPolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -147,16 +149,16 @@ func (c *E3dbPDSClient) ShareRecords(ctx context.Context, params ShareRecordsReq
 	// Create a policy to apply for the reader to be allowed to read records of type specified in params
 	sharePolicy := allowReadPolicy{
 		Allow: []readPolicy{
-			readPolicy{
+			{
 				Read: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -175,16 +177,16 @@ func (c *E3dbPDSClient) UnshareRecords(ctx context.Context, params ShareRecordsR
 	// Create a policy to apply for the reader to be denied to read records of type specified in params
 	sharePolicy := denyReadPolicy{
 		Deny: []readPolicy{
-			readPolicy{
+			{
 				Read: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -204,16 +206,16 @@ func (c *E3dbPDSClient) AuthorizerShareRecords(ctx context.Context, params Autho
 	// Create a policy to apply for the reader to be allowed to read records of type specified in params
 	sharePolicy := allowReadPolicy{
 		Allow: []readPolicy{
-			readPolicy{
+			{
 				Read: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, sharePolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -236,16 +238,16 @@ func (c *E3dbPDSClient) AuthorizerUnshareRecords(ctx context.Context, params Aut
 	// Create a policy to apply for the reader to be allowed to read records of type specified in params
 	unsharePolicy := denyReadPolicy{
 		Deny: []readPolicy{
-			readPolicy{
+			{
 				Read: make(map[string]interface{}),
 			},
 		},
 	}
-	request, err := e3dbClients.CreateRequest("PUT", path, unsharePolicy)
+	req, err := e3dbClients.CreateRequest("PUT", path, unsharePolicy)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -253,11 +255,11 @@ func (c *E3dbPDSClient) AuthorizerUnshareRecords(ctx context.Context, params Aut
 func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID string) (*InternalAllowedReadsResponse, error) {
 	var result *InternalAllowedReadsResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_reads/" + readerID
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -265,11 +267,11 @@ func (c *E3dbPDSClient) InternalAllowedReads(ctx context.Context, readerID strin
 func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context, params InternalAllowedReadersForPolicyRequest) (*InternalAllowedReadersForPolicyResponse, error) {
 	var result *InternalAllowedReadersForPolicyResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_readers"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -278,11 +280,11 @@ func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context,
 func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearchRequest) (*InternalSearchResponse, error) {
 	var result *InternalSearchResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/search"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -291,11 +293,11 @@ func (c *E3dbPDSClient) InternalSearch(ctx context.Context, params InternalSearc
 func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params InternalSearchAllowedReadsRequest) (*InternalSearchAllowedReadsResponse, error) {
 	var result *InternalSearchAllowedReadsResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_reads"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -303,16 +305,16 @@ func (c *E3dbPDSClient) InternalSearchAllowedReads(ctx context.Context, params I
 func (c *E3dbPDSClient) InternalBulkDelete(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
 	var result BulkDeleteResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/records/bulk/" + clientID.String()
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return result, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	if limit != 0 {
 		urlParams.Set("limit", strconv.Itoa(limit))
 	}
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -320,15 +322,15 @@ func (c *E3dbPDSClient) InternalBulkDelete(ctx context.Context, clientID uuid.UU
 func (c *E3dbPDSClient) PutAccessKey(ctx context.Context, params PutAccessKeyRequest) (*PutAccessKeyResponse, error) {
 	var result *PutAccessKeyResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
-	request, err := e3dbClients.CreateRequest("PUT", path, params)
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
-// PutEncryptedAccessKey wraps PutAccessKey to encrypt an unencryptedAK before placing it in Tozstore.
+// PutEncryptedAccessKey wraps PutAccessKey to encrypt an un-encryptedAK before placing it in TozStore.
 func (c *E3dbPDSClient) PutEncryptedAccessKey(ctx context.Context, params PutAccessKeyRequest, unencryptedAK e3dbClients.SymmetricKey) (*PutAccessKeyResponse, error) {
 	eak, err := e3dbClients.EncryptAccessKey(unencryptedAK, c.EncryptionKeys)
 	if err != nil {
@@ -342,22 +344,22 @@ func (c *E3dbPDSClient) PutEncryptedAccessKey(ctx context.Context, params PutAcc
 func (c *E3dbPDSClient) GetAccessKey(ctx context.Context, params GetAccessKeyRequest) (*GetAccessKeyResponse, error) {
 	var result *GetAccessKeyResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
-	request, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
 // DeleteAccessKey attempts to delete an access key stored in E3DB returning the response and error (if any).
 func (c *E3dbPDSClient) DeleteAccessKey(ctx context.Context, params DeleteAccessKeyRequest) error {
 	path := c.Host + "/" + PDSServiceBasePath + "/access_keys" + fmt.Sprintf("/%s", params.WriterID) + fmt.Sprintf("/%s", params.UserID) + fmt.Sprintf("/%s", params.ReaderID) + fmt.Sprintf("/%s", params.RecordType)
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -382,11 +384,11 @@ func (c *E3dbPDSClient) EncryptRecord(ctx context.Context, record Record) (Recor
 func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordRequest) (*WriteRecordResponse, error) {
 	var result *WriteRecordResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -427,11 +429,11 @@ func (c *E3dbPDSClient) DecryptRecord(ctx context.Context, record Record) (Recor
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
 func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordRequest) error {
 	path := c.Host + "/" + PDSServiceBasePath + "/records/" + params.RecordID
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -439,11 +441,11 @@ func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordReq
 func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsRequest) (*ListRecordsResult, error) {
 	var result *ListRecordsResult
 	path := c.Host + "/" + PDSServiceBasePath + "/search"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -451,11 +453,11 @@ func (c *E3dbPDSClient) ListRecords(ctx context.Context, params ListRecordsReque
 func (c *E3dbPDSClient) ProxyListRecords(ctx context.Context, authToken string, params ListRecordsRequest) (*ListRecordsResult, error) {
 	var result *ListRecordsResult
 	path := c.Host + "/" + PDSServiceBasePath + "/search"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	err = e3dbClients.MakeProxiedUserCall(ctx, c.requester, authToken, req, &result)
 	return result, err
 }
 
@@ -464,11 +466,11 @@ func (c *E3dbPDSClient) ProxyListRecords(ctx context.Context, authToken string, 
 func (c *E3dbPDSClient) BatchGetRecords(ctx context.Context, params BatchGetRecordsRequest) (*BatchGetRecordsResult, error) {
 	var result *BatchGetRecordsResult
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
-	request, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -478,11 +480,11 @@ func (c *E3dbPDSClient) BatchGetRecords(ctx context.Context, params BatchGetReco
 func (c *E3dbPDSClient) ProxyBatchGetRecords(ctx context.Context, authToken string, params BatchGetRecordsRequest) (*BatchGetRecordsResult, error) {
 	var result *BatchGetRecordsResult
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
-	request, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeProxiedUserCall(ctx, authToken, request, &result)
+	err = e3dbClients.MakeProxiedUserCall(ctx, c.requester, authToken, req, &result)
 	return result, err
 }
 
@@ -490,11 +492,11 @@ func (c *E3dbPDSClient) ProxyBatchGetRecords(ctx context.Context, authToken stri
 func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) (*InternalGetRecordResponse, error) {
 	var result *InternalGetRecordResponse
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/records/" + recordID
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -502,11 +504,11 @@ func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) 
 // returning error if unable to connect to the search service.
 func (c *E3dbPDSClient) HealthCheck(ctx context.Context) error {
 	path := c.Host + "/" + PDSServiceBasePath + "/servicecheck"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -682,7 +684,7 @@ func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCr
 			RecordType:         params.RecordType,
 			EncryptedAccessKey: eak,
 		})
-		// return the unencrypted version for local use
+		// return the un-encrypted version for local use
 		return accessKey, err
 	}
 	encryptedAccessKey := accessKeyResponse.EAK
@@ -704,5 +706,6 @@ func New(config e3dbClients.ClientConfig) E3dbPDSClient {
 		config.Host,
 		config.EncryptionKeys,
 		&authService,
+		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

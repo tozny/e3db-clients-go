@@ -6,6 +6,7 @@ import (
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 type ToznyNotificationClient struct {
@@ -13,6 +14,7 @@ type ToznyNotificationClient struct {
 	SigningKeys e3dbClients.SigningKeys
 	ClientID    string
 	authClient  authClient.E3dbAuthClient
+	requester   request.Requester
 }
 
 const (
@@ -24,11 +26,11 @@ const (
 func (nc *ToznyNotificationClient) CreateNotification(ctx context.Context, params CreateNotificationRequest) (*NotificationMeta, error) {
 	var result *NotificationMeta
 	path := nc.Host + NotificationServiceBasePath + "/"
-	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	req, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, nc.SigningKeys, nc.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, nc.requester, req, nc.SigningKeys, nc.ClientID, &result)
 	return result, err
 }
 
@@ -36,11 +38,11 @@ func (nc *ToznyNotificationClient) CreateNotification(ctx context.Context, param
 func (nc *ToznyNotificationClient) DirectMobilePush(ctx context.Context, params DirectMobilePushRequestWithPayload) (*PushResponse, error) {
 	var result *PushResponse
 	path := nc.Host + NotificationServiceBasePath + "/direct-mobile-push"
-	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	req, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, nc.SigningKeys, nc.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, nc.requester, req, nc.SigningKeys, nc.ClientID, &result)
 	return result, err
 }
 
@@ -50,5 +52,6 @@ func New(config e3dbClients.ClientConfig) *ToznyNotificationClient {
 		ClientID:    config.ClientID,
 		Host:        config.Host,
 		authClient:  authClient.New(config),
+		requester:   request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

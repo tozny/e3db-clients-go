@@ -473,7 +473,7 @@ func TestListGroupsWithQueenClientAllAccountReturnsSuccess(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed generating encrypted group key  %s", err)
 	}
-	// Create Another Accouunt under the queen client to list groups, Each create a group
+	// Create Another Account under the queen client to list groups, Each create a group
 	group := storageClientV2.CreateGroupRequest{
 		Name:              "TestGroup1" + uuid.New().String(),
 		PublicKey:         encryptionKeyPair.Public.Material,
@@ -909,7 +909,7 @@ func TestCreateGroupMembershipKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
 	}
-	// Verify that the group membership key for the client matches the output for the group raw privat key above
+	// Verify that the group membership key for the client matches the output for the group raw private key above
 	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(groupMemberToAdd.EncryptionKeys.Private.Material)
 	if err != nil {
 		t.Fatalf("Client to add to group Private key was not decoded correctly \n Client: %+v, err: %+v ", groupMemberToAdd, err)
@@ -1084,7 +1084,7 @@ func TestAddBulkGroupMemberWithValidInputReturnsSuccess(t *testing.T) {
 	}
 	membershipKeyResponse2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest2)
 	if err != nil {
-		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse2, err)
 	}
 	// Add clients  to group
 	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}

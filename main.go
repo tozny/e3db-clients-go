@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/tozny/e3db-clients-go/request"
 	"github.com/tozny/utils-go/server"
+	"golang.org/x/oauth2"
 )
 
 // ClientConfig wraps configuration
@@ -22,11 +24,12 @@ type ClientConfig struct {
 	// Hostname for the soon to be deprecated (v1) e3db bearer auth service API.
 	// Once request signing is the primary mode of authenticating e3db requests this can be removed.
 	AuthNHost      string
-	SigningKeys    SigningKeys    // AsymmetricEncryptionKeypair used for signing and authenticating requests
-	EncryptionKeys EncryptionKeys // AsymmetricEncryptionKeypair used for encrypting and decrypting data
+	SigningKeys    SigningKeys           // AsymmetricEncryptionKeypair used for signing and authenticating requests
+	EncryptionKeys EncryptionKeys        // AsymmetricEncryptionKeypair used for encrypting and decrypting data
+	Interceptors   []request.Interceptor // Any number of request interceptors that will have access to the request as it is sent
 }
 
-// AuthenticationHeader wraps the structure used in the X-Tozny-Authn HTTP header
+// ToznyAuthNHeader wraps the structure used in the X-Tozny-Authn HTTP header
 type ToznyAuthNHeader struct {
 	Method    string          `json:"method"`
 	AuthnInfo json.RawMessage `json:"authn_info"`
@@ -42,12 +45,6 @@ type ToznyAuthenticatedClientContext struct {
 	EncryptionKeys PublicEncryptionKeys `json:"encryption_keys"`        // Tozny does not know a user's private encryption key
 	SigningKeys    PublicSigningKeys    `json:"signing_keys,omitempty"` // Tozny does not know a user's private signing key
 	Type           string               `json:"type"`
-}
-
-// E3DBHTTPAuthorizer implements the functionality needed to make
-// an authenticated call to an e3db endpoint.
-type E3DBHTTPAuthorizer interface {
-	AuthHTTPClient() *http.Client
 }
 
 // RequestError provides additional details about the failed request.
@@ -68,15 +65,15 @@ func NewError(message, url string, statusCode int) error {
 }
 
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
-func MakeE3DBServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) error {
-	client := httpAuthorizer.AuthHTTPClient()
-	err := MakeRawServiceCall(client, request.WithContext(ctx), result)
+func MakeE3DBServiceCall(ctx context.Context, client request.Requester, source oauth2.TokenSource, req *http.Request, result interface{}) error {
+	client = request.ApplyTokenInterceptor(source)(client)
+	err := MakeRawServiceCall(client, req.WithContext(ctx), result)
 	return err
 }
 
 // MakeSignedServiceCall makes a TSV1 signed request(using the private key from the provided keypair),
 // deserializing the response into the provided result holder, and returning error (if any).
-func MakeSignedServiceCall(ctx context.Context, request *http.Request, keypair SigningKeys, signer string, result interface{}) error {
+func MakeSignedServiceCall(ctx context.Context, client request.Requester, req *http.Request, keypair SigningKeys, signer string, result interface{}) error {
 	privateSigningKey := keypair.Private.Material
 	if privateSigningKey == "" {
 		return ErrorPrivateSigningKeyRequired
@@ -85,50 +82,46 @@ func MakeSignedServiceCall(ctx context.Context, request *http.Request, keypair S
 	if publicSigningKey == "" {
 		return ErrorPublicSigningKeyRequired
 	}
-	client := &http.Client{}
 	timestamp := time.Now().Unix()
-	err := SignRequest(request, keypair, timestamp, signer)
+	err := SignRequest(req, keypair, timestamp, signer)
 	if err != nil {
 		return err
 	}
-	err = MakeRawServiceCall(client, request.WithContext(ctx), result)
+	err = MakeRawServiceCall(client, req.WithContext(ctx), result)
 	return err
 }
 
 // MakeProxiedSignedCall attempts to call an e3db service using the provided
 // signature to authenticate the request.
-func MakeProxiedSignedCall(ctx context.Context, headers http.Header, request *http.Request, result interface{}) error {
-	client := &http.Client{}
-	request.Header.Add("Authorization", headers.Get("Authorization"))
-	request.Header.Add(server.ToznyAuthNHeader, headers.Get(server.ToznyAuthNHeader))
-	return MakeRawServiceCall(client, request, result)
+func MakeProxiedSignedCall(ctx context.Context, client request.Requester, headers http.Header, req *http.Request, result interface{}) error {
+	req.Header.Add("Authorization", headers.Get("Authorization"))
+	req.Header.Add(server.ToznyAuthNHeader, headers.Get(server.ToznyAuthNHeader))
+	return MakeRawServiceCall(client, req, result)
 }
 
 // MakeProxiedUserCall attempts to call an e3db service using provided user auth token to authenticate request.
-func MakeProxiedUserCall(ctx context.Context, userAuthToken string, request *http.Request, result interface{}) error {
-	client := &http.Client{}
-	request.Header.Add("Authorization", "Bearer "+userAuthToken)
-	return MakeRawServiceCall(client, request, result)
+func MakeProxiedUserCall(ctx context.Context, client request.Requester, userAuthToken string, req *http.Request, result interface{}) error {
+	req.Header.Add("Authorization", "Bearer "+userAuthToken)
+	return MakeRawServiceCall(client, req, result)
 }
 
 // MakePublicCall makes an unauthenticated request to an e3db service.
-func MakePublicCall(ctx context.Context, request *http.Request, result interface{}) error {
-	client := &http.Client{}
-	return MakeRawServiceCall(client, request, result)
+func MakePublicCall(ctx context.Context, client request.Requester, req *http.Request, result interface{}) error {
+	return MakeRawServiceCall(client, req, result)
 }
 
 // MakeRawServiceCall sends a request, auto decoding the response to the result interface if sent.
-func MakeRawServiceCall(client *http.Client, request *http.Request, result interface{}) error {
-	response, err := client.Do(request)
+func MakeRawServiceCall(client request.Requester, req *http.Request, result interface{}) error {
+	response, err := client.Do(req)
 	if err != nil {
 		return &RequestError{
-			URL:     request.URL.String(),
+			URL:     req.URL.String(),
 			message: err.Error(),
 		}
 	}
 	defer response.Body.Close()
 	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
-		requestURL := request.URL.String()
+		requestURL := req.URL.String()
 		return &RequestError{
 			StatusCode: response.StatusCode,
 			URL:        requestURL,
@@ -141,23 +134,10 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 		return nil
 	}
 
-	// var bodyBytes []byte
-	// if response.Body != nil {
-	// 	bodyBytes, err = ioutil.ReadAll(response.Body)
-	// 	if err != nil {
-	// 		fmt.Printf("Error reading request body %s", err)
-	// 	}
-	// }
-
-	// fmt.Printf("Raw Response %s", string(bodyBytes))
-
-	// // Repopulate body with the data read
-	// response.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
 		return &RequestError{
-			URL:     request.URL.String(),
+			URL:     req.URL.String(),
 			message: err.Error(),
 		}
 	}
@@ -167,24 +147,23 @@ func MakeRawServiceCall(client *http.Client, request *http.Request, result inter
 // TODO: determine a better way to handle X-args.
 
 // ReturnE3dbServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
-func ReturnE3dbServiceCall(httpAuthorizer E3DBHTTPAuthorizer, ctx context.Context, request *http.Request, result interface{}) (*http.Response, error) {
-	client := httpAuthorizer.AuthHTTPClient()
-	resp, err := ReturnRawServiceCall(client, request.WithContext(ctx), result)
+func ReturnE3dbServiceCall(ctx context.Context, client request.Requester, req *http.Request, result interface{}) (*http.Response, error) {
+	resp, err := ReturnRawServiceCall(client, req.WithContext(ctx), result)
 	return resp, err
 }
 
-// ReturnRawServiceCall sends a request, auto decoding the response to the result interface and returning Response.
-func ReturnRawServiceCall(client *http.Client, request *http.Request, result interface{}) (*http.Response, error) {
-	response, err := client.Do(request)
+// ReturnRawServiceCall sends a req, auto decoding the response to the result interface and returning Response.
+func ReturnRawServiceCall(client request.Requester, req *http.Request, result interface{}) (*http.Response, error) {
+	response, err := client.Do(req)
 	if err != nil {
 		return response, &RequestError{
-			URL:     request.URL.String(),
+			URL:     req.URL.String(),
 			message: err.Error(),
 		}
 	}
 	defer response.Body.Close()
 	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
-		requestURL := request.URL.String()
+		requestURL := req.URL.String()
 		return response, &RequestError{
 			StatusCode: response.StatusCode,
 			URL:        requestURL,
@@ -199,7 +178,7 @@ func ReturnRawServiceCall(client *http.Client, request *http.Request, result int
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
 		return response, &RequestError{
-			URL:     request.URL.String(),
+			URL:     req.URL.String(),
 			message: err.Error(),
 		}
 	}
@@ -209,19 +188,19 @@ func ReturnRawServiceCall(client *http.Client, request *http.Request, result int
 // CreateRequest isolates duplicate code in creating http search request.
 func CreateRequest(method string, path string, params interface{}) (*http.Request, error) {
 	var buf bytes.Buffer
-	var request *http.Request
+	var req *http.Request
 	err := json.NewEncoder(&buf).Encode(&params)
 	if err != nil {
-		return request, err
+		return req, err
 	}
-	request, err = http.NewRequest(method, path, &buf)
+	req, err = http.NewRequest(method, path, &buf)
 	if err != nil {
-		return request, &RequestError{
+		return req, &RequestError{
 			URL:     path,
 			message: err.Error(),
 		}
 	}
-	return request, nil
+	return req, nil
 }
 
 // XToznyAuthnRequestAuthenticator authenticates implements utils-go
@@ -234,7 +213,7 @@ type XToznyAuthnRequestAuthenticator struct {
 // AuthenticateRequest validates the provided request authenticates
 // an internal OR external e3db client via the request's X-TOZNY-AUTHN
 // header, returning the clientID, authentication status of the
-// provided request, and error (if any).
+// provided req, and error (if any).
 func (c *XToznyAuthnRequestAuthenticator) AuthenticateRequest(ctx context.Context, req *http.Request) (string, error) {
 	var xTozAuthnValue ToznyAuthNHeader
 	var toznyUser ToznyAuthenticatedClientContext

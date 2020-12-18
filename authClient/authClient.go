@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/request"
 	"github.com/tozny/utils-go/server"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -25,7 +26,8 @@ type E3dbAuthClient struct {
 	APISecret    string
 	Host         string
 	oauth2Helper clientcredentials.Config
-	httpClient   *http.Client
+	tokenSource  oauth2.TokenSource
+	requester    request.Requester
 }
 
 // GetToken attempts to retrieve and return a valid oauth2 token based on the clients
@@ -41,11 +43,11 @@ func (c *E3dbAuthClient) ValidateToken(ctx context.Context, params ValidateToken
 	if err != nil {
 		return result, err
 	}
-	request, err := http.NewRequest("POST", c.Host+AuthServiceBasePath+"/validate", &buf)
+	req, err := http.NewRequest("POST", c.Host+AuthServiceBasePath+"/validate", &buf)
 	if err != nil {
 		return result, err
 	}
-	internalError := e3dbClients.MakeE3DBServiceCall(c, ctx, request, &result)
+	internalError := e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.TokenSource(), req, &result)
 	return result, internalError
 }
 
@@ -67,16 +69,16 @@ func (c *E3dbAuthClient) AuthenticateE3DBClient(ctx context.Context, token strin
 	return validateTokenResponse.ClientId, validateTokenResponse.Valid, err
 }
 
-// AuthHTTPClient returns an http client that can be used for
+// TokenSource returns an oauth2 TokenSource that can be used for
 // making requests to Tozny services that require bearer auth,
 // automatically fetching and refreshing the token as needed
-func (c *E3dbAuthClient) AuthHTTPClient() *http.Client {
-	if c.httpClient == nil {
+func (c *E3dbAuthClient) TokenSource() oauth2.TokenSource {
+	if c.tokenSource == nil {
 		// Use a background context as while token refreshing is driven by client actions
 		// it is state maintained server side
-		c.httpClient = c.oauth2Helper.Client(context.Background())
+		c.tokenSource = c.oauth2Helper.TokenSource(context.Background())
 	}
-	return c.httpClient
+	return c.tokenSource
 }
 
 // HealthCheck checks whether the auth service is up,
@@ -86,7 +88,7 @@ func (c *E3dbAuthClient) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := e3dbClients.MakePublicCall(ctx, req, nil); err != nil { // run request to auth healthcheck
+	if err := e3dbClients.MakePublicCall(ctx, c.requester, req, nil); err != nil { // run request to auth healthcheck
 		return err
 	}
 	return nil
@@ -103,5 +105,6 @@ func New(config e3dbClients.ClientConfig) E3dbAuthClient {
 			ClientSecret: config.APISecret,
 			TokenURL:     fmt.Sprintf("%s%s/token", config.AuthNHost, AuthServiceBasePath),
 		},
+		requester: request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }
