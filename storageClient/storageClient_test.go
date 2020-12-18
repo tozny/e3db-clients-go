@@ -768,7 +768,6 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsOneGro
 		GroupNames: []string{group.Name},
 	}
 	responseList, err := regClient.ListGroups(testCtx, listRequest)
-
 	if err != nil {
 		t.Fatalf("Group LIST: Group was Not Found: %+v Error: %+v", responseList, err)
 	}
