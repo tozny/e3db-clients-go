@@ -47,6 +47,32 @@ type Group struct {
 	EncryptedGroupKey string    `json:"encrypted_group_key"`
 }
 
+// GroupAccessKeyRequest wraps the values to get or create an access key
+type GroupAccessKeyRequest struct {
+	GroupID            uuid.UUID `json:"group_id"`
+	RecordType         string    `json:"record_type"`
+	RecordID           string    `json:"record_id"`
+	EncryptedAccessKey string    `json:"encrypted_access_key"`
+	PublicKey          string    `json:"public_key"`
+}
+
+// GroupRecord wraps the values of a record for a group
+type GroupRecord struct {
+	GroupID            uuid.UUID `json:"group_id"`
+	RecordType         string    `json:"record_type"`
+	RecordID           string    `json:"record_id"`
+	EncryptedAccessKey string    `json:"encrypted_access_key"`
+	MembershipKey      string    `json:"membership_key"`
+	PublicKey          string    `json:"public_key"`
+}
+
+// ListGroupRecords wraps the values to list Records shared with a group
+type ListGroupRecords struct {
+	NextToken    int64
+	Max          int
+	GroupRecords []GroupRecord `json:"group_records"`
+}
+
 // DescribeGroupRequest wraps values used to look up Groups
 type DescribeGroupRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
@@ -86,6 +112,9 @@ type GroupMember struct {
 
 // DeleteGroupMembersRequest  wraps the information of all members being removed from group provided.
 type DeleteGroupMembersRequest AddGroupMembersRequest
+
+// GetMembershipKeyRequest wraps the information to get the membership key for a client
+type GetMembershipKeyRequest AddGroupMembersRequest
 
 // AddGroupMembersRequest  wraps the information of all members being added.
 type AddGroupMembersRequest struct {
