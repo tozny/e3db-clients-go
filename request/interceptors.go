@@ -26,7 +26,11 @@ func LoggingInterceptor(l logging.Logger) Interceptor {
 	return InterceptorFunc(func(c Requester, r *http.Request) (*http.Response, error) {
 		startTime := time.Now()
 		resp, err := c.Do(r)
-		l.Debugf("%s request to %s at %s took %s", r.Method, r.URL, r.Header.Get("Date"), time.Now().Sub(startTime))
+		at := r.Header.Get("Date")
+		if at == "" {
+			at = startTime.String()
+		}
+		l.Debugf("%s request to %s at %s took %s", r.Method, r.URL, at, time.Now().Sub(startTime))
 		return resp, err
 	})
 }

@@ -137,7 +137,7 @@ func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGro
 	return err
 }
 
-// ListGroupMembers returns the group members and capabilites based on the groupID
+// ListGroupMembers returns the group members and capabilities based on the groupID
 func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*[]GroupMember, error) {
 	var result *[]GroupMember
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
@@ -145,7 +145,7 @@ func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMe
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
