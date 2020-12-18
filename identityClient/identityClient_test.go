@@ -364,7 +364,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s retrieving internal registered identity %+v using  %+v", err, identity.Identity, registeredIdentityClient)
 	}
-	if internalIdentityAuthenticationContext.RealmID != realm.ID || internalIdentityAuthenticationContext.RealmName != realm.Name || internalIdentityAuthenticationContext.Active != true {
+	if internalIdentityAuthenticationContext.RealmID != realm.ID || internalIdentityAuthenticationContext.RealmName != realm.Domain || internalIdentityAuthenticationContext.Active != true {
 		t.Fatalf("expected registered identity %+v to be an active member of realm %+v , got  %+v", identity.Identity, realm, internalIdentityAuthenticationContext)
 	}
 }
@@ -396,9 +396,9 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 		RdnAttributeName: "cn",
 		Classes:          []string{"test", "of", "classes"},
 		Attributes: map[string][]string{
-			"cn":       []string{"testuser"},
-			"multi":    []string{"multiple", "values"},
-			"editable": []string{"this is editable"},
+			"cn":       {"testuser"},
+			"multi":    {"multiple", "values"},
+			"editable": {"this is editable"},
 		},
 		ReadOnlyAttributes: []string{"multi"},
 		Groups:             []string{"group1", "group2"},
@@ -1652,7 +1652,7 @@ func TestGroupRoleMappingCRD(t *testing.T) {
 		GroupID:   group.ID,
 		RoleMapping: RoleMapping{
 			ClientRoles: map[string][]Role{
-				application.ID: []Role{
+				application.ID: {
 					*realmApplicationRole,
 				},
 			},

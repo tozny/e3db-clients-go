@@ -8,6 +8,7 @@ import (
 
 	"github.com/tozny/e3db-clients-go/authClient"
 	"github.com/tozny/e3db-clients-go/clientServiceClient"
+	"github.com/tozny/e3db-clients-go/request"
 
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -37,16 +38,17 @@ type StorageClient struct {
 	Host           string // host will generally need to be cyclops service to get the X-Tozny-Auth header
 	httpClient     *http.Client
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -55,11 +57,11 @@ func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, erro
 func (c *StorageClient) CreateGroup(ctx context.Context, params CreateGroupRequest) (*Group, error) {
 	var result *Group
 	path := c.Host + storageServiceBasePath + "/groups"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -68,23 +70,23 @@ func (c *StorageClient) CreateGroup(ctx context.Context, params CreateGroupReque
 func (c *StorageClient) DescribeGroup(ctx context.Context, params DescribeGroupRequest) (*Group, error) {
 	var result *Group
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
-	request, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
 		return result, err
 	}
 
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
 // DeleteGroup deletes a specified group, returning an error (if any).
 func (c *StorageClient) DeleteGroup(ctx context.Context, params DeleteGroupRequest) error {
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
-	request, err := e3dbClients.CreateRequest("DELETE", path, params)
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
 
@@ -92,11 +94,11 @@ func (c *StorageClient) DeleteGroup(ctx context.Context, params DeleteGroupReque
 func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest) (*ListGroupsResponse, error) {
 	var result *ListGroupsResponse
 	path := c.Host + storageServiceBasePath + "/groups"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	if params.ClientID != uuid.Nil {
@@ -105,37 +107,37 @@ func (c *StorageClient) ListGroups(ctx context.Context, params ListGroupsRequest
 	for _, groupName := range params.GroupNames {
 		urlParams.Add("group_names", groupName)
 	}
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
-// AddGroupMembers Adds Clients to a group and returns the succesfuly added clients (if any).
+// AddGroupMembers Adds Clients to a group and returns the successfully added clients (if any).
 func (c *StorageClient) AddGroupMembers(ctx context.Context, params AddGroupMembersRequest) (*[]GroupMember, error) {
 	var result *[]GroupMember
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
 
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
 // DeleteGroupMembers removed clients form a group and returns success.
 func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGroupMembersRequest) error {
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
-	request, err := e3dbClients.CreateRequest("DELETE", path, params)
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
 	if err != nil {
 		return err
 	}
 
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
 
-// ListGroupMembers returns the group members and capabilites based on the groupID
+// ListGroupMembers returns the group members and capabilities based on the groupID
 func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*[]GroupMember, error) {
 	var result *[]GroupMember
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
@@ -143,17 +145,17 @@ func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMe
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
-	request, err := e3dbClients.CreateRequest("PUT", path, params)
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -214,13 +216,13 @@ func (c *StorageClient) EncryptMembershipKeyForGroupMember(ctx context.Context, 
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
 	// Set appropriate request query params & headers for satisfying
 	// a note's required EACPs
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	if eacpParams != nil {
 		for key, val := range eacpParams {
 			var isHeaderEACP bool
@@ -236,22 +238,22 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams 
 		}
 	}
 	urlParams.Set("note_id", noteID)
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
 func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) (ChallengeResponse, error) {
 	var challenges ChallengeResponse
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
-	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
 	if err != nil {
 		return challenges, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("note_id", noteID)
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &challenges)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &challenges)
 	return challenges, err
 }
 
@@ -260,70 +262,70 @@ func (c *StorageClient) Challenge(ctx context.Context, noteID string, params Cha
 func (c *StorageClient) ProxyChallengeByName(ctx context.Context, headers http.Header, noteName string, params ChallengeRequest) (ChallengeResponse, error) {
 	var challenges ChallengeResponse
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
-	request, err := e3dbClients.CreateRequest("PATCH", path, params)
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
 	if err != nil {
 		return challenges, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("id_string", noteName)
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeProxiedSignedCall(ctx, headers, request, &challenges)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeProxiedSignedCall(ctx, c.requester, headers, req, &challenges)
 	return challenges, err
 }
 
 func (c *StorageClient) Prime(ctx context.Context, noteID string, body PrimeRequestBody) (PrimeResponseBody, error) {
 	path := c.Host + storageServiceBasePath + "/notes/prime"
-	request, err := e3dbClients.CreateRequest("PATCH", path, body)
+	req, err := e3dbClients.CreateRequest("PATCH", path, body)
 	var primedResponse PrimeResponseBody
 	if err != nil {
 		return primedResponse, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("note_id", noteID)
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &primedResponse)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &primedResponse)
 	return primedResponse, err
 }
 
 func (c *StorageClient) BulkDeleteByClient(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
 	path := c.Host + "/internal" + storageServiceBasePath + "/notes/bulk/" + clientID.String()
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	var resp BulkDeleteResponse
 	if err != nil {
 		return resp, err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	if limit != 0 {
 		urlParams.Set("limit", strconv.Itoa(limit))
 	}
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &resp)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
 	return resp, err
 }
 
 func (c *StorageClient) InternalDeleteNoteByID(ctx context.Context, noteID uuid.UUID) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/notes"
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("note_id", noteID.String())
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
 
 func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName string) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/notes"
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
-	urlParams := request.URL.Query()
+	urlParams := req.URL.Query()
 	urlParams.Set("id_string", noteName)
-	request.URL.RawQuery = urlParams.Encode()
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, nil)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
 
@@ -333,11 +335,11 @@ func (c *StorageClient) InternalDeleteNoteByName(ctx context.Context, noteName s
 func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params InternalSearchBySharingTupleRequest) (*InternalSearchBySharingTupleResponse, error) {
 	var result *InternalSearchBySharingTupleResponse
 	path := c.Host + "/internal" + storageServiceBasePath + "/search/sharing-group"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -345,11 +347,11 @@ func (c *StorageClient) InternalSearchBySharingGroup(ctx context.Context, params
 func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShareRequest) (*OutgoingShareResponse, error) {
 	var result *OutgoingShareResponse
 	path := c.Host + storageServiceBasePath + "/share/outgoing"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -357,11 +359,11 @@ func (c *StorageClient) OutgoingShares(ctx context.Context, params OutgoingShare
 func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomingSharesRequest) (*SearchIncomingSharesResponse, error) {
 	var result *SearchIncomingSharesResponse
 	path := c.Host + storageServiceBasePath + "/share/incoming"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -369,11 +371,11 @@ func (c *StorageClient) IncomingShares(ctx context.Context, params SearchIncomin
 func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchAuthorizationsProxiedRequest) (*SearchAuthorizationsProxiedResponse, error) {
 	var result *SearchAuthorizationsProxiedResponse
 	path := c.Host + storageServiceBasePath + "/authorizer/outgoing"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
@@ -381,44 +383,44 @@ func (c *StorageClient) ProxiedAuthorization(ctx context.Context, params SearchA
 func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params SearchAuthorizedGrantedRequest) (*SearchAuthorizedGrantedResponse, error) {
 	var result *SearchAuthorizedGrantedResponse
 	path := c.Host + storageServiceBasePath + "/authorizer/incoming"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, request, c.SigningKeys, c.ClientID, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
 func (c *StorageClient) WriteFile(ctx context.Context, params Record) (*PendingFileResponse, error) {
 	var result *PendingFileResponse
 	path := c.Host + storageServiceBasePath + "/files"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
 func (c *StorageClient) FileCommit(ctx context.Context, pendingFileID uuid.UUID) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/files/" + pendingFileID.String()
-	request, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	req, err := e3dbClients.CreateRequest("PATCH", path, nil)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -432,5 +434,6 @@ func New(config e3dbClients.ClientConfig) StorageClient {
 		ClientID:       config.ClientID,
 		httpClient:     &http.Client{},
 		E3dbAuthClient: &authService,
+		requester:      request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

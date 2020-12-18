@@ -3,10 +3,13 @@ package searchExecutorClient
 import (
 	"context"
 	"errors"
-	"github.com/tozny/e3db-clients-go"
+	"net/http"
+	"time"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-	"time"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 const (
@@ -21,6 +24,7 @@ type SearchExecutorClient struct {
 	APISecret string
 	Host      string
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 // Search makes a search request to executor and returns the parsed response
@@ -28,15 +32,15 @@ type SearchExecutorClient struct {
 func (c *SearchExecutorClient) Search(ctx context.Context, params ExecutorQueryRequest) (*ExecutorQueryResponse, error) {
 	var result *ExecutorQueryResponse
 	path := c.Host + "/v2/search"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
-// New returns searchExectorCient from generic config.
+// New returns searchExectorClient from generic config.
 func New(config e3dbClients.ClientConfig) SearchExecutorClient {
 	authService := authClient.New(config)
 	return SearchExecutorClient{
@@ -44,6 +48,7 @@ func New(config e3dbClients.ClientConfig) SearchExecutorClient {
 		config.APISecret,
 		config.Host,
 		&authService,
+		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }
 

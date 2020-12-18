@@ -47,7 +47,7 @@ func TestCreateWebHook(t *testing.T) {
 	createHookRequest := CreateHookRequest{
 		WebhookURL: webhookURL,
 		Triggers: []HookTrigger{
-			HookTrigger{
+			{
 				Enabled:  true,
 				APIEvent: "authorizer_added",
 			},

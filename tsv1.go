@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	HashingAlgorithim    = "BLAKE2B"
+	HashingAlgorithm     = "BLAKE2B"
 	SignatureType        = "ED25519"
-	AuthenticationMethod = "TSV1-" + SignatureType + "-" + HashingAlgorithim // TSV1-ED25519-BLAKE2B
+	AuthenticationMethod = "TSV1-" + SignatureType + "-" + HashingAlgorithm // TSV1-ED25519-BLAKE2B
 	PublicKeyBytes       = 32
 	PrivateKeyBytes      = 64
 	AuthorizationHeader  = "Authorization"

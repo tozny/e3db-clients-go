@@ -1,16 +1,22 @@
 package e3dbClients_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"regexp"
+	"testing"
+
 	"github.com/google/uuid"
-	"github.com/tozny/e3db-clients-go"
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/authClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
+	"github.com/tozny/e3db-clients-go/request"
 	"github.com/tozny/e3db-clients-go/test"
-	"os"
-	"testing"
+	"github.com/tozny/utils-go/logging"
 )
 
 var (
@@ -94,5 +100,60 @@ func TestValidateTokenReturnsValidResultsForValidExternalClientToken(t *testing.
 	}
 	if response.ClientId != validPDSUserID {
 		t.Errorf("Expected token to belong to %v valid, got %+v", validPDSUserID, response)
+	}
+}
+
+func TestInterceptorsRun(t *testing.T) {
+	before := false
+	after := false
+	interceptor := request.InterceptorFunc(func(r request.Requester, h *http.Request) (*http.Response, error) {
+		before = true
+		resp, err := r.Do(h)
+		after = true
+		return resp, err
+	})
+	config := e3dbClients.ClientConfig{
+		APIKey:       e3dbAPIKey,
+		APISecret:    e3dbAPISecret,
+		Host:         e3dbPDSHost,
+		AuthNHost:    e3dbAuthHost,
+		Interceptors: []request.Interceptor{interceptor},
+	}
+	client := pdsClient.New(config)
+	err := client.HealthCheck(context.Background())
+	if err != nil {
+		t.Errorf("%s health check failed using %+v\n", err, client)
+	}
+	if !before {
+		t.Error("Expected to see code before the request run,  but before was false.")
+	}
+	if !after {
+		t.Error("Expected to see code after the request run,  but after was false.")
+	}
+}
+
+func TestLoggingInterceptor(t *testing.T) {
+	var log bytes.Buffer
+	logger := logging.NewServiceLogger(&log, "tester", "DEBUG")
+	interceptor := request.LoggingInterceptor(&logger)
+	config := e3dbClients.ClientConfig{
+		APIKey:       e3dbAPIKey,
+		APISecret:    e3dbAPISecret,
+		Host:         e3dbPDSHost,
+		AuthNHost:    e3dbAuthHost,
+		Interceptors: []request.Interceptor{interceptor},
+	}
+	client := pdsClient.New(config)
+	err := client.HealthCheck(context.Background())
+	if err != nil {
+		t.Errorf("%s health check failed using %+v\n", err, client)
+	}
+	logBytes := log.Bytes()
+	matched, err := regexp.Match(`: DEBUG: tester: GET request to https?://[^/]+/v1/storage/servicecheck at .+? took .+?`, logBytes)
+	if err != nil {
+		t.Fatalf("could not validate log: %+v", err)
+	}
+	if !matched {
+		t.Errorf("log format did not match expected. Got %q", logBytes)
 	}
 }

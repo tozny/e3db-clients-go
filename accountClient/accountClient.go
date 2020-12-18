@@ -9,6 +9,7 @@ import (
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 // HTTP PATH prefix for calls to the e3db Account service for v1
@@ -22,17 +23,18 @@ type E3dbAccountClient struct {
 	APISecret string
 	Host      string
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 // CreateAccount attempts to create an e3db account using the provided params, returning created account and error (if any).
 func (c *E3dbAccountClient) CreateAccount(ctx context.Context, params CreateAccountRequest) (*CreateAccountResponse, error) {
 	var result *CreateAccountResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/profile"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	internalErr := e3dbClients.MakeRawServiceCall(&http.Client{}, request, &result)
+	internalErr := e3dbClients.MakeRawServiceCall(&http.Client{}, req, &result)
 	return result, internalErr
 }
 
@@ -42,11 +44,11 @@ func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID s
 	var result *InternalAccountInfoResponse
 
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/info/" + accountID
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -54,11 +56,11 @@ func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID s
 func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, error) {
 	var result *InternalGetClientAccountResponse
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/clients/" + clientID
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -67,11 +69,11 @@ func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, client
 func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientRegistrationRequest) (*ClientRegistrationResponse, error) {
 	var result *ClientRegistrationResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/e3db/clients/register"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	resp, err := e3dbClients.ReturnE3dbServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	resp, err := e3dbClients.ReturnE3dbServiceCall(ctx, c.requester, req, &result)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
@@ -83,14 +85,14 @@ func (c *E3dbAccountClient) RegisterClient(ctx context.Context, params ClientReg
 
 // ProxyiedRegisterClient registers a client via a proxied call to client service by the account service.
 // This method is intended for TESTING the functionality of the integrated client service. Not intended for future use.
-func (c *E3dbAccountClient) ProxyiedRegisterClient(ctx context.Context, params ProxiedClientRegistrationRequest) (*ProxiedClientRegisterationResponse, error) {
-	var result *ProxiedClientRegisterationResponse
+func (c *E3dbAccountClient) ProxyiedRegisterClient(ctx context.Context, params ProxiedClientRegistrationRequest) (*ProxiedClientRegistrationResponse, error) {
+	var result *ProxiedClientRegistrationResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/e3db/clients/register"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	resp, err := e3dbClients.ReturnRawServiceCall(&http.Client{}, request, &result)
+	resp, err := e3dbClients.ReturnRawServiceCall(c.requester, req, &result)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
@@ -104,13 +106,13 @@ func (c *E3dbAccountClient) ProxyiedRegisterClient(ctx context.Context, params P
 func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params CreateRegistrationTokenRequest) (*CreateRegTokenResponse, error) {
 	var result *CreateRegTokenResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
 	// TODO: Not actually a `proxied user call` but account service serves it's own auth...
 	// Consider a renaming of MakeProxiedUserCall
-	err = e3dbClients.MakeProxiedUserCall(ctx, params.AccountServiceToken, request, &result)
+	err = e3dbClients.MakeProxiedUserCall(ctx, c.requester, params.AccountServiceToken, req, &result)
 	return result, err
 }
 
@@ -118,33 +120,33 @@ func (c *E3dbAccountClient) CreateRegistrationToken(ctx context.Context, params 
 func (c *E3dbAccountClient) ListRegistrationTokens(ctx context.Context, accountServiceToken string) (*ListRegistrationTokensResponse, error) {
 	var result *ListRegistrationTokensResponse
 	path := c.Host + "/" + AccountServiceBasePath + "/tokens"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeProxiedUserCall(ctx, accountServiceToken, request, &result)
+	err = e3dbClients.MakeProxiedUserCall(ctx, c.requester, accountServiceToken, req, &result)
 	return result, err
 }
 
 // DeleteRegistrationToken attempts to delete the specified registration token, returning error (if any).
 func (c *E3dbAccountClient) DeleteRegistrationToken(ctx context.Context, params DeleteRegistrationTokenRequest) error {
 	path := c.Host + "/" + AccountServiceBasePath + fmt.Sprintf("/tokens/%s", params.Token)
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return e3dbClients.NewError(err.Error(), path, 0)
 	}
-	return e3dbClients.MakeProxiedUserCall(ctx, params.AccountServiceToken, request, nil)
+	return e3dbClients.MakeProxiedUserCall(ctx, c.requester, params.AccountServiceToken, req, nil)
 }
 
 // RegistrationToken validates a registration token with the account service and fetches its permissions
 func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string) (*RegTokenInfo, error) {
 	var result RegTokenInfo
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/token"
-	request, err := e3dbClients.CreateRequest("POST", path, map[string]string{"token": token})
+	req, err := e3dbClients.CreateRequest("POST", path, map[string]string{"token": token})
 	if err != nil {
 		return &result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return &result, err
 }
 
@@ -152,11 +154,11 @@ func (c *E3dbAccountClient) RegistrationToken(ctx context.Context, token string)
 func (c *E3dbAccountClient) IncrementTokenUse(ctx context.Context, token string) (*RegTokenInfo, error) {
 	path := c.Host + "/internal/" + AccountServiceBasePath + "/token/" + token + "/increment"
 	result := RegTokenInfo{}
-	request, err := e3dbClients.CreateRequest("PUT", path, nil)
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
 	if err != nil {
 		return &result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return &result, err
 }
 
@@ -168,11 +170,11 @@ func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params Valida
 	if err != nil {
 		return result, err
 	}
-	request, err := http.NewRequest("POST", c.Host+"/"+AccountServiceBasePath+"/auth/validate", &buf)
+	req, err := http.NewRequest("POST", c.Host+"/"+AccountServiceBasePath+"/auth/validate", &buf)
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
 	return result, err
 }
 
@@ -180,11 +182,11 @@ func (c *E3dbAccountClient) ValidateAuthToken(ctx context.Context, params Valida
 // returning error if unable to connect service
 func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {
 	path := c.Host + "/" + AccountServiceBasePath + "/servicecheck"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -192,11 +194,11 @@ func (c *E3dbAccountClient) ServiceCheck(ctx context.Context) error {
 // returning error if unable to connect to the service.
 func (c *E3dbAccountClient) HealthCheck(ctx context.Context) error {
 	path := c.Host + "/" + AccountServiceBasePath + "/healthcheck"
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -208,5 +210,6 @@ func New(config e3dbClients.ClientConfig) E3dbAccountClient {
 		config.APISecret,
 		config.Host,
 		&authService,
+		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

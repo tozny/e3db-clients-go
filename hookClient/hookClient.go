@@ -3,8 +3,11 @@ package hookClient
 import (
 	"context"
 	"fmt"
-	"github.com/tozny/e3db-clients-go"
+	"net/http"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/authClient"
+	"github.com/tozny/e3db-clients-go/request"
 )
 
 const (
@@ -17,6 +20,7 @@ type E3dbHookClient struct {
 	APISecret string
 	Host      string
 	*authClient.E3dbAuthClient
+	requester request.Requester
 }
 
 // CreateHook creates a hook that will fire for any of the provided enabled triggers,
@@ -24,11 +28,11 @@ type E3dbHookClient struct {
 func (c *E3dbHookClient) CreateHook(ctx context.Context, params CreateHookRequest) (*CreateHookResponse, error) {
 	var createHookResponse *CreateHookResponse
 	path := c.Host + HookServiceBasePath
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return createHookResponse, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &createHookResponse)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &createHookResponse)
 	return createHookResponse, err
 }
 
@@ -37,22 +41,22 @@ func (c *E3dbHookClient) CreateHook(ctx context.Context, params CreateHookReques
 func (c *E3dbHookClient) ListHooks(ctx context.Context) (*ListHooksResponse, error) {
 	var listHooksResponse *ListHooksResponse
 	path := c.Host + HookServiceBasePath
-	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return listHooksResponse, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &listHooksResponse)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &listHooksResponse)
 	return listHooksResponse, err
 }
 
 // DeleteHook deletes the hook with the given id, returning error (if any).
 func (c *E3dbHookClient) DeleteHook(ctx context.Context, hookID int) error {
 	path := c.Host + HookServiceBasePath + fmt.Sprintf("/%d", hookID)
-	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, nil)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 	return err
 }
 
@@ -64,5 +68,6 @@ func New(config e3dbClients.ClientConfig, hookHost string) E3dbHookClient {
 		config.APISecret,
 		hookHost,
 		&authService,
+		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }
