@@ -17,6 +17,7 @@ const (
 	AuthenticationMethod = "TSV1-" + SignatureType + "-" + HashingAlgorithim // TSV1-ED25519-BLAKE2B
 	PublicKeyBytes       = 32
 	PrivateKeyBytes      = 64
+	Blake2BBytes         = 32
 	AuthorizationHeader  = "Authorization"
 )
 
@@ -54,7 +55,7 @@ func SignRequest(r *http.Request, signingKeys SigningKeys, timestamp int64, clie
 	publicB64 := base64.RawURLEncoding.EncodeToString(publicKey[:])
 	headerString := fmt.Sprintf("%s; %s; %d; %s; %s", AuthenticationMethod, publicB64, timestamp, nonce, "uid:"+clientID)
 	strToSign := fmt.Sprintf("%s; %s; %s; %s", callPath, queryString, callMethod, headerString)
-	h, err := blake2b.New(32, nil)
+	h, err := blake2b.New(Blake2BBytes, nil)
 	if err != nil {
 		return err
 	}
