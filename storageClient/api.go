@@ -73,6 +73,12 @@ type ListGroupRecords struct {
 	GroupRecords []GroupRecord `json:"group_records"`
 }
 
+// ListGroupRecordsRequest wraps values needed for the request to list all records shared with a group
+type ListGroupRecordsRequest struct {
+	NextToken int64
+	Max       int
+}
+
 // DescribeGroupRequest wraps values used to look up Groups
 type DescribeGroupRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
