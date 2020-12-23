@@ -238,6 +238,59 @@ func (c *StorageClient) EncryptMembershipKeyForGroupMember(ctx context.Context, 
 
 }
 
+// GetGroupMembershipKey returns the client's group information including the membership key.
+func (c *StorageClient) GetGroupMembershipKey(ctx context.Context, params GetMembershipKeyRequest) (*ClientGroup, error) {
+	var result *ClientGroup
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/membership_key"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// CreateGroupAccessKey takes in information about a record type and wraps the access key for a group.
+func (c *StorageClient) CreateGroupAccessKey(ctx context.Context, params GroupAccessKeyRequest) (e3dbClients.SymmetricKey, string, error) {
+	var wrappedAccessKey string
+	var accessKey e3dbClients.SymmetricKey
+	// Decrypt Access Key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return accessKey, wrappedAccessKey, err
+	}
+	accessKey, err = e3dbClients.DecryptEAK(params.EncryptedAccessKey, c.EncryptionKeys.Public.Material, rawEncryptionKey)
+	if err != nil {
+		return accessKey, wrappedAccessKey, err
+	}
+	// Encrypt Access Key with Group's Public Key
+	encryptionKeys := e3dbClients.EncryptionKeys{
+		Public: e3dbClients.Key{
+			Type:     e3dbClients.DefaultEncryptionKeyType,
+			Material: params.PublicKey,
+		},
+		Private: c.EncryptionKeys.Private,
+	}
+	eak, eakN, err := e3dbClients.BoxEncryptToBase64(accessKey[:], encryptionKeys)
+	if err != nil {
+		return accessKey, wrappedAccessKey, err
+	}
+	wrappedAccessKey = fmt.Sprintf("%s.%s", eak, eakN)
+	return accessKey, wrappedAccessKey, nil
+}
+
+// ShareRecordWithGroup shares a record type for all group members in given group
+func (c *StorageClient) ShareRecordWithGroup(ctx context.Context, params ShareGroupRecordRequest) (*ShareGroupRecordResponse, error) {
+	var result *ShareGroupRecordResponse
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/share"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
