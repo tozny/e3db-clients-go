@@ -41,6 +41,31 @@ type StorageClient struct {
 	requester request.Requester
 }
 
+// SignNote signs a note using using the provided private signing key and salt
+// according to the Tozny Field Signing V1 protocol using Blake2B for hashing and curve Ed25519 for signing
+// https://github.com/tozny/internal-docs/blob/master/tozny-platform/notes/tozny-field-signing.md
+// returning the signed note and error (if any).
+func (c *StorageClient) SignNote(note Note, privateSigningKey e3dbClients.SigningKey, salt string) (Note, error) {
+	// Sign the signing material (key and salt)
+	signatureSalt := uuid.New().String()
+	signerSignature, err := e3dbClients.SignField("signature", salt, privateSigningKey, signatureSalt)
+	if err != nil {
+		return note, err
+	}
+	note.Signature = signerSignature
+	// Sign each field in the note data individually using the same signed signing material
+	for key, value := range note.Data {
+		signedNoteField, err := e3dbClients.SignField(key, value, privateSigningKey, salt)
+		if err != nil {
+			return note, err
+		}
+		note.Data[key] = signedNoteField
+	}
+
+	return note, nil
+}
+
+// WriteNote writes the specified note to the server, returning the written note and error (if any)
 func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"

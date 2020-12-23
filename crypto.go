@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -23,15 +24,23 @@ const (
 	DefaultCryptographicMode = "Sodium"
 	NISTCryptographicMode    = "NIST"
 	SymmetricKeySize         = 32
+	SigningKeySize           = 64
 	NonceSize                = 24
 	SaltSize                 = 16
 	AccountDerivationRounds  = 1000
 	IdentityDerivationRounds = 10000
+	// The UUIDv5 is derived from a fixed namespace UUIDv4
+	// "794253a4-310b-449d-9d8d-4575e8923f40" and a version string
+	// "TFSP1;ED25519;BLAKE2B"
+	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data
 // also referred to as the 'SecretKey'
 type SymmetricKey *[SymmetricKeySize]byte
+
+// SigningKey is used for fast signing and verifying properties of data
+type SigningKey *[SigningKeySize]byte
 
 // Nonce is a type that represents nonce randomly generated unique value that is used once in encrypting data.
 type Nonce *[NonceSize]byte
@@ -384,10 +393,35 @@ func Decrypt(ciphertext string, key SymmetricKey) ([]byte, error) {
 }
 
 // Sign does a detached signature of the requested message using the provided key
-func Sign(message []byte, key *[64]byte) []byte {
+func Sign(message []byte, key SigningKey) []byte {
 	bytes := sign.Sign(nil, message, key)
 	offset := len(bytes) - len(message)
 	return bytes[:offset]
+}
+
+// SignField signs a field - a key value string pair - using Tozny Field Signing Version 1 (TFSV1) protocol
+// https://github.com/tozny/internal-docs/blob/master/tozny-platform/notes/tozny-field-signing.md
+// in a way compatible with the JS SDK implementation of TFSV1
+// returning the signed string and error (if any)
+func SignField(fieldName, fieldValue string, privateSigningKey SigningKey, salt string) (string, error) {
+	// Construct the complete message to sign over
+	message := salt + fieldName + fieldValue
+	// Hash the message
+	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	if err != nil {
+		return "", err
+	}
+	hashedMessageAccumlator.Write([]byte(message))
+	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
+	hashedMessage := Base64Encode(hashedMessageBytes)
+	// Sign over the hashed message
+	signatureBytes := Sign([]byte(hashedMessage), privateSigningKey)
+	signature := Base64Encode(signatureBytes)
+	// Construct the TFSV1 signature string
+	signedFieldPrexixes := []string{ToznyFieldSignatureVersionV1, salt, fmt.Sprint(len(signature)), signature}
+	signedFieldPrefix := strings.Join(signedFieldPrexixes, ";")
+
+	return signedFieldPrefix + fieldValue, nil
 }
 
 // DeriveSymmetricKey create a symmetric encryption key from a seed and a salt
