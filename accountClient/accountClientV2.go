@@ -55,7 +55,7 @@ func (c *E3dbAccountClientV2) InitiateEmailUpdate(ctx context.Context, params In
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(c.E3dbAuthClient, ctx, request, &result)
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), request, &result)
 	return result, err
 }
 
