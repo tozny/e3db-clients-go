@@ -2,6 +2,8 @@ package pdsClient
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const BatchReadRecordLimit = 1000
@@ -206,9 +208,17 @@ type FileMeta struct {
 
 // GetEAKResponse contains the api representation of fetching an encrypted access key.
 type GetEAKResponse struct {
-	EAK                 string    `json:"eak"`
-	AuthorizerID        string    `json:"authorizer_id"`
-	AuthorizerPublicKey ClientKey `json:"authorizer_public_key"`
+	EAK                 string              `json:"eak"`
+	AuthorizerID        string              `json:"authorizer_id"`
+	AuthorizerPublicKey ClientKey           `json:"authorizer_public_key"`
+	AccessKeyWrappers   *[]AccessKeyWrapper `json:"access_key_wrappers,omitempty"`
+}
+
+// AccessKeyWrapper holds the information needed to unwrap each layer of access keys
+type AccessKeyWrapper struct {
+	MembershipKey string    `json:"membership_key"`
+	PublicKey     string    `json:"public_key"`
+	AccessKeyID   uuid.UUID `json:"access_key_id"`
 }
 
 // GetAccessKeyResponse contains the api representation of fetching an encrypted access key.

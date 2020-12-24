@@ -291,6 +291,27 @@ func (c *StorageClient) ShareRecordWithGroup(ctx context.Context, params ShareGr
 	return result, err
 }
 
+// GetSharedWithGroup returns a list of all records shared with a group
+func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroupRecordsRequest) (*ListGroupRecordsResponse, error) {
+	var result *ListGroupRecordsResponse
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/share"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("next_token", params.NextToken)
+	if params.Max != 0 {
+		urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	}
+	for _, writer := range params.WriterIDs {
+		urlParams.Add("writer_ids", writer)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
