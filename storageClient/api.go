@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/tozny/e3db-clients-go/pdsClient"
 )
 
 // Note is the API-level note object that mirrors the note JSON objects.
@@ -111,6 +112,27 @@ type DeleteGroupMembersRequest AddGroupMembersRequest
 // GetMembershipKeyRequest wraps the information to get the membership key for a client
 type GetMembershipKeyRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
+}
+
+// ListGroupRecordsRequest wraps values needed for the request to list all records shared with a group, can filter by writer ids
+type ListGroupRecordsRequest struct {
+	GroupID   uuid.UUID `json:"group_id"`
+	WriterIDs []string  `json:"writer_ids"`
+	NextToken string
+	Max       int
+}
+
+// ListGroupRecordsResponse returns all the records shared with a group and the values needed to unwrap.
+type ListGroupRecordsResponse struct {
+	ResultList []pdsClient.ListedRecord `json:"results"`
+	NextToken  string                   `json:"next_token"`
+}
+
+// AccessKeyWrapper holds the information needed to unwrap each layer of access keys
+type AccessKeyWrapper struct {
+	MembershipKey string    `json:"membership_key"`
+	PublicKey     string    `json:"public_key"`
+	AccessKeyID   uuid.UUID `json:"access_key_id"`
 }
 
 // AddGroupMembersRequest  wraps the information of all members being added.

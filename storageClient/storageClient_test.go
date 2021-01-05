@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -1713,4 +1714,1082 @@ func TestListGroupMembersReturnsSuccess(t *testing.T) {
 			t.Fatalf("Failed to List Group Member: ClientID:  %+v", member.ClientID)
 		}
 	}
+}
+
+func TestShareRecordAndPaginateTestSameRecordsAsMaxReturnsNextTokenAsZero(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Create Two client Configurations for this test
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// in order to be able to write records i needed a pds and storage client with the same credentials
+	groupMemberPDS := pdsClient.New(ClientConfig)
+	groupMember := storageClientV2.New(ClientConfig)
+	// Queen Client is just an admin to create the group and add group members
+	queenClient := storageClientV2.New(queenClientInfo)
+	// Group member 2 will be the tester to see if a group member can retrieve the records shared with the group
+	groupMember2 := storageClientV2.New(ClientConfig2)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClientV2.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for group member
+	membershipKeyRequest := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for group member 2
+	membershipKeyRequestGroupMember2 := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponseGroupMember2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequestGroupMember2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponseGroupMember2, err)
+	}
+
+	// Add clients to group
+	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}
+	memberRequest := []storageClientV2.GroupMember{}
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember2.ClientID),
+			MembershipKey:   membershipKeyResponseGroupMember2,
+			CapabilityNames: groupMemberCapabilities})
+	addMemberRequest := storageClientV2.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	// Create record with pds version of group member
+	recordType := "test"
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: groupMemberPDS.ClientID,
+		UserID:   groupMemberPDS.ClientID,
+		ReaderID: groupMemberPDS.ClientID,
+	}
+	keyReq.RecordType = recordType
+	_, err = groupMemberPDS.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+	}
+	// Create records for given record type
+	resp, err := CreateRecordsForRecordType(recordType, "test1", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err := EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest := storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err := groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest := storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err := groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 2
+	resp, err = CreateRecordsForRecordType(recordType, "Test2", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 3
+	resp, err = CreateRecordsForRecordType(recordType, "test3", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 3
+
+	// Record 4
+	resp, err = CreateRecordsForRecordType(recordType, "test4", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 4
+
+	// Now check group member 2 can retrieve the record
+	listRequest := storageClientV2.ListGroupRecordsRequest{
+		GroupID: response.GroupID,
+		Max:     2,
+	}
+	listReturn, err := groupMember2.GetSharedWithGroup(testCtx, listRequest)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
+	}
+	listRequest2 := storageClientV2.ListGroupRecordsRequest{
+		GroupID:   response.GroupID,
+		Max:       2,
+		NextToken: listReturn.NextToken,
+	}
+	_, err = groupMember2.GetSharedWithGroup(testCtx, listRequest2)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest2, err)
+	}
+	// // Verify we got the same record back
+	var found bool
+	for _, returnRecords := range listReturn.ResultList {
+		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+			found = true
+		}
+	}
+	if found == false {
+		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
+	}
+}
+func CreateRecordsForRecordType(recordType string, dataRecord string, groupMemberPDS pdsClient.E3dbPDSClient) (e3dbClients.SymmetricKey, error) {
+	var err error
+	data := map[string]string{"data": dataRecord}
+	recordToWrite := pdsClient.WriteRecordRequest{
+		Data: data,
+		Metadata: pdsClient.Meta{
+			Type:     recordType,
+			WriterID: groupMemberPDS.ClientID,
+			UserID:   groupMemberPDS.ClientID,
+			Plain:    map[string]string{"key": "value"},
+		},
+	}
+	_, err = groupMemberPDS.WriteRecord(testCtx, recordToWrite)
+	if err != nil {
+		return nil, err
+	}
+	// Get Access key for group work
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID:   groupMemberPDS.ClientID,
+		UserID:     groupMemberPDS.ClientID,
+		ReaderID:   groupMemberPDS.ClientID,
+		RecordType: recordType,
+	}
+	resp, err := groupMemberPDS.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		fmt.Printf("Failed to create shared AK client %+v, req: %+v resp: %+v, err: %s", groupMemberPDS, keyReq, resp, err)
+		return nil, err
+	}
+	return resp, err
+}
+func TestShareRecordAndPaginateTestNotFullLastPageReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Create Two client Configurations for this test
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// in order to be able to write records i needed a pds and storage client with the same credentials
+	groupMemberPDS := pdsClient.New(ClientConfig)
+	groupMember := storageClientV2.New(ClientConfig)
+	// Queen Client is just an admin to create the group and add group members
+	queenClient := storageClientV2.New(queenClientInfo)
+	// Group member 2 will be the tester to see if a group member can retrieve the records shared with the group
+	groupMember2 := storageClientV2.New(ClientConfig2)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClientV2.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for group member
+	membershipKeyRequest := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for group member 2
+	membershipKeyRequestGroupMember2 := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponseGroupMember2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequestGroupMember2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponseGroupMember2, err)
+	}
+
+	// Add clients to group
+	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}
+	memberRequest := []storageClientV2.GroupMember{}
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember2.ClientID),
+			MembershipKey:   membershipKeyResponseGroupMember2,
+			CapabilityNames: groupMemberCapabilities})
+	addMemberRequest := storageClientV2.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	// Create record with pds version of group member
+	recordType := "test"
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: groupMemberPDS.ClientID,
+		UserID:   groupMemberPDS.ClientID,
+		ReaderID: groupMemberPDS.ClientID,
+	}
+	keyReq.RecordType = recordType
+	_, err = groupMemberPDS.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+	}
+	// Create records for given record type
+	resp, err := CreateRecordsForRecordType(recordType, "test1", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err := EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest := storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err := groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest := storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err := groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 2
+	resp, err = CreateRecordsForRecordType(recordType, "Test2", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 3
+	resp, err = CreateRecordsForRecordType(recordType, "test3", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 3
+
+	// Record 4
+	resp, err = CreateRecordsForRecordType(recordType, "test4", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 4
+
+	// Now check group member 2 can retrieve the record
+	listRequest := storageClientV2.ListGroupRecordsRequest{
+		GroupID: response.GroupID,
+		Max:     3,
+	}
+	listReturn, err := groupMember2.GetSharedWithGroup(testCtx, listRequest)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
+	}
+	listRequest2 := storageClientV2.ListGroupRecordsRequest{
+		GroupID:   response.GroupID,
+		Max:       3,
+		NextToken: listReturn.NextToken,
+	}
+	_, err = groupMember2.GetSharedWithGroup(testCtx, listRequest2)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest2, err)
+	}
+	// // Verify we got the same record back
+	var found bool
+	for _, returnRecords := range listReturn.ResultList {
+		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+			found = true
+		}
+	}
+	if found == false {
+		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
+	}
+}
+
+func TestShareRecordAndPaginateReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Create Two client Configurations for this test
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// in order to be able to write records i needed a pds and storage client with the same credentials
+	groupMemberPDS := pdsClient.New(ClientConfig)
+	groupMember := storageClientV2.New(ClientConfig)
+	// Queen Client is just an admin to create the group and add group members
+	queenClient := storageClientV2.New(queenClientInfo)
+	// Group member 2 will be the tester to see if a group member can retrieve the records shared with the group
+	groupMember2 := storageClientV2.New(ClientConfig2)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClientV2.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for group member
+	membershipKeyRequest := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for group member 2
+	membershipKeyRequestGroupMember2 := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponseGroupMember2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequestGroupMember2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponseGroupMember2, err)
+	}
+
+	// Add clients to group
+	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}
+	memberRequest := []storageClientV2.GroupMember{}
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember2.ClientID),
+			MembershipKey:   membershipKeyResponseGroupMember2,
+			CapabilityNames: groupMemberCapabilities})
+	addMemberRequest := storageClientV2.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	// Create record with pds version of group member
+	recordType := "test"
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: groupMemberPDS.ClientID,
+		UserID:   groupMemberPDS.ClientID,
+		ReaderID: groupMemberPDS.ClientID,
+	}
+	keyReq.RecordType = recordType
+	_, err = groupMemberPDS.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+	}
+	// Create records for given record type
+	resp, err := CreateRecordsForRecordType(recordType, "test1", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err := EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest := storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err := groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest := storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err := groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 2
+	resp, err = CreateRecordsForRecordType(recordType, "Test2", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Record 3
+	resp, err = CreateRecordsForRecordType(recordType, "test3", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 3
+
+	// Record 4
+	resp, err = CreateRecordsForRecordType(recordType, "test4", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// end of record 4
+
+	// Now check group member 2 can retrieve the record
+	listRequest := storageClientV2.ListGroupRecordsRequest{
+		GroupID: response.GroupID,
+		Max:     3,
+	}
+	listReturn, err := groupMember2.GetSharedWithGroup(testCtx, listRequest)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
+	}
+	listRequest2 := storageClientV2.ListGroupRecordsRequest{
+		GroupID:   response.GroupID,
+		Max:       3,
+		NextToken: listReturn.NextToken,
+	}
+	_, err = groupMember2.GetSharedWithGroup(testCtx, listRequest2)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest2, err)
+	}
+	// Add another record
+	resp, err = CreateRecordsForRecordType(recordType, "added late", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err = EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest = storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err = groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest = storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err = groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+
+	// Now check group member 2 can retrieve the record
+	listRequest = storageClientV2.ListGroupRecordsRequest{
+		GroupID: response.GroupID,
+		Max:     5,
+	}
+	listReturn, err = groupMember2.GetSharedWithGroup(testCtx, listRequest)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
+	}
+	// // Verify we got the same record back
+	var found bool
+	for _, returnRecords := range listReturn.ResultList {
+		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+			found = true
+		}
+	}
+	if found == false {
+		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
+	}
+}
+
+func TestShareRecordWithGroupReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Create Two client Configurations for this test
+	reg, ClientConfig, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClient(testCtx, ClientServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	// in order to be able to write records i needed a pds and storage client with the same credentials
+	groupMemberPDS := pdsClient.New(ClientConfig)
+	groupMember := storageClientV2.New(ClientConfig)
+	// Queen Client is just an admin to create the group and add group members
+	queenClient := storageClientV2.New(queenClientInfo)
+	// Group member 2 will be the tester to see if a group member can retrieve the records shared with the group
+	groupMember2 := storageClientV2.New(ClientConfig2)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClientV2.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key for group member
+	membershipKeyRequest := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	//Create a request to create a new membership key for group member 2
+	membershipKeyRequestGroupMember2 := storageClientV2.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponseGroupMember2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequestGroupMember2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponseGroupMember2, err)
+	}
+
+	// Add clients to group
+	groupMemberCapabilities := []string{storageClientV2.ShareContentGroupCapability, storageClientV2.ReadContentGroupCapability}
+	memberRequest := []storageClientV2.GroupMember{}
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+	memberRequest = append(memberRequest,
+		storageClientV2.GroupMember{
+			ClientID:        uuid.MustParse(groupMember2.ClientID),
+			MembershipKey:   membershipKeyResponseGroupMember2,
+			CapabilityNames: groupMemberCapabilities})
+	addMemberRequest := storageClientV2.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	// Create record with pds version of group member
+	recordType := "test"
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: groupMemberPDS.ClientID,
+		UserID:   groupMemberPDS.ClientID,
+		ReaderID: groupMemberPDS.ClientID,
+	}
+	keyReq.RecordType = recordType
+	_, err = groupMemberPDS.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+	}
+	// Create records for given record type
+	resp, err := CreateRecordsForRecordType(recordType, "test1", groupMemberPDS)
+	if err != nil {
+		t.Errorf("Failed to create the record under given record type (%+v)", recordType)
+	}
+	//  Encrypt Access Key for the group
+	wrappedAccessKey, err := EncryptAccessKeyForGroup(groupMember, resp)
+	if err != nil {
+		t.Errorf("Error wrapping the access key for the group (%+v)", err)
+	}
+	// Create group access key
+	accessKeyRequest := storageClientV2.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err := groupMember.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", groupMember.ClientID, err)
+	}
+	// Share record with group
+	recordShareRequest := storageClientV2.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	responseVal, err := groupMember.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Now check group member 2 can retrieve the record
+	listRequest := storageClientV2.ListGroupRecordsRequest{
+		GroupID: response.GroupID,
+		Max:     3,
+	}
+	listReturn, err := groupMember2.GetSharedWithGroup(testCtx, listRequest)
+	if err != nil {
+		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
+	}
+	// Now decrypt the record and verify that it was the same record
+
+	// // Verify we got the same record back
+	var found bool
+	for _, returnRecords := range listReturn.ResultList {
+		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+			found = true
+		}
+	}
+	if found == false {
+		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
+	}
+}
+func EncryptAccessKeyForGroup(groupMember storageClientV2.StorageClient, accessKey e3dbClients.SymmetricKey) (string, error) {
+	encryptionKeys := e3dbClients.EncryptionKeys{
+		Public: e3dbClients.Key{
+			Type:     e3dbClients.DefaultEncryptionKeyType,
+			Material: groupMember.EncryptionKeys.Public.Material,
+		},
+		Private: groupMember.EncryptionKeys.Private,
+	}
+	eak, eakN, err := e3dbClients.BoxEncryptToBase64(accessKey[:], encryptionKeys)
+	wrappedAccessKey := fmt.Sprintf("%s.%s", eak, eakN)
+	return wrappedAccessKey, err
 }
