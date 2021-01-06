@@ -426,6 +426,43 @@ func (c *E3dbPDSClient) DecryptRecord(ctx context.Context, record Record) (Recor
 	return record, err
 }
 
+// DecryptGroupRecordWithGroupEncryptedAccessKey takes a record and an eak response, decrypts the membership key used for encrypting the record, and the public key
+// for the writer of the record. Then decrypts the record and returns data
+func (c *E3dbPDSClient) DecryptGroupRecordWithGroupEncryptedAccessKey(ctx context.Context, record Record, groupEncryptedAccessKey *GetEAKResponse) (Record, error) {
+	// Decrypt the access key
+	encryptedAccessKey := groupEncryptedAccessKey.EAK
+	if encryptedAccessKey == "" {
+		return record, fmt.Errorf("no access key exists for records of type %s", record.Metadata.Type)
+	}
+	// otherwise attempt to decrypt the returned access key
+	rawEncryptionKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return record, err
+	}
+	// Right now we only have one Wrapper, So this should return the Group Key
+	var rawGroupPrivateKey e3dbClients.SymmetricKey
+	var writerPublicKey string
+	for _, wrapper := range *groupEncryptedAccessKey.AccessKeyWrappers {
+		rawGroupPrivateKey, err = e3dbClients.DecryptEAK(wrapper.MembershipKey, groupEncryptedAccessKey.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
+		if err != nil {
+			return record, err
+		}
+		writerPublicKey = wrapper.PublicKey
+	}
+	accessKey, err := e3dbClients.DecryptEAK(encryptedAccessKey, writerPublicKey, rawGroupPrivateKey)
+	if err != nil {
+		return record, err
+	}
+	// Decrypt the record
+	decrypted, err := e3dbClients.DecryptData(record.Data, accessKey)
+	if err != nil {
+		return record, err
+	}
+	// Return the decrypted record
+	record.Data = *decrypted
+	return record, err
+}
+
 // DeleteRecord attempts to delete a record in e3db, returning error (if any).
 func (c *E3dbPDSClient) DeleteRecord(ctx context.Context, params DeleteRecordRequest) error {
 	path := c.Host + "/" + PDSServiceBasePath + "/records/" + params.RecordID

@@ -216,9 +216,10 @@ type GetEAKResponse struct {
 
 // AccessKeyWrapper holds the information needed to unwrap each layer of access keys
 type AccessKeyWrapper struct {
-	MembershipKey string    `json:"membership_key"`
-	PublicKey     string    `json:"public_key"`
-	AccessKeyID   uuid.UUID `json:"access_key_id"`
+	MembershipKey  string    `json:"membership_key"`
+	PublicKey      string    `json:"public_key"`
+	AccessKeyID    uuid.UUID `json:"access_key_id"`
+	GroupPublicKey string    `json:"group_public_key"`
 }
 
 // GetAccessKeyResponse contains the api representation of fetching an encrypted access key.

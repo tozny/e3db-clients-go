@@ -161,6 +161,7 @@ type ClientGroup struct {
 	GroupID       uuid.UUID `json:"group_id"`
 	MembershipKey string    `json:"encrypted_membership_key"`
 	ClientID      uuid.UUID `json:"client_id"`
+	AuthorizerID  uuid.UUID `json:"authorizer_id"`
 }
 
 // CapabilityMap wraps values managing client capabilities for resources

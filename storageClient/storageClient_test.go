@@ -2003,7 +2003,12 @@ func CreateRecordsForRecordType(recordType string, dataRecord string, groupMembe
 			Plain:    map[string]string{"key": "value"},
 		},
 	}
-	_, err = groupMemberPDS.WriteRecord(testCtx, recordToWrite)
+
+	encryptedRecord, err := groupMemberPDS.EncryptRecord(testCtx, recordToWrite)
+	if err != nil {
+		return nil, err
+	}
+	_, err = groupMemberPDS.WriteRecord(testCtx, encryptedRecord)
 	if err != nil {
 		return nil, err
 	}
@@ -2647,6 +2652,7 @@ func TestShareRecordWithGroupReturnsSuccess(t *testing.T) {
 	queenClient := storageClientV2.New(queenClientInfo)
 	// Group member 2 will be the tester to see if a group member can retrieve the records shared with the group
 	groupMember2 := storageClientV2.New(ClientConfig2)
+	groupMember2PDS := pdsClient.New(ClientConfig2)
 	// Generate a Key pair for the group
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
@@ -2769,15 +2775,17 @@ func TestShareRecordWithGroupReturnsSuccess(t *testing.T) {
 		t.Errorf("Error trying to list records shared with group (%+v) (%+v)", listRequest, err)
 	}
 	// Now decrypt the record and verify that it was the same record
-
-	// // Verify we got the same record back
-	var found bool
-	for _, returnRecords := range listReturn.ResultList {
-		if returnRecords.Metadata.RecordID == responseVal.RecordID {
-			found = true
-		}
+	record := pdsClient.Record{
+		Metadata:        listReturn.ResultList[0].Metadata,
+		Data:            listReturn.ResultList[0].Data,
+		RecordSignature: listReturn.ResultList[0].RecordSignature,
 	}
-	if found == false {
+	decryptedRecord, err := groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].AccessKey)
+	if err != nil {
+		t.Errorf("Couldnt decrypt record %+v Error: %+v", record, err)
+	}
+	// // Verify we got the same record back
+	if decryptedRecord.Data["data"] != "test1" {
 		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
 	}
 }
