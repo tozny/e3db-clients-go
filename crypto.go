@@ -345,7 +345,6 @@ func DecryptEAK(eak string, authorizerPublicKey string, privateKey SymmetricKey)
 	if err != nil {
 		return nil, err
 	}
-
 	akBytes, err := BoxDecryptFromBase64(fields[0], fields[1], decodedAuthorizerPublicKey, privateKey)
 	if err != nil {
 		return nil, errors.New("access key decryption failure")
