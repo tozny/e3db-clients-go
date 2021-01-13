@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -133,7 +134,16 @@ func MakeRawServiceCall(client request.Requester, req *http.Request, result inte
 	if result == nil {
 		return nil
 	}
-
+	var bodyBytes []byte
+	if response.Body != nil {
+		bodyBytes, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			fmt.Printf("Error reading request body %s", err)
+		}
+	}
+	fmt.Printf("Raw Response %s", string(bodyBytes))
+	// Repopulate body with the data read
+	response.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
 		return &RequestError{
