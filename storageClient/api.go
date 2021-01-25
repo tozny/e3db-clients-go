@@ -101,7 +101,7 @@ type AddingCapabilityRequest struct {
 
 // GroupMember wraps values for a client that is a member of a group.
 type GroupMember struct {
-	ClientID        uuid.UUID `json:"client_ids"`
+	ClientID        uuid.UUID `json:"client_id"`
 	MembershipKey   string    `json:"membership_key"`
 	CapabilityNames []string  `json:"capability_names"`
 }
