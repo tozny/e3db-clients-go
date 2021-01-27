@@ -34,6 +34,7 @@ type Note struct {
 type CreateGroupRequest struct {
 	Name              string `json:"group_name"`
 	PublicKey         string `json:"public_key"`
+	Description       string `json:"description"`
 	EncryptedGroupKey string `json:"encrypted_group_key"`
 }
 
@@ -46,6 +47,7 @@ type Group struct {
 	CreatedAt         time.Time `json:"created_at"`
 	LastModified      time.Time `json:"last_modified"`
 	EncryptedGroupKey string    `json:"encrypted_group_key"`
+	Description       string    `json:"description"`
 }
 
 // GroupAccessKeyRequest wraps the values to get or create an access key
