@@ -48,6 +48,7 @@ type Group struct {
 	LastModified      time.Time `json:"last_modified"`
 	EncryptedGroupKey string    `json:"encrypted_group_key"`
 	Description       string    `json:"description"`
+	MemberCount       int       `json:"member_count"`
 }
 
 // GroupAccessKeyRequest wraps the values to get or create an access key
