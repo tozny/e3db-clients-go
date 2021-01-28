@@ -1983,7 +1983,7 @@ func TestShareRecordAndPaginateTestSameRecordsAsMaxReturnsNextTokenAsZero(t *tes
 	// // Verify we got the same record back
 	var found bool
 	for _, returnRecords := range listReturn.ResultList {
-		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+		if returnRecords.Metadata.RecordID != responseVal.RecordID {
 			found = true
 		}
 	}
@@ -2293,7 +2293,7 @@ func TestShareRecordAndPaginateTestNotFullLastPageReturnsSuccess(t *testing.T) {
 	// // Verify we got the same record back
 	var found bool
 	for _, returnRecords := range listReturn.ResultList {
-		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+		if returnRecords.Metadata.RecordID != responseVal.RecordID {
 			found = true
 		}
 	}
@@ -2611,7 +2611,7 @@ func TestShareRecordAndPaginateReturnsSuccess(t *testing.T) {
 	// // Verify we got the same record back
 	var found bool
 	for _, returnRecords := range listReturn.ResultList {
-		if returnRecords.Metadata.RecordID == responseVal.RecordID {
+		if returnRecords.Metadata.RecordID != responseVal.RecordID {
 			found = true
 		}
 	}
