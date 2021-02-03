@@ -718,3 +718,19 @@ type ListRealmApplicationMappersRequest struct {
 type ListRealmApplicationMappersResponse struct {
 	ApplicationMappers []ApplicationMapper `json:"application_mappers"`
 }
+
+// SearchRealmIdentitiesResponse wraps matching identities in the given realm for the search criteria (if any)
+type SearchRealmIdentitiesResponse struct {
+	MatchingEmailIdentityAliases    SearchCriteriaToToznyClientAliases `json:"identities_email_to_client_aliases"`
+	MatchingUsernameIdentityAliases SearchCriteriaToToznyClientAliases `json:"identities_username_to_client_aliases"`
+}
+
+// SearchCriteriaToToznyClientAliases maps identity email or username to TozID
+type SearchCriteriaToToznyClientAliases map[string]uuid.UUID
+
+// SearchRealmIdentitiesRequest wraps the search criteria to use for retrieving matching Identities from a given realm
+type SearchRealmIdentitiesRequest struct {
+	RealmName         string
+	IdentityEmails    []string `json:"identity_emails"`
+	IdentityUsernames []string `json:"identity_usernames"`
+}

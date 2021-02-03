@@ -6,7 +6,8 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	google.golang.org/appengine v1.6.1 // indirect
+	golang.org/x/sys v0.0.0-20190606165138-5da285871e9c // indirect
+	google.golang.org/appengine v1.6.6 // indirect
 )
 
 go 1.13
