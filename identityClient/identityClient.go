@@ -731,7 +731,7 @@ func (c *E3dbIdentityClient) JoinGroups(ctx context.Context, params UpdateIdenti
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
-// LeaveGroups removes andidentity from groups in a realm by group IDs.
+// LeaveGroups removes an identity from groups in a realm by group IDs.
 func (c *E3dbIdentityClient) LeaveGroups(ctx context.Context, params UpdateIdentityGroupMembershipRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID + "/groups"
 	req, err := e3dbClients.CreateRequest(http.MethodDelete, path, params)
