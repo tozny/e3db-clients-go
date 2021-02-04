@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -61,6 +62,20 @@ type allowAuthorizerPolicy struct {
 // records of a specified type on behalf of the granting client
 type denyAuthorizerPolicy struct {
 	Deny []authorizePolicy `json:"deny"`
+}
+
+// ClientInfo fetches the public information about a TozStore client based on ID. This requires
+// A valid auth token, so API Key and Secret must be available
+func (c *E3dbPDSClient) ClientInfo(ctx context.Context, clientID string) (*ClientInfo, error) {
+	var result *ClientInfo
+	path := fmt.Sprintf("%s/%s/clients/%s", c.Host, PDSServiceBasePath, url.QueryEscape(clientID))
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return result, err
+	}
+
+	e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, nil
 }
 
 // FileCommit finalized a pending file write, returning the committed file record

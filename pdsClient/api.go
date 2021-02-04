@@ -8,6 +8,25 @@ import (
 
 const BatchReadRecordLimit = 1000
 
+// PublicEncryptionKey contains a cryptographic key for use in client encryption operations.
+type PublicEncyrptionKey struct {
+	Curve25519 string `json:"curve25519"`
+}
+
+// PublicSigningKey contains a cryptographic key for use in client signing operations.
+type PublicSigningKey struct {
+	Ed25519 string `json:"ed25519"`
+}
+
+// ClientInfo contains information sent by the E3DB service
+// about a client.
+type ClientInfo struct {
+	ClientID   string              `json:"client_id"`
+	PublicKey  PublicEncyrptionKey `json:"public_key"`
+	SigningKey PublicSigningKey    `json:"signing_key,omitempty"`
+	Validated  bool                `json:"validated"`
+}
+
 // AddAuthorizedWriterRequest wraps the needed parameters
 // to authorize a client to share records of a specified type on behalf of another client
 type AddAuthorizedWriterRequest struct {
