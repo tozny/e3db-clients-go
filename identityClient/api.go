@@ -21,6 +21,7 @@ const (
 	SAMLKeycloakSubsystemDescriptionFormat                  = "keycloak-saml-subsystem"
 	UserSessionNoteOIDCApplicationMapperType                = "oidc-user-session-note-mapper"
 	UserAttributeOIDCApplicationMapperType                  = "oidc-user-attribute-mapper"
+	GroupMembershipOIDCApplicationMapperType                = "oidc-group-membership-mapper"
 	RoleListSAMLApplicationMapperType                       = "saml-role-list-mapper"
 	UserPropertySAMLApplicationMapperType                   = "saml-user-property-mapper"
 	ClaimJSONStringType                                     = "String"
@@ -50,6 +51,13 @@ type Realm struct {
 	Active                bool      `json:"active"`                             // Whether the realm is active for applications and identities to consume.
 	Sovereign             Sovereign `json:"sovereign"`                          // The realm's sovereign.
 	BrokerIdentityToznyID uuid.UUID `json:"broker_identity_tozny_id,omitempty"` // The Tozny Client ID associated with the Identity used to broker interactions between the realm and it's Identities. Will be empty if no realm broker Identity has been registered.
+}
+
+// RealmInfo represents the public information about a TozID realm
+type RealmInfo struct {
+	Name                  string    `json:"name"`
+	BrokerIdentityToznyID uuid.UUID `json:"broker_id,omitempty"`
+	Domain                string    `json:"domain"`
 }
 
 // Sovereign represents the top level user of a realm
@@ -527,6 +535,19 @@ type IdentityDetails struct {
 	Attributes map[string][]string `json:"attributes"`
 }
 
+// RealmIdentityRequest wraps a realm name and identity ID
+type RealmIdentityRequest struct {
+	RealmName  string
+	IdentityID string
+}
+
+// UpdateIdentityGroupMembershipRequest wraps a realm name and set of role IDs for a realm
+type UpdateIdentityGroupMembershipRequest struct {
+	RealmName  string   `json:"-"`
+	IdentityID string   `json:"-"`
+	Groups     []string `json:"groups"`
+}
+
 // RoleMapping wraps a full set of roles for a realm and its clients
 type RoleMapping struct {
 	ClientRoles map[string][]Role `json:"client"`
@@ -545,10 +566,11 @@ type Role struct {
 
 // Group wraps a single group representation in a realm
 type Group struct {
-	ID        string  `json:"id"`
-	Name      string  `json:"name"`
-	Path      string  `json:"path"`
-	SubGroups []Group `json:"subGroups"`
+	ID         string              `json:"id"`
+	Name       string              `json:"name"`
+	Path       string              `json:"path"`
+	Attributes map[string][]string `json:"attributes"`
+	SubGroups  []Group             `json:"subGroups"`
 }
 
 // ListGroupRoleMappingsRequest wraps parameters for
@@ -569,6 +591,12 @@ type AddGroupRoleMappingsRequest struct {
 // RemoveGroupRoleMappingsRequest wraps request parameters for
 // removing role mappings from a group.
 type RemoveGroupRoleMappingsRequest = AddGroupRoleMappingsRequest
+
+// UpdateGroupListRequest wraps a realm name and set of role IDs for a realm
+type UpdateGroupListRequest struct {
+	RealmName string   `json:"-"`
+	Groups    []string `json:"groups"`
+}
 
 // CreateRealmRoleRequest wraps parameters for creating a realm role
 type CreateRealmRoleRequest struct {
@@ -627,6 +655,8 @@ type ApplicationMapper struct {
 	UserSessionNote string `json:"user_session_note"`
 	// Name of stored user attribute within the UserModel.attribute map
 	UserAttribute string `json:"user_attribute"`
+	// Whether or not to map in the full group path in tokens when mapping groups into tokens
+	FullPath bool `json:"full_path"`
 	// Name of the claim to insert into the token. This can be a fully qualified name like 'address.street'. In this case, a nested json object will be created. To prevent nesting and use dot literally, escape the dot with backslash (\.)
 	TokenClaimName string `json:"token_claim_name"`
 	// JSON type that should be used to populate the json claim in the token

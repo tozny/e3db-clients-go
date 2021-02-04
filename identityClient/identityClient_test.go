@@ -1223,6 +1223,62 @@ func createIdentityServiceClient(t *testing.T) E3dbIdentityClient {
 	return identityServiceClient
 }
 
+func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, string) {
+	accountTag := uuid.New().String()
+	queenClientInfo, accountInfo, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := accountInfo.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, registrationToken)
+	}
+	return identityServiceClient, registrationToken
+}
+
+func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) *RegisterIdentityResponse {
+	identityTag := uuid.New().String()
+	identityName := "Freud" + identityTag
+	identityEmail := "freud+" + identityTag + "@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realmName,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	return identity
+}
+
 func uniqueString(prefix string) string {
 	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
 }
@@ -1295,6 +1351,240 @@ func listRealmApplicationRoles(t *testing.T, identityServiceClient E3dbIdentityC
 	}
 
 	return applicationRoles.ApplicationRoles
+}
+
+func groupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, identity string) []Group {
+	params := RealmIdentityRequest{
+		RealmName:  realmName,
+		IdentityID: identity,
+	}
+
+	groups, err := identityServiceClient.GroupMembership(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing default realm groups: %+v", err)
+	}
+
+	return groups.Groups
+}
+
+func updateGroupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, identity string, groups []string) {
+	params := UpdateIdentityGroupMembershipRequest{
+		RealmName:  realmName,
+		IdentityID: identity,
+		Groups:     groups,
+	}
+	var err error
+	switch method {
+	case "join":
+		err = identityServiceClient.JoinGroups(testContext, params)
+		break
+	case "leave":
+		err = identityServiceClient.LeaveGroups(testContext, params)
+		break
+	case "update":
+		err = identityServiceClient.UpdateGroupMembership(testContext, params)
+		break
+	default:
+		err = fmt.Errorf("Unknown method for update default realm groups")
+	}
+
+	if err != nil {
+		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
+	}
+}
+
+func TestDeleteIdentityRemoves(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	err := client.DeleteIdentity(testContext, RealmIdentityRequest{
+		RealmName:  realm.Name,
+		IdentityID: identityID,
+	})
+	if err != nil {
+		t.Fatalf("unable to delete identity: %+v", err)
+	}
+	// Validate the identity is cleaned up
+	foundIdentities, err := client.ListIdentities(testContext, ListIdentitiesRequest{
+		RealmName: realm.Name,
+		Max:       1000,
+	})
+	if err != nil {
+		t.Fatalf("Error %+v while fetching identity %q", err, identityID)
+	}
+	for _, found := range foundIdentities.Identities {
+		if found.Name == identity.Identity.Name {
+			t.Fatalf("Found identity %q in realm, but it should have been removed", found.Name)
+		}
+	}
+}
+
+func TestGroupMembershipWorksWhenEmpty(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	groups := groupMembership(t, client, realm.Name, identityID)
+
+	if len(groups) != 0 {
+		t.Errorf("expected result to be empty")
+	}
+}
+
+func TestGroupMembershipReturnsGroups(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	groupName := uniqueString("realm group")
+	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   groupCreated.ID,
+	})
+
+	// make default group
+	updateGroupMembership(t, client, "join", realm.Name, identityID, []string{groupCreated.ID})
+
+	actual := groupMembership(t, client, realm.Name, identityID)
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	group := actual[0]
+
+	if group.Name != groupName {
+		t.Errorf("expected result group name to be '%s', was '%s'", groupName, group.Name)
+	}
+}
+
+func TestLeaveGroupsRemovesGroups(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	groupName := uniqueString("realm group")
+	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   groupCreated.ID,
+	})
+
+	// make default group then remove it
+	updateGroupMembership(t, client, "join", realm.Name, identityID, []string{groupCreated.ID})
+	updateGroupMembership(t, client, "leave", realm.Name, identityID, []string{groupCreated.ID})
+
+	actual := groupMembership(t, client, realm.Name, identityID)
+
+	if len(actual) != 0 {
+		t.Errorf("expected result to have no elements")
+	}
+}
+
+func TestJoinGroupsAddsGroups(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	group1Name := uniqueString("realm group 1")
+	group1 := createRealmGroup(t, client, realm.Name, group1Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group1.ID,
+	})
+	group2Name := uniqueString("realm group 2")
+	group2 := createRealmGroup(t, client, realm.Name, group2Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group2.ID,
+	})
+
+	// join a group
+	updateGroupMembership(t, client, "join", realm.Name, identityID, []string{group1.ID})
+	// join another group
+	updateGroupMembership(t, client, "join", realm.Name, identityID, []string{group2.ID})
+
+	actual := groupMembership(t, client, realm.Name, identityID)
+
+	if len(actual) != 2 {
+		t.Errorf("expected result to have two elements")
+	}
+
+	found := map[string]bool{}
+	found[group1Name] = false
+	found[group2Name] = false
+	for _, group := range actual {
+		found[group.Name] = true
+	}
+
+	for groupName, isFound := range found {
+		if !isFound {
+			t.Errorf("did not find %q in returned groups: %+v", groupName, actual)
+		}
+	}
+}
+
+func TestUpdateGroupMemvbershipReplacesGroups(t *testing.T) {
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identityID := identity.Identity.ToznyID.String()
+
+	group1Name := uniqueString("realm group 1")
+	group1 := createRealmGroup(t, client, realm.Name, group1Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group1.ID,
+	})
+	group2Name := uniqueString("realm group 2")
+	group2 := createRealmGroup(t, client, realm.Name, group2Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group2.ID,
+	})
+
+	// join a group
+	updateGroupMembership(t, client, "join", realm.Name, identityID, []string{group1.ID})
+	// leave original group and join new group
+	updateGroupMembership(t, client, "update", realm.Name, identityID, []string{group2.ID})
+
+	actual := groupMembership(t, client, realm.Name, identityID)
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	group := actual[0]
+
+	if group.Name != group2Name {
+		t.Errorf("expected result group name to be '%s', was '%s'", group2Name, group.Name)
+	}
 }
 
 func TestDescribeApplicationRoleReturnsCreatedApplicationRole(t *testing.T) {
@@ -1495,6 +1785,45 @@ func listRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, rea
 	return groups.Groups
 }
 
+func listDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
+	params := ListRealmGroupsRequest{
+		RealmName: realmName,
+	}
+
+	groups, err := identityServiceClient.ListRealmDefaultGroups(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing default realm groups: %+v", err)
+	}
+
+	return groups.Groups
+}
+
+func updateDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, groups []string) {
+	params := UpdateGroupListRequest{
+		RealmName: realmName,
+		Groups:    groups,
+	}
+	var err error
+	switch method {
+	case "add":
+		err = identityServiceClient.AddRealmDefaultGroups(testContext, params)
+		break
+	case "remove":
+		err = identityServiceClient.RemoveRealmDefaultGroups(testContext, params)
+		break
+	case "replace":
+		err = identityServiceClient.ReplaceRealmDefaultGroups(testContext, params)
+		break
+	default:
+		err = fmt.Errorf("Unknown method for update default realm groups")
+	}
+
+	if err != nil {
+		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
+	}
+}
+
 func TestDescribeGroupReturnsCreatedGroup(t *testing.T) {
 	client := createIdentityServiceClient(t)
 
@@ -1616,6 +1945,153 @@ func TestDeletedGroupIsNotListed(t *testing.T) {
 
 	if len(actual) != 0 {
 		t.Errorf("expected 0 application roles after deleting the one created")
+	}
+}
+
+func TestListDefaultGroupsWorksWhenEmpty(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groups := listDefaultRealmGroups(t, client, realm.Name)
+
+	if len(groups) != 0 {
+		t.Errorf("expected result to be empty")
+	}
+}
+
+func TestListDefaultGroupsReturnsDefaultGroups(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   groupCreated.ID,
+	})
+
+	// make default group
+	updateDefaultRealmGroups(t, client, "add", realm.Name, []string{groupCreated.ID})
+
+	actual := listDefaultRealmGroups(t, client, realm.Name)
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	group := actual[0]
+
+	if group.Name != groupName {
+		t.Errorf("expected result group name to be '%s', was '%s'", groupName, group.Name)
+	}
+}
+
+func TestRemoveDefaultGroupsRemovesDefaultGroups(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	groupName := uniqueString("realm group")
+	groupCreated := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   groupCreated.ID,
+	})
+
+	// make default group then remove it
+	updateDefaultRealmGroups(t, client, "add", realm.Name, []string{groupCreated.ID})
+	updateDefaultRealmGroups(t, client, "remove", realm.Name, []string{groupCreated.ID})
+
+	actual := listDefaultRealmGroups(t, client, realm.Name)
+
+	if len(actual) != 0 {
+		t.Errorf("expected result to have no elements")
+	}
+}
+
+func TestAddDefaultGroupsAddsADefaultGroup(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	group1Name := uniqueString("realm group 1")
+	group1 := createRealmGroup(t, client, realm.Name, group1Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group1.ID,
+	})
+	group2Name := uniqueString("realm group 2")
+	group2 := createRealmGroup(t, client, realm.Name, group2Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group2.ID,
+	})
+
+	// make default group
+	updateDefaultRealmGroups(t, client, "add", realm.Name, []string{group1.ID})
+	// add a default group
+	updateDefaultRealmGroups(t, client, "add", realm.Name, []string{group2.ID})
+
+	actual := listDefaultRealmGroups(t, client, realm.Name)
+
+	if len(actual) != 2 {
+		t.Errorf("expected result to have two elements")
+	}
+
+	found := map[string]bool{}
+	found[group1Name] = false
+	found[group2Name] = false
+	for _, group := range actual {
+		found[group.Name] = true
+	}
+
+	for groupName, isFound := range found {
+		if !isFound {
+			t.Errorf("did not find %q in returned groups: %+v", groupName, actual)
+		}
+	}
+}
+
+func TestReplaceDefaultGroupsReplacesDefaultGroups(t *testing.T) {
+	client := createIdentityServiceClient(t)
+
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+
+	group1Name := uniqueString("realm group 1")
+	group1 := createRealmGroup(t, client, realm.Name, group1Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group1.ID,
+	})
+	group2Name := uniqueString("realm group 2")
+	group2 := createRealmGroup(t, client, realm.Name, group2Name)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group2.ID,
+	})
+
+	// make default group
+	updateDefaultRealmGroups(t, client, "add", realm.Name, []string{group1.ID})
+	// add a default group
+	updateDefaultRealmGroups(t, client, "replace", realm.Name, []string{group2.ID})
+
+	actual := listDefaultRealmGroups(t, client, realm.Name)
+
+	if len(actual) != 1 {
+		t.Errorf("expected result to have one element")
+	}
+
+	group := actual[0]
+
+	if group.Name != group2Name {
+		t.Errorf("expected result group name to be '%s', was '%s'", group2Name, group.Name)
 	}
 }
 

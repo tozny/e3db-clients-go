@@ -22,6 +22,7 @@ const (
 	identityResourceName          = "identity"
 	roleResourceName              = "role"
 	groupResourceName             = "group"
+	defaultGroupResourceName      = "default-groups"
 	roleMapperResourceName        = "role_mapping"
 	realmLoginPathPrefix          = "/auth/realms"
 	realmLoginPathPostfix         = "/protocol/openid-connect/token"
@@ -455,6 +456,48 @@ func (c *E3dbIdentityClient) CreateRealmGroup(ctx context.Context, params Create
 	return group, err
 }
 
+// ListRealmDefaultGroups lists the default groups in a realm.
+func (c *E3dbIdentityClient) ListRealmDefaultGroups(ctx context.Context, params ListRealmGroupsRequest) (*ListRealmGroupsResponse, error) {
+	var groups *ListRealmGroupsResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + defaultGroupResourceName
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return groups, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &groups)
+	return groups, err
+}
+
+// ReplaceRealmDefaultGroups replaces the list of default groups in a realm by group IDs.
+func (c *E3dbIdentityClient) ReplaceRealmDefaultGroups(ctx context.Context, params UpdateGroupListRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + defaultGroupResourceName
+	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// AddRealmDefaultGroups adds to the list of default groups in a realm by group IDs.
+func (c *E3dbIdentityClient) AddRealmDefaultGroups(ctx context.Context, params UpdateGroupListRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + defaultGroupResourceName
+	req, err := e3dbClients.CreateRequest(http.MethodPatch, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// RemoveRealmDefaultGroups removes groups from the list of default groups in a realm by group IDs.
+func (c *E3dbIdentityClient) RemoveRealmDefaultGroups(ctx context.Context, params UpdateGroupListRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + defaultGroupResourceName
+	req, err := e3dbClients.CreateRequest(http.MethodDelete, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
 // ListOIDCKeysForRealm returns a list of all configured keys for OIDC flows for a given realm and error (if any)
 func (c *E3dbIdentityClient) ListOIDCKeysForRealm(ctx context.Context, realmName string) (ListRealmOIDCKeysResponse, error) {
 	var listedKeys ListRealmOIDCKeysResponse
@@ -621,6 +664,18 @@ func (c *E3dbIdentityClient) InternalDeleteLDAPCache(ctx context.Context, realmN
 	return err
 }
 
+// RealmInfo fetches the public realm information based on realm name.
+func (c *E3dbIdentityClient) RealmInfo(ctx context.Context, realmName string) (*RealmInfo, error) {
+	var info *RealmInfo
+	path := c.Host + identityServiceBasePath + "/info/realm/" + strings.ToLower(realmName)
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return info, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.requester, req, &info)
+	return info, err
+}
+
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,
 // returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {
@@ -632,6 +687,58 @@ func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params Regist
 	}
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &identity)
 	return identity, err
+}
+
+// DeleteIdentity removes an identity in the given realm.
+func (c *E3dbIdentityClient) DeleteIdentity(ctx context.Context, params RealmIdentityRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID
+	req, err := e3dbClients.CreateRequest(http.MethodDelete, path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// GroupMembership lists the groups in a realm an identity is associated with.
+func (c *E3dbIdentityClient) GroupMembership(ctx context.Context, params RealmIdentityRequest) (*ListRealmGroupsResponse, error) {
+	var groups *ListRealmGroupsResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID + "/groups"
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return groups, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &groups)
+	return groups, err
+}
+
+// UpdateGroupMembership replaces an identity's group membership in a realm by group IDs.
+func (c *E3dbIdentityClient) UpdateGroupMembership(ctx context.Context, params UpdateIdentityGroupMembershipRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID + "/groups"
+	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// JoinGroups associates an identity with groups in a realm by group IDs.
+func (c *E3dbIdentityClient) JoinGroups(ctx context.Context, params UpdateIdentityGroupMembershipRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID + "/groups"
+	req, err := e3dbClients.CreateRequest(http.MethodPatch, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// LeaveGroups removes an identity from groups in a realm by group IDs.
+func (c *E3dbIdentityClient) LeaveGroups(ctx context.Context, params UpdateIdentityGroupMembershipRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID + "/groups"
+	req, err := e3dbClients.CreateRequest(http.MethodDelete, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
 // ListRealms lists the realms belonging to the requester returning the realms and error (if any).
