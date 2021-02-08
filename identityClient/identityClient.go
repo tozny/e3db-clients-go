@@ -788,6 +788,18 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 	return realm, err
 }
 
+// SearchRealmIdentities searches for and retrieves details about Identities in a realm based off criteria
+func (c *E3dbIdentityClient) SearchRealmIdentities(ctx context.Context, params SearchRealmIdentitiesRequest) (*SearchRealmIdentitiesResponse, error) {
+	var identitySearch *SearchRealmIdentitiesResponse
+	path := c.Host + identityServiceBasePath + "/search/realm/" + params.RealmName + "/identity"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return identitySearch, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identitySearch)
+	return identitySearch, err
+}
+
 func (c *E3dbIdentityClient) ChallengePushRequest(ctx context.Context, params UserChallengePushRequest) (InitiateUserChallengeResponse, error) {
 	var resp InitiateUserChallengeResponse
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.Realm + "/challenge/" + params.Username
