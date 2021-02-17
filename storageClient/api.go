@@ -69,6 +69,14 @@ type ShareGroupRecordRequest struct {
 	PublicKey          string    `json:"public_key"`
 }
 
+// RemoveRecordSharedWithGroupRequest wraps the values for revoking record access to a group
+type RemoveRecordSharedWithGroupRequest struct {
+	GroupID      uuid.UUID
+	RecordType   string    `json:"record_type"`
+	WriterID     uuid.UUID `json:"writer_id"`
+	AuthorizerID uuid.UUID `json:"authorizer_id"`
+}
+
 // ShareGroupRecordResponse wraps the return values of sharing a record for a group
 type ShareGroupRecordResponse ShareGroupRecordRequest
 
