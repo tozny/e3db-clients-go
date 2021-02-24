@@ -291,6 +291,17 @@ func (c *StorageClient) ShareRecordWithGroup(ctx context.Context, params ShareGr
 	return result, err
 }
 
+// RemoveSharedRecordWithGroup shares a record type for all group members in given group
+func (c *StorageClient) RemoveSharedRecordWithGroup(ctx context.Context, params RemoveRecordSharedWithGroupRequest) error {
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/share"
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // GetSharedWithGroup returns a list of all records shared with a group
 func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroupRecordsRequest) (*ListGroupRecordsResponse, error) {
 	var result *ListGroupRecordsResponse
