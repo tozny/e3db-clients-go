@@ -2844,3 +2844,74 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T
 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, identities)
 	}
 }
+
+func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	//defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	identityName := "Katie"
+	identityEmail := "katie@tozny.com"
+	identityFirstName := "Katie"
+	identityLastName := "Rock"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: toznyCyclopsHost,
+	}
+	anonClient := New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+
+	realmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if realmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Recieved %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Recieved %+v", realmName, realmInfo.Name)
+	}
+}

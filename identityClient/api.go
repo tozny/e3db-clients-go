@@ -60,6 +60,14 @@ type RealmInfo struct {
 	Domain                string    `json:"domain"`
 }
 
+// PrivateRealmInfo represents the private information about a TozID realm
+type PrivateRealmInfo struct {
+	Name                  string    `json:"name"`
+	BrokerIdentityToznyID uuid.UUID `json:"broker_id,omitempty"`
+	Domain                string    `json:"domain"`
+	SecretsEnabled        bool      `json:"secrets_enabled"`
+}
+
 // Sovereign represents the top level user of a realm
 // (i.e. a user who is able to log into the realm,
 // create/update/delete/view the realm properties and it's identities.)

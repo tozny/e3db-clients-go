@@ -676,6 +676,18 @@ func (c *E3dbIdentityClient) RealmInfo(ctx context.Context, realmName string) (*
 	return info, err
 }
 
+// PrivateRealmInfo fetches the private realm information based on realm name.
+func (c *E3dbIdentityClient) PrivateRealmInfo(ctx context.Context, realmName string) (*PrivateRealmInfo, error) {
+	var info *PrivateRealmInfo
+	path := c.Host + identityServiceBasePath + "/realm/info/" + realmName
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return info, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &info)
+	return info, err
+}
+
 // RegisterIdentity registers an identity with the specified realm using the specified parameters,
 // returning the created identity and error (if any).
 func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params RegisterIdentityRequest) (*RegisterIdentityResponse, error) {
