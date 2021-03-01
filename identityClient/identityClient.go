@@ -679,7 +679,7 @@ func (c *E3dbIdentityClient) RealmInfo(ctx context.Context, realmName string) (*
 // PrivateRealmInfo fetches the private realm information based on realm name.
 func (c *E3dbIdentityClient) PrivateRealmInfo(ctx context.Context, realmName string) (*PrivateRealmInfo, error) {
 	var info *PrivateRealmInfo
-	path := c.Host + identityServiceBasePath + "/realm/info/" + realmName
+	path := c.Host + identityServiceBasePath + "/realm/" + realmName + "/info"
 	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return info, err
