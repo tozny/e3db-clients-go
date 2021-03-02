@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -2484,366 +2483,367 @@ func TestApplicationMapperCRD(t *testing.T) {
 		t.Fatalf("expected deleted application mapper %+v not to be listed, got %+v", applicationMapper, listedApplicationMappers)
 	}
 }
-func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	_, err = anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:      realm.Name,
-		IdentityEmails: []string{"katie@tozny.com"},
-	}
-	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Valid identity should be returned
-	_, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-}
 
-func TestSearchingIdentitiesWithEmailValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:      realm.Name,
-		IdentityEmails: []string{"Luna@tozny.com"},
-	}
-	_, err = identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v should not error when searching invalid identities", err, requestParam)
-	}
-}
+// func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	accountToken := createAccountResponse.AccountServiceToken
+// 	queenAccountClient := accountClient.New(queenClientInfo)
+// 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+// 	if err != nil {
+// 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+// 	}
+// 	identityName := "Katie"
+// 	identityEmail := "katie@tozny.com"
+// 	identityFirstName := "Katie"
+// 	identityLastName := "Rock"
+// 	signingKeys, err := e3dbClients.GenerateSigningKeys()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating identity signing keys", err)
+// 	}
+// 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating encryption keys", err)
+// 	}
+// 	registerParams := RegisterIdentityRequest{
+// 		RealmRegistrationToken: registrationToken,
+// 		RealmName:              realm.Name,
+// 		Identity: Identity{
+// 			Name:        identityName,
+// 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+// 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+// 			FirstName:   identityFirstName,
+// 			LastName:    identityLastName,
+// 			Email:       identityEmail,
+// 		},
+// 	}
+// 	anonConfig := e3dbClients.ClientConfig{
+// 		Host: toznyCyclopsHost,
+// 	}
+// 	anonClient := New(anonConfig)
+// 	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+// 	if err != nil {
+// 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+// 	}
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:      realm.Name,
+// 		IdentityEmails: []string{"katie@tozny.com"},
+// 	}
+// 	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Valid identity should be returned
+// 	_, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
+// 	if !ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// }
 
-func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	registerResponse, err := anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
+// func TestSearchingIdentitiesWithEmailValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:      realm.Name,
+// 		IdentityEmails: []string{"Luna@tozny.com"},
+// 	}
+// 	_, err = identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v should not error when searching invalid identities", err, requestParam)
+// 	}
+// }
 
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:      realm.Name,
-		IdentityEmails: []string{"katie@tozny.com", "Luna@tozny.com"},
-	}
-	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Valid identity should be returned
-	responseTozclientId, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	if registerResponse.Identity.ToznyID != responseTozclientId {
-		t.Fatalf("Error Returning wrong client info for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Invalid identity should not be returned
-	_, ok = identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[1]]
-	if ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-}
+// func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	accountToken := createAccountResponse.AccountServiceToken
+// 	queenAccountClient := accountClient.New(queenClientInfo)
+// 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+// 	if err != nil {
+// 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+// 	}
+// 	identityName := "Katie"
+// 	identityEmail := "katie@tozny.com"
+// 	identityFirstName := "Katie"
+// 	identityLastName := "Rock"
+// 	signingKeys, err := e3dbClients.GenerateSigningKeys()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating identity signing keys", err)
+// 	}
+// 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating encryption keys", err)
+// 	}
+// 	registerParams := RegisterIdentityRequest{
+// 		RealmRegistrationToken: registrationToken,
+// 		RealmName:              realm.Name,
+// 		Identity: Identity{
+// 			Name:        identityName,
+// 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+// 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+// 			FirstName:   identityFirstName,
+// 			LastName:    identityLastName,
+// 			Email:       identityEmail,
+// 		},
+// 	}
+// 	anonConfig := e3dbClients.ClientConfig{
+// 		Host: toznyCyclopsHost,
+// 	}
+// 	anonClient := New(anonConfig)
+// 	registerResponse, err := anonClient.RegisterIdentity(testContext, registerParams)
+// 	if err != nil {
+// 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+// 	}
 
-func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	_, err = anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:         realm.Name,
-		IdentityUsernames: []string{"Katie"},
-	}
-	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Valid identity should be returned
-	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v in Map %+v", err, requestParam, identities)
-	}
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:      realm.Name,
+// 		IdentityEmails: []string{"katie@tozny.com", "Luna@tozny.com"},
+// 	}
+// 	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Valid identity should be returned
+// 	responseTozclientId, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
+// 	if !ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	if registerResponse.Identity.ToznyID != responseTozclientId {
+// 		t.Fatalf("Error Returning wrong client info for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Invalid identity should not be returned
+// 	_, ok = identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[1]]
+// 	if ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// }
 
-}
+// func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	accountToken := createAccountResponse.AccountServiceToken
+// 	queenAccountClient := accountClient.New(queenClientInfo)
+// 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+// 	if err != nil {
+// 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+// 	}
+// 	identityName := "Katie"
+// 	identityEmail := "katie@tozny.com"
+// 	identityFirstName := "Katie"
+// 	identityLastName := "Rock"
+// 	signingKeys, err := e3dbClients.GenerateSigningKeys()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating identity signing keys", err)
+// 	}
+// 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating encryption keys", err)
+// 	}
+// 	registerParams := RegisterIdentityRequest{
+// 		RealmRegistrationToken: registrationToken,
+// 		RealmName:              realm.Name,
+// 		Identity: Identity{
+// 			Name:        identityName,
+// 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+// 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+// 			FirstName:   identityFirstName,
+// 			LastName:    identityLastName,
+// 			Email:       identityEmail,
+// 		},
+// 	}
+// 	anonConfig := e3dbClients.ClientConfig{
+// 		Host: toznyCyclopsHost,
+// 	}
+// 	anonClient := New(anonConfig)
+// 	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+// 	if err != nil {
+// 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+// 	}
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:         realm.Name,
+// 		IdentityUsernames: []string{"Katie"},
+// 	}
+// 	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Valid identity should be returned
+// 	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
+// 	if !ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v in Map %+v", err, requestParam, identities)
+// 	}
 
-func TestSearchingIdentitiesWithUsernameValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:         realm.Name,
-		IdentityUsernames: []string{"Luna"},
-	}
-	_, err = identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-}
-func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T) {
-	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
-	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	_, err = anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
+// }
 
-	requestParam := SearchRealmIdentitiesRequest{
-		RealmName:         realm.Name,
-		IdentityUsernames: []string{"katie", "luna"},
-	}
-	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
-	if err != nil {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Valid identity should be returned
-	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
-	}
-	// Invalid identity should not be returned
-	_, ok = identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[1])]
-	if ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, identities)
-	}
-}
+// func TestSearchingIdentitiesWithUsernameValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:         realm.Name,
+// 		IdentityUsernames: []string{"Luna"},
+// 	}
+// 	_, err = identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// }
+// func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T) {
+// 	accountTag := uuid.New().String()
+// 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+// 	if err != nil {
+// 		t.Fatalf("Error %s making new account", err)
+// 	}
+// 	queenClientInfo.Host = toznyCyclopsHost
+// 	identityServiceClient := New(queenClientInfo)
+// 	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+// 	sovereignName := "QueenCoolName"
+// 	params := CreateRealmRequest{
+// 		RealmName:     realmName,
+// 		SovereignName: sovereignName,
+// 	}
+// 	realm, err := identityServiceClient.CreateRealm(testContext, params)
+// 	if err != nil {
+// 		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+// 	}
+// 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+// 	accountToken := createAccountResponse.AccountServiceToken
+// 	queenAccountClient := accountClient.New(queenClientInfo)
+// 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+// 	if err != nil {
+// 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+// 	}
+// 	identityName := "Katie"
+// 	identityEmail := "katie@tozny.com"
+// 	identityFirstName := "Katie"
+// 	identityLastName := "Rock"
+// 	signingKeys, err := e3dbClients.GenerateSigningKeys()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating identity signing keys", err)
+// 	}
+// 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+// 	if err != nil {
+// 		t.Fatalf("error %s generating encryption keys", err)
+// 	}
+// 	registerParams := RegisterIdentityRequest{
+// 		RealmRegistrationToken: registrationToken,
+// 		RealmName:              realm.Name,
+// 		Identity: Identity{
+// 			Name:        identityName,
+// 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+// 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+// 			FirstName:   identityFirstName,
+// 			LastName:    identityLastName,
+// 			Email:       identityEmail,
+// 		},
+// 	}
+// 	anonConfig := e3dbClients.ClientConfig{
+// 		Host: toznyCyclopsHost,
+// 	}
+// 	anonClient := New(anonConfig)
+// 	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+// 	if err != nil {
+// 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+// 	}
+
+// 	requestParam := SearchRealmIdentitiesRequest{
+// 		RealmName:         realm.Name,
+// 		IdentityUsernames: []string{"katie", "luna"},
+// 	}
+// 	identities, err := identityServiceClient.SearchRealmIdentities(testContext, requestParam)
+// 	if err != nil {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Valid identity should be returned
+// 	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
+// 	if !ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+// 	}
+// 	// Invalid identity should not be returned
+// 	_, ok = identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[1])]
+// 	if ok {
+// 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, identities)
+// 	}
+// }
 
 func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.T) {
 	accountTag := uuid.New().String()
