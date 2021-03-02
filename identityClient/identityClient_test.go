@@ -2484,6 +2484,7 @@ func TestApplicationMapperCRD(t *testing.T) {
 		t.Fatalf("expected deleted application mapper %+v not to be listed, got %+v", applicationMapper, listedApplicationMappers)
 	}
 }
+
 func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
@@ -2550,12 +2551,19 @@ func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
 	}
 	// Valid identity should be returned
-	_, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+	if identities.SearchCriteria != "Email" {
+		t.Fatalf("Error Returning correct search criteria, Expected Email, Received %+v", identities.SearchCriteria)
+	}
+	var found bool
+	for _, identity := range identities.SearchedIdentitiesInformation {
+		if identity.RealmEmail == requestParam.IdentityEmails[0] {
+			found = true
+		}
+	}
+	if found != true {
+		t.Fatalf("Error Returning correct Identities, Expected %+v, Received %+v", requestParam.IdentityEmails, identities.SearchedIdentitiesInformation)
 	}
 }
-
 func TestSearchingIdentitiesWithEmailValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
@@ -2638,7 +2646,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
 		Host: toznyCyclopsHost,
 	}
 	anonClient := New(anonConfig)
-	registerResponse, err := anonClient.RegisterIdentity(testContext, registerParams)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
 	if err != nil {
 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
 	}
@@ -2652,20 +2660,22 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
 	}
 	// Valid identity should be returned
-	responseTozclientId, ok := identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[0]]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+	if identities.SearchCriteria != "Email" {
+		t.Fatalf("Error Returning correct search criteria, Expected Email, Received %+v", identities.SearchCriteria)
 	}
-	if registerResponse.Identity.ToznyID != responseTozclientId {
-		t.Fatalf("Error Returning wrong client info for Realm %+v Identities %+v", err, requestParam)
+	var found bool
+	for _, identity := range identities.SearchedIdentitiesInformation {
+		if identity.RealmEmail == requestParam.IdentityEmails[0] {
+			found = true
+		}
+		if identity.RealmEmail == requestParam.IdentityEmails[1] {
+			t.Fatalf("Error Returned Invalid Identity")
+		}
 	}
-	// Invalid identity should not be returned
-	_, ok = identities.MatchingEmailIdentityAliases[requestParam.IdentityEmails[1]]
-	if ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+	if found != true {
+		t.Fatalf("Error Returning correct Identities, Expected %+v, Received %+v", requestParam.IdentityEmails, identities.SearchedIdentitiesInformation)
 	}
 }
-
 func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
@@ -2732,11 +2742,18 @@ func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
 	}
 	// Valid identity should be returned
-	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v in Map %+v", err, requestParam, identities)
+	if identities.SearchCriteria != "Username" {
+		t.Fatalf("Error Returning correct search criteria, Expected Username, Received %+v", identities.SearchCriteria)
 	}
-
+	var found bool
+	for _, identity := range identities.SearchedIdentitiesInformation {
+		if identity.RealmUsername == strings.ToLower(requestParam.IdentityUsernames[0]) {
+			found = true
+		}
+	}
+	if found != true {
+		t.Fatalf("Error Returning correct Identities, Expected %+v, Received %+v", requestParam.IdentityUsernames, identities.SearchedIdentitiesInformation)
+	}
 }
 
 func TestSearchingIdentitiesWithUsernameValidRealmInvalidIdentitiesReturnsSuccess(t *testing.T) {
@@ -2834,14 +2851,20 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T
 		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
 	}
 	// Valid identity should be returned
-	_, ok := identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[0])]
-	if !ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, requestParam)
+	if identities.SearchCriteria != "Username" {
+		t.Fatalf("Error Returning correct search criteria, Expected Username, Received %+v", identities.SearchCriteria)
 	}
-	// Invalid identity should not be returned
-	_, ok = identities.MatchingUsernameIdentityAliases[strings.ToLower(requestParam.IdentityUsernames[1])]
-	if ok {
-		t.Fatalf("Error Searching for Realm %+v Identities %+v", err, identities)
+	var found bool
+	for _, identity := range identities.SearchedIdentitiesInformation {
+		if identity.RealmUsername == strings.ToLower(requestParam.IdentityUsernames[0]) {
+			found = true
+		}
+		if identity.RealmUsername == strings.ToLower(requestParam.IdentityUsernames[1]) {
+			t.Fatalf("Error Returned Invalid Identity")
+		}
+	}
+	if found != true {
+		t.Fatalf("Error Returning correct Identities, Expected %+v, Received %+v", requestParam.IdentityUsernames, identities.SearchedIdentitiesInformation)
 	}
 }
 
@@ -2909,9 +2932,9 @@ func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.
 		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
 	}
 	if realmInfo.Name != realmName {
-		t.Fatalf("Error Expected %+v, Recieved %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 	if realmInfo.SecretsEnabled != false {
-		t.Fatalf("Error Expected %+v, Recieved %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 }
