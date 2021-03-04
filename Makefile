@@ -50,3 +50,11 @@ version:
 
 it : lint
 	go test -count=1 -v -cover --race ./... -run=TestGetToznyHostedBrokerInfo
+
+# Run all Identity Integration tests
+test-identity:
+	go test  -v  identityClient/identityClient_test.go identityClient/identityClient.go identityClient/api.go 
+
+# Run all Storage Integration tests
+test-storage:
+	go test -count=1 -v storageClient/storageClient_test.go

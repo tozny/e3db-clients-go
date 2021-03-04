@@ -31,6 +31,7 @@ const (
 	BasicSAMLAttributeNameFormat                            = "Basic"
 	UnspecifiedSAMLAttributeNameFormat                      = "Unspecified"
 	URIReferenceSAMLAttributeNameFormat                     = "URI Reference"
+	DefaultUMAProtectionApplicationRole                     = "uma_protection"
 )
 
 var (
