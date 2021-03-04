@@ -1631,7 +1631,7 @@ func TestDescribeApplicationRoleReturnsCreatedApplicationRole(t *testing.T) {
 	}
 }
 
-func TestListApplicationRoleReturnsNoApplicationRolesWhenApplicationHasNone(t *testing.T) {
+func TestListApplicationRoleReturnsOnlyDefaultRoleWhenNoUserProvidedRole(t *testing.T) {
 	client := createIdentityServiceClient(t)
 
 	realm := createRealm(t, client)
@@ -1644,8 +1644,11 @@ func TestListApplicationRoleReturnsNoApplicationRolesWhenApplicationHasNone(t *t
 
 	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
 
-	if len(actual) != 0 {
-		t.Errorf("expected 0 application roles before creating one")
+	if len(actual) != 1 {
+		t.Errorf("expected 1 default application role, Recieved %+v", actual)
+	}
+	if actual[0].Name != DefaultUMAProtectionApplicationRole {
+		t.Errorf("Expected %+v, Recieved %+v", DefaultUMAProtectionApplicationRole, actual)
 	}
 }
 
@@ -1660,6 +1663,7 @@ func TestListApplicationRoleReturnsCreatedApplicationRoles(t *testing.T) {
 		ApplicationID: application.ID,
 	})
 
+	defaultRoles := listRealmApplicationRoles(t, client, realm.Name, application.ID)
 	roleName := uniqueString("realm application role")
 	_ = createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	defer client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
@@ -1669,21 +1673,22 @@ func TestListApplicationRoleReturnsCreatedApplicationRoles(t *testing.T) {
 	})
 
 	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
-
-	if len(actual) != 1 {
-		t.Errorf("expected result to have one element")
+	expectedNumberOfAplicationRoles := len(defaultRoles) + 1
+	if len(actual) != expectedNumberOfAplicationRoles {
+		t.Errorf("expected %d number of realm roles, recieved %+v", expectedNumberOfAplicationRoles, actual)
 	}
-
-	role := actual[0]
-
-	if role.Name != roleName {
-		t.Errorf("expected result role name to be '%s', was '%s'", roleName, role.Name)
-	}
-
 	roleDescription := (roleName + " description")
-
-	if role.Description != roleDescription {
-		t.Errorf("expected result role description to be '%s', was '%s'", roleDescription, role.Description)
+	var found bool
+	for _, role := range actual {
+		if role.Name == roleName {
+			if role.Description == roleDescription {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Expected to find role with name %+v and description %+v, In list %+v did not", roleName, roleDescription, actual)
 	}
 }
 
@@ -1735,7 +1740,7 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 		RealmName:     realm.Name,
 		ApplicationID: application.ID,
 	})
-
+	defaultRoles := listRealmApplicationRoles(t, client, realm.Name, application.ID)
 	roleName := uniqueString("realm application role")
 	_ = createRealmApplicationRole(t, client, realm.Name, application.ID, roleName)
 	err := client.DeleteRealmApplicationRole(testContext, DeleteRealmApplicationRoleRequest{
@@ -1750,8 +1755,8 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 
 	actual := listRealmApplicationRoles(t, client, realm.Name, application.ID)
 
-	if len(actual) != 0 {
-		t.Errorf("expected 0 application roles after deleting the one created")
+	if len(actual) != len(defaultRoles) {
+		t.Errorf("expected %d after deleting the role created, recieved %+v", len(defaultRoles), actual)
 	}
 }
 

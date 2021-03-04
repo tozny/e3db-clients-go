@@ -892,7 +892,6 @@ func TestCreateGroupMembershipKey(t *testing.T) {
 		EncryptedGroupKey: eak,
 	}
 	response, err := queenClient.CreateGroup(testCtx, newGroup)
-	t.Logf("%+v", response)
 	if err != nil {
 		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
 	}
