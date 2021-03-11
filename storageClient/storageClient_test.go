@@ -166,7 +166,7 @@ func TestWriteFileAsDeployed(t *testing.T) {
 				"key": "value",
 			},
 			FileMeta: &storageClientV2.FileMeta{
-				Size:     fileLength,
+				Size:     int64(fileLength),
 				Checksum: hashString,
 			},
 		},
@@ -242,7 +242,7 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 				"survey_question_ids": longMetadataValueThatFailedBefore,
 			},
 			FileMeta: &storageClientV2.FileMeta{
-				Size:     fileLength,
+				Size:     int64(fileLength),
 				Checksum: hashString,
 			},
 		},

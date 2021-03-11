@@ -304,7 +304,7 @@ type Meta struct {
 type FileMeta struct {
 	FileURL     string `json:"file_url,omitempty"`
 	FileName    string `json:"file_name,omitempty"`
-	Size        int    `json:"size,omitempty"`
+	Size        int64  `json:"size,omitempty"`
 	Compression string `json:"compression,omitempty"`
 	Checksum    string `json:"checksum,omitempty"`
 }
