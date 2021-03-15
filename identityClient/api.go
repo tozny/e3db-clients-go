@@ -737,8 +737,9 @@ type SearchRealmIdentitiesResponse struct {
 // SearchRealmIdentitiesRequest wraps the search criteria to use for retrieving matching Identities from a given realm
 type SearchRealmIdentitiesRequest struct {
 	RealmName         string
-	IdentityEmails    []string `json:"identity_emails"`
-	IdentityUsernames []string `json:"identity_usernames"`
+	IdentityEmails    []string    `json:"identity_emails"`
+	IdentityUsernames []string    `json:"identity_usernames"`
+	IdentityClientIDs []uuid.UUID `json:"identity_client_ids"`
 }
 
 // SearchIdentitiesInformation wraps the information that is pulled from a user during a look up
