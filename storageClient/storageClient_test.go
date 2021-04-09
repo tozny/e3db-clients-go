@@ -270,6 +270,96 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 	}
 }
 
+func TestWriteAndEncryptFile(t *testing.T) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	// storageClient := storageClientV2.New(queenClientConfig)
+	pdsServiceClient := pdsClient.New(queenClientConfig)
+	clientID := queenClientConfig.ClientID
+	// Create an access key to allow for decrypting
+	// records of this type
+	recordType := "test_file1"
+	putEAKParams := pdsClient.PutAccessKeyRequest{
+		WriterID:           clientID,
+		UserID:             clientID,
+		ReaderID:           clientID,
+		RecordType:         recordType,
+		EncryptedAccessKey: "SOMERANDOMNPOTENTIALLYNONVALIDKEY",
+	}
+	_, err = pdsServiceClient.PutAccessKey(testCtx, putEAKParams)
+	if err != nil {
+		t.Errorf("Error trying to put access key for %+v %s", clientID, err)
+	}
+	// Create file and compute its signature
+	// fileValue := "It was the best of times. It was the worst of times."
+	// hasher := md5.New()
+	// fileLength, err := io.WriteString(hasher, fileValue)
+	// if err != nil {
+		// t.Fatalf("Could not write to hasher %+v", err)
+	// }
+	// encrypt file (might be part of write file)
+
+	// ak := e3dbClients.RandomSymmetricKey()
+	akArr := [32]byte{119, 211, 135, 141,  45,  35,  99, 161, 196,  68, 231,  34, 200, 160,  89, 153, 73,  16,  34, 171, 136, 234,  24, 208, 229, 158,  32, 212, 182, 198, 138, 145}
+	ak := &akArr
+	header, err := e3dbClients.EncryptFile("test_text.txt", "endFile", ak)
+	if err != nil {
+		t.Fatalf("Could not encrypt file: %s", err)
+	}
+	t.Logf("header: %+v", header)
+
+	// header, err := e3dbClients.DecryptFile("test_dec.txt", "endFile2", ak)
+	// if err != nil {
+	// 	t.Fatalf("Could not encrypt file: %s", err)
+	// }
+	// t.Logf("header: %+v", header)
+	// fileRecordToWrite := storageClientV2.Record{
+	// 	Metadata: storageClientV2.Meta{
+	// 		WriterID: clientUUID,
+	// 		UserID:   clientUUID,
+	// 		Type:     recordType,
+	// 		Plain: map[string]string{
+	// 			"key": "value",
+	// 		},
+	// 		FileMeta: &storageClientV2.FileMeta{
+	// 			Size:     int64(fileLength),
+	// 			Checksum: hashString,
+	// 		},
+	// 	},
+	// }
+	// pendingFileURL, err := storageClient.WriteFile(testCtx, fileRecordToWrite)
+	// if err != nil {
+	// 	t.Fatalf("Call to file post should return 200 level status code returned %+v", err)
+	// }
+	// // Write the file to the server directed location
+	// req, err := http.NewRequest("PUT", pendingFileURL.FileURL, strings.NewReader(fileValue))
+	// req.Header.Set("Content-MD5", hashString)
+	// req.Header.Set("Content-Type", "application/octet-stream")
+	// if err != nil {
+	// 	t.Fatalf("Creation of put request should not cause an error")
+	// }
+	// resp, err := http.DefaultClient.Do(req)
+	// if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	// 	t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, resp)
+	// }
+	// // Register the file as being written
+	// newresp, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
+	// if err != nil {
+	// 	t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
+	// }
+	// t.Logf("the response: %+v", newresp)
+	// fileID, err := uuid.Parse(newresp.Metadata.RecordID)
+	// if err != nil {
+	// 	t.Fatalf("FileID is not a UUID: %+v", fileID)
+	// }
+	// t.Logf("the uuid: %+v", fileID)
+	// read_resp, err := storageClient.ReadFile(testCtx, fileID)
+	// t.Logf("the response: %+v\nthe error: %+v", read_resp, err)
+}
+
 // Tests creating a group with valid authorization and valid group name.
 func TestCreateGroupSucceedsWithValidInput(t *testing.T) {
 	// Make request through cyclops to test tozny header is parsed properly
