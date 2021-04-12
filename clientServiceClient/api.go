@@ -57,6 +57,13 @@ type ClientRegisterInfo struct {
 	SigningKeys map[string]string `json:"signing_key,omitemtpy"`
 }
 
+// BackfillClientSigningKeysRequest wraps the information needed to patch signing keys
+type BackfillClientSigningKeysRequest struct {
+	// Public Signing Key
+	ClientID    uuid.UUID
+	SigningKeys map[string]string `json:"signing_key"`
+}
+
 // ClientRegisterResponse sends back the client information for a newly registered client
 type ClientRegisterResponse struct {
 	Client
