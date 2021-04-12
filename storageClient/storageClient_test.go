@@ -303,19 +303,22 @@ func TestWriteAndEncryptFile(t *testing.T) {
 	// encrypt file (might be part of write file)
 
 	// ak := e3dbClients.RandomSymmetricKey()
-	akArr := [32]byte{119, 211, 135, 141,  45,  35,  99, 161, 196,  68, 231,  34, 200, 160,  89, 153, 73,  16,  34, 171, 136, 234,  24, 208, 229, 158,  32, 212, 182, 198, 138, 145}
+	akArr := [32]byte{23, 173, 232, 45, 26, 168, 171, 125, 165, 232, 146, 102, 154, 182, 9, 106, 162, 229, 80, 45, 246, 99, 232, 219, 19, 113, 99, 242, 23, 162, 254, 241}
 	ak := &akArr
-	header, err := e3dbClients.EncryptFile("test_text.txt", "endFile", ak)
-	if err != nil {
-		t.Fatalf("Could not encrypt file: %s", err)
-	}
-	t.Logf("header: %+v", header)
-
-	// header, err := e3dbClients.DecryptFile("test_dec.txt", "endFile2", ak)
+	// size, checksum, err := e3dbClients.EncryptFile("words.txt", "endFile", ak)
 	// if err != nil {
 	// 	t.Fatalf("Could not encrypt file: %s", err)
 	// }
-	// t.Logf("header: %+v", header)
+	// t.Logf("size: %+v  checksum: %+v", size, checksum)
+
+	// header, err := e3dbClients.DecryptFile("test_dec.txt", "endFile2", ak)
+	header, err := e3dbClients.DecryptFile("test_dec.txt", "endFile2", ak)
+
+	if err != nil {
+		t.Fatalf("Could not decrypt file: %s", err)
+	}
+	t.Logf("header: %+v", header)
+
 	// fileRecordToWrite := storageClientV2.Record{
 	// 	Metadata: storageClientV2.Meta{
 	// 		WriterID: clientUUID,

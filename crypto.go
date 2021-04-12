@@ -19,6 +19,7 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/nacl/sign"
 	"golang.org/x/crypto/pbkdf2"
+	"github.com/tozny/e3db-clients-go/secretstream"
 )
 
 const (
@@ -39,10 +40,6 @@ const (
 	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
 	FILE_VERSION = 3
 	FILE_BLOCK_SIZE = 65536
-	// rplace these with tags once i figure out where to get them from
-	FINAL = 3
-	MESSAGE = 0
-	ABYTES = 17
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data
@@ -281,7 +278,6 @@ func BoxDecryptFromBase64(ciphertext, nonce string, pubKey SymmetricKey, privKey
 func SecretBoxEncryptToBase64(data []byte, key SymmetricKey) (string, string) {
 	n := RandomNonce()
 	box := secretbox.Seal(nil, data, n, key)
-	fmt.Println("box:", box)
 	return Base64Encode(box), Base64Encode(n[:])
 }
 
@@ -473,41 +469,29 @@ func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte)
 	return publicKey, privateKey
 }
 
-// encrypt file (in chunks -- like js-sdk)
-// pass in file handle, temporary file name, accesskey 
-func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (string, error) {
-	// open fileName & read text
-	fmt.Println("ak:", ak)
+// EncryptFile encrypts the contents of the file fileName and stores the ciphertext in tempFileName
+func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, string, error) {
 	hasher := md5.New()
-	// dk := RandomSymmetricKey()
-	byteArr := [SymmetricKeySize]byte{124, 197, 218, 36, 114, 81, 58, 65, 247, 15, 72, 75, 191, 122, 94, 95, 72, 244, 53, 236, 45, 219, 226, 234, 20, 160, 104, 200, 162, 12, 108, 69}
-	dk := &byteArr
-	fmt.Println("dk", dk)
-	// edk, edkN := SecretBoxEncryptToBase64(dk[:], ak)
-	edk := "2HSLgx7RyOuDJTRUiRsunNaX9qomOnzTBYSN9G5cZCsVHtrDd_LuWyfay2QJkyEu"
-	edkN := "It0asdVgeDzTd_LISPahe0LzBGzelklv"
-	fmt.Println("edkN:", edkN)
-	fmt.Println("edk:", edk)
+	var dk []byte
+	dkSymmetric := RandomSymmetricKey()
+	dk = dkSymmetric[:]
+	edk, edkN := SecretBoxEncryptToBase64(dk[:], ak)
 	headerText := fmt.Sprintf("%v.%s.%s.", FILE_VERSION, edk, edkN)
-	// fmt.Println("header:", headerText)
 	headerBytes := []byte(headerText)
-	// fmt.Println("bytes:", headerBytes)
-	hasher.Sum(headerBytes)
+	hasher.Write(headerBytes)
 
 	// create and open tempFileName
 	tempFile, err := os.Create(tempFileName)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
 	size, err := tempFile.Write(headerBytes)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	fmt.Println("size", size)
-
 	readFile, err := os.Open(fileName)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
@@ -515,61 +499,76 @@ func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (string,
 		}
 	}()
 
-	// need to get stream header -- might actually need to make the encryption stream too.
+	var header []byte
+	nonce := RandomNonce()
+	header = nonce[:]
+	fmt.Println("extra header encrypt", header)
+	x, err := tempFile.Write(header)
+	if err != nil {
+		return 0, "", err
+	}
+	size += x
+	hasher.Write(header)
 
-	r := bufio.NewReader(readFile)
-	reader := make([]byte, 10)
-	// fmt.Println("r", r)
-
-	var block []byte
-	// nonce := RandomNonce()
-	nonceArr := [NonceSize]byte{33, 123, 138,  44, 160, 172,  94, 14,  39,  16, 126, 104, 102, 195, 166,  87, 210,  28, 223,  28,  41, 120,  30,  77}
-	nonce := &nonceArr
-
-	for {
-		n, err := r.Read(reader)
-		if err != nil {
-			break
-		}
-		readBlock := reader[0:n]
-		fmt.Println("readblock:", readBlock)
-
-		block := secretbox.Seal(block[:0], readBlock, nonce, dk) 
-		fmt.Println("block", block, "len", len(block))
-		// blockBytes := Base64Encode(block)
-		blockBytes := string(block)
-		// blockBytes := block
-		fmt.Println("blockbytes:", blockBytes, "len", len(blockBytes))
-		// if err != nil {
-		// 	fmt.Println("error decoding block: ", err)
-		// }
-		// hasher.Sum(blockBytes)
-		fmt.Println("hasher:", hasher.Sum(block))
-		n, err = tempFile.WriteString(blockBytes)
-		if err != nil {
-			fmt.Println("an error: ", err)
-		}
-		size += n
-		fmt.Println("the size:", size)
-		// break
+	encryptor, err := secretstream.NewEncryptor(header, dk)
+	fmt.Println("encryptor:", encryptor)
+	if err != nil {
+		return 0, "", err
 	}
 
-	return headerText, nil
+	r := bufio.NewReader(readFile)
+	var nextBlock []byte
+	headBlock := make([]byte, 10)
+	// headBlock := make([]byte, FILE_BLOCK_SIZE)
+	m, err := r.Read(headBlock)
+	if err != nil {
+		return 0, "", err
+	}
+	var block []byte
+	i := 1
+	for {
+		nextBlock = make([]byte, 10)
+		// nextBlock = make([]byte, FILE_BLOCK_SIZE)
+		n, err := r.Read(nextBlock)
+		var tag byte
+		if err != nil {
+			tag = secretstream.TagFinal
+		} else {
+			tag = secretstream.TagMessage
+		}
+		readBlock := headBlock[0:m]
+		block, err = encryptor.Push(readBlock, nil, tag)
+		if err != nil {
+			return 0, "", err
+		}
+		y, err := tempFile.Write(block)
+		if err != nil {
+			return 0, "", err
+		}
+		size += y
+		if i == 1 {
+			fmt.Println(block)
+			i = 2
+		}
+		hasher.Write(block)
+		if tag == secretstream.TagFinal {
+			break
+		}
+		copy(headBlock, nextBlock)
+		m = n
+	}
+	md5 := hasher.Sum(nil)
+	checksum := Base64Encode(md5)
 
-	// fileLength, err := io.WriteString(hasher, fileValue)
-	// hashString := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-
-	// create tempFileName & write encrypted file to it
-	// return fileLength, hashString 
+	return size, checksum, nil
 }
 
 func DecryptFile(fileName string, tempFileName string, ak SymmetricKey) (string, error) {
-	// this is the length of that extra header i haven't figured out how to do yet
-	// extraHeaderSize := 
-
-	// blockSize := ABYTES + FILE_BLOCK_SIZE
-	// blockSize := ABYTES + 10
-	fmt.Println("blocksize:", blockSize)
+	extraHeaderSize := secretstream.HeaderBytes
+	fmt.Println("extra size", extraHeaderSize)
+	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
+	// blockSize := secretstream.AdditionalBytes + 10
+	fmt.Println("block size", blockSize)
 
 	readFile, err := os.Open(fileName)
 	if err != nil {
@@ -580,48 +579,86 @@ func DecryptFile(fileName string, tempFileName string, ak SymmetricKey) (string,
 			fmt.Println("Error closing file: ", err)
 		}
 	}()
+	readFileHeader, err := os.Open(fileName)
+	if err != nil {
+		fmt.Println("the encrypted file doesn't exist")
+		return "", err
+	}
+	defer func() {
+		if err = readFileHeader.Close(); err != nil {
+			fmt.Println("Error closing header file: ", err)
+		}
+	}()
 
-	r := bufio.NewReader(readFile)
-	//  how to get stream header ???
-	reader := make([]byte, 100)
+	tempFile, err := os.Create(tempFileName)
+	if err != nil {
+		fmt.Println("could not create tempfile")
+		return "", err
+	}
 
-	// var header [60]byte
-	// var bytes []byte
-	// _, err = io.ReadFull(r, header[:])
-	n, err := r.Read(reader)
+	r := bufio.NewReader(readFileHeader)
+	readHeader := make([]byte, 4096)
+
+	n, err := r.Read(readHeader)
 	if err != nil {
 		return "", err
 	}
-	readBlock := reader[0:n]
-	// copy(bytes[:], header)
-	fmt.Println("header is:", readBlock)
-	fmt.Println("header is:", string(readBlock))
-	headerString := string(readBlock)
+	readHeaderBlock := readHeader[0:n]
+	headerString := string(readHeaderBlock)
 	s := strings.Split(headerString, ".")
-	fmt.Println("s:", len(s))
-	versionString := s[0]
-	edk := s[1]
-	edkN := s[2]
-	version, err := strconv.Atoi(versionString)
+	version, err := strconv.Atoi(s[0])
 	if err != nil || version != FILE_VERSION {
 		return "", err
 	}
-	fmt.Println("edk:", edk, " edkN:", edkN)
+	edk := s[1]
+	edkN := s[2]
 	dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
 	if err != nil {
 		return "", err
 	}
 
-	dk := MakeSymmetricKey(dkBytes)
+	var dk []byte
+	dkSymm := MakeSymmetricKey(dkBytes)
+	dk = dkSymm[:]
 	fmt.Println("dk:", dk)
 
+	headerLength := len(s[0] + s[1] + s[2]) + 3
 
+	r2 := bufio.NewReader(readFile)
+	readHeader = make([]byte, headerLength)
+	readExtraHeader := make([]byte, extraHeaderSize)
+	readCtxt := make([]byte, blockSize)
 
-	// if len(s) < 4 {
-	// 	// this means the whole header wasn't read, so need to read another chunk 
-	// }
+	_, err = r2.Read(readHeader)
+	if err != nil {
+		return "", err
+	}
+	n, err = r2.Read(readExtraHeader)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("extra header decrypt", readExtraHeader[0:n], "length", len(readExtraHeader[0:n]))
+	fmt.Println(string(readExtraHeader[0:n]))
 
+	decryptor, err := secretstream.NewDecryptor(readExtraHeader[0:n], dk)
+	fmt.Println("decryptor", decryptor)
 
+	for {
+		n, err = r2.Read(readCtxt)
+		msg, tag, err := decryptor.Pull(readCtxt[0:n], nil)
+		fmt.Println("ctxt", readCtxt[0:n], "length", len(readCtxt[0:n]))
+		fmt.Println(string(readCtxt[0:n]))
+		if err != nil {
+			return "", err
+		}
+		_, err = tempFile.Write(msg)
+		if err != nil {
+			return "", err
+		}
+		if tag == secretstream.TagFinal {
+			break
+		}
+	}
 	return "", nil
 }
 
