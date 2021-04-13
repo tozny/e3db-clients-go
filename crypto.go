@@ -469,8 +469,8 @@ func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte)
 	return publicKey, privateKey
 }
 
-// EncryptFile encrypts the contents of the file fileName and stores the ciphertext in tempFileName
-func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, string, error) {
+// EncryptFile encrypts the contents of the file plainFileName and stores the ciphertext in encryptedFileName
+func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey) (int, string, error) {
 	hasher := md5.New()
 	var dk []byte
 	dkSymmetric := RandomSymmetricKey()
@@ -479,17 +479,17 @@ func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, st
 	headerText := fmt.Sprintf("%v.%s.%s.", FILE_VERSION, edk, edkN)
 	headerBytes := []byte(headerText)
 	hasher.Write(headerBytes)
-
-	// create and open tempFileName
-	tempFile, err := os.Create(tempFileName)
+	// create and open encryptedFileName
+	tempFile, err := os.Create(encryptedFileName)
 	if err != nil {
 		return 0, "", err
 	}
+	// write the header to the encrypted file
 	size, err := tempFile.Write(headerBytes)
 	if err != nil {
 		return 0, "", err
 	}
-	readFile, err := os.Open(fileName)
+	readFile, err := os.Open(plainFileName)
 	if err != nil {
 		return 0, "", err
 	}
@@ -498,37 +498,32 @@ func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, st
 			fmt.Println("Error closing file: ", err)
 		}
 	}()
-
+	// create random header and write to encrypted file
 	var header []byte
 	nonce := RandomNonce()
 	header = nonce[:]
-	fmt.Println("extra header encrypt", header)
 	x, err := tempFile.Write(header)
 	if err != nil {
 		return 0, "", err
 	}
 	size += x
 	hasher.Write(header)
-
+	// create a new encryption stream
 	encryptor, err := secretstream.NewEncryptor(header, dk)
-	fmt.Println("encryptor:", encryptor)
 	if err != nil {
 		return 0, "", err
 	}
-
 	r := bufio.NewReader(readFile)
 	var nextBlock []byte
-	headBlock := make([]byte, 10)
-	// headBlock := make([]byte, FILE_BLOCK_SIZE)
+	headBlock := make([]byte, FILE_BLOCK_SIZE)
 	m, err := r.Read(headBlock)
 	if err != nil {
 		return 0, "", err
 	}
 	var block []byte
-	i := 1
+	// encrypt each block of the file with the appropriate tag
 	for {
-		nextBlock = make([]byte, 10)
-		// nextBlock = make([]byte, FILE_BLOCK_SIZE)
+		nextBlock = make([]byte, FILE_BLOCK_SIZE)
 		n, err := r.Read(nextBlock)
 		var tag byte
 		if err != nil {
@@ -546,10 +541,6 @@ func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, st
 			return 0, "", err
 		}
 		size += y
-		if i == 1 {
-			fmt.Println(block)
-			i = 2
-		}
 		hasher.Write(block)
 		if tag == secretstream.TagFinal {
 			break
@@ -557,32 +548,29 @@ func EncryptFile(fileName string, tempFileName string, ak SymmetricKey) (int, st
 		copy(headBlock, nextBlock)
 		m = n
 	}
+	// calculate the checksum
 	md5 := hasher.Sum(nil)
 	checksum := Base64Encode(md5)
 
 	return size, checksum, nil
 }
 
-func DecryptFile(fileName string, tempFileName string, ak SymmetricKey) (string, error) {
+func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey) (error) {
 	extraHeaderSize := secretstream.HeaderBytes
-	fmt.Println("extra size", extraHeaderSize)
 	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
-	// blockSize := secretstream.AdditionalBytes + 10
-	fmt.Println("block size", blockSize)
 
-	readFile, err := os.Open(fileName)
+	readFile, err := os.Open(ctxtFileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
 			fmt.Println("Error closing file: ", err)
 		}
 	}()
-	readFileHeader, err := os.Open(fileName)
+	readFileHeader, err := os.Open(ctxtFileName)
 	if err != nil {
-		fmt.Println("the encrypted file doesn't exist")
-		return "", err
+		return err
 	}
 	defer func() {
 		if err = readFileHeader.Close(); err != nil {
@@ -590,76 +578,65 @@ func DecryptFile(fileName string, tempFileName string, ak SymmetricKey) (string,
 		}
 	}()
 
-	tempFile, err := os.Create(tempFileName)
+	tempFile, err := os.Create(decryptedFileName)
 	if err != nil {
-		fmt.Println("could not create tempfile")
-		return "", err
+		return err
 	}
 
 	r := bufio.NewReader(readFileHeader)
-	readHeader := make([]byte, 4096)
+	readFirst := make([]byte, 4096)
 
-	n, err := r.Read(readHeader)
+	n, err := r.Read(readFirst)
 	if err != nil {
-		return "", err
+		return err
 	}
-	readHeaderBlock := readHeader[0:n]
+	// read header and extract version, edk, edkN
+	readHeaderBlock := readFirst[0:n]
 	headerString := string(readHeaderBlock)
 	s := strings.Split(headerString, ".")
 	version, err := strconv.Atoi(s[0])
 	if err != nil || version != FILE_VERSION {
-		return "", err
+		return err
 	}
 	edk := s[1]
 	edkN := s[2]
+	// get the dk
 	dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
 	if err != nil {
-		return "", err
+		return err
 	}
-
 	var dk []byte
 	dkSymm := MakeSymmetricKey(dkBytes)
 	dk = dkSymm[:]
-	fmt.Println("dk:", dk)
-
 	headerLength := len(s[0] + s[1] + s[2]) + 3
-
-	r2 := bufio.NewReader(readFile)
-	readHeader = make([]byte, headerLength)
+	readHeader := make([]byte, headerLength)
 	readExtraHeader := make([]byte, extraHeaderSize)
 	readCtxt := make([]byte, blockSize)
 
-	_, err = r2.Read(readHeader)
+	_, err = readFile.Read(readHeader)	
 	if err != nil {
-		return "", err
+		return err
 	}
-	n, err = r2.Read(readExtraHeader)
+	// get the extra header and use it to make decryption stream
+	n, err = readFile.Read(readExtraHeader)
 	if err != nil {
-		return "", err
+		return err
 	}
-	fmt.Println("extra header decrypt", readExtraHeader[0:n], "length", len(readExtraHeader[0:n]))
-	fmt.Println(string(readExtraHeader[0:n]))
-
 	decryptor, err := secretstream.NewDecryptor(readExtraHeader[0:n], dk)
-	fmt.Println("decryptor", decryptor)
-
+	// read each block and decrypt, writing the result to the decrypted file
 	for {
-		n, err = r2.Read(readCtxt)
+		n, err = readFile.Read(readCtxt)
 		msg, tag, err := decryptor.Pull(readCtxt[0:n], nil)
-		fmt.Println("ctxt", readCtxt[0:n], "length", len(readCtxt[0:n]))
-		fmt.Println(string(readCtxt[0:n]))
 		if err != nil {
-			return "", err
+			return err
 		}
 		_, err = tempFile.Write(msg)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if tag == secretstream.TagFinal {
 			break
 		}
 	}
-	return "", nil
+	return nil
 }
-
-// decrypt file (in chunks -- like js-sdk)
