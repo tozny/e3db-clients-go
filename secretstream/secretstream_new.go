@@ -1,3 +1,6 @@
+// The open ticket to make this part of the Golang core:
+// https://go-review.googlesource.com/c/crypto/+/288969 
+
 // Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.

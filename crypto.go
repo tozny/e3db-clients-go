@@ -469,7 +469,7 @@ func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte)
 	return publicKey, privateKey
 }
 
-// EncryptFile encrypts the contents of the file plainFileName and stores the ciphertext in encryptedFileName
+// EncryptFile encrypts the contents of the file plainFileName using the ak and stores the ciphertext in encryptedFileName
 func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey) (int, string, error) {
 	hasher := md5.New()
 	var dk []byte
@@ -555,11 +555,12 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	return size, checksum, nil
 }
 
-func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey) (error) {
+// DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
+func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) (error) {
 	extraHeaderSize := secretstream.HeaderBytes
 	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
 
-	readFile, err := os.Open(ctxtFileName)
+	readFile, err := os.Open(encryptedFileName)
 	if err != nil {
 		return err
 	}
@@ -568,7 +569,7 @@ func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey)
 			fmt.Println("Error closing file: ", err)
 		}
 	}()
-	readFileHeader, err := os.Open(ctxtFileName)
+	readFileHeader, err := os.Open(encryptedFileName)
 	if err != nil {
 		return err
 	}
@@ -578,7 +579,7 @@ func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey)
 		}
 	}()
 
-	tempFile, err := os.Create(decryptedFileName)
+	decryptedFile, err := os.Create(decryptedFileName)
 	if err != nil {
 		return err
 	}
@@ -630,7 +631,7 @@ func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey)
 		if err != nil {
 			return err
 		}
-		_, err = tempFile.Write(msg)
+		_, err = decryptedFile.Write(msg)
 		if err != nil {
 			return err
 		}
@@ -638,5 +639,6 @@ func DecryptFile(ctxtFileName string, decryptedFileName string, ak SymmetricKey)
 			break
 		}
 	}
+	decryptedFile.Close()
 	return nil
 }

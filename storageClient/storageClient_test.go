@@ -274,9 +274,8 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 }
 
 func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
-	ptxtFileName := "plaintext"
 	// create a plaintext file and file with a random string that is smaller than the blockSize
-	plainFile, err := os.Create(ptxtFileName)
+	plainFile, err := os.Create("plaintext")
 	if err != nil {
 		t.Fatalf("Could not create plainFile: %+v", err)
 	}
@@ -288,7 +287,7 @@ func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 	plainFile.Close()
 	ak := e3dbClients.RandomSymmetricKey()
 	// encrypt the file
-	_, _, err = e3dbClients.EncryptFile(ptxtFileName, "encrypted", ak)
+	_, _, err = e3dbClients.EncryptFile("plaintext", "encrypted", ak)
 	if err != nil {
 		t.Fatalf("Could not encrypt file: %s", err)
 	}
@@ -298,9 +297,9 @@ func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 		t.Fatalf("Could not decrypt file: %s", err)
 	}
 	// compare ptxt and decrypted
-	ptxt, err := ioutil.ReadFile(ptxtFileName)
+	ptxt, err := ioutil.ReadFile("plaintext")
 	if err != nil {
-		t.Fatalf("Could not read %+v file: %+v", ptxtFileName, err)
+		t.Fatalf("Could not read plaintext file: %+v", err)
 	}
 	decrypted, err := ioutil.ReadFile("decrypted")
 	if err != nil {
@@ -310,9 +309,9 @@ func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 	if !compare {
 		t.Fatalf("Plaintext and decrypted files do not match")
 	}
-	err = os.Remove(ptxtFileName)
+	err = os.Remove("plaintext")
 	if err != nil {
-		t.Fatalf("Could not delete %+v: %+v", ptxtFileName, err)
+		t.Fatalf("Could not delete plaintext: %+v", err)
 	}
 	err = os.Remove("encrypted")
 	if err != nil {
@@ -325,26 +324,27 @@ func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 }
 
 func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
-	ptxtFileName := "plaintext"
-	// create a plaintext file and file with a random string that is bigger than the blockSize
-	plainFile, err := os.Create(ptxtFileName)
+	// create a 1 MB plaintext file with random strings
+	plainFile, err := os.Create("plaintext")
 	if err != nil {
 		t.Fatalf("Could not create plainFile: %+v", err)
 	}
-	randTxt, _ := e3dbClients.GenerateRandomString(FILE_BLOCK_SIZE)
-	_, err = plainFile.WriteString(randTxt)
-	if err != nil {
-		t.Fatalf("Could not write to plainFile: %+v", err)
-	}
-	randTxt, _ = e3dbClients.GenerateRandomString(500)
-	_, err = plainFile.WriteString(randTxt)
-	if err != nil {
-		t.Fatalf("Could not write to plainFile: %+v", err)
+	size := 0
+	for {
+		randTxt, _ := e3dbClients.GenerateRandomString(FILE_BLOCK_SIZE)
+		n, err := plainFile.WriteString(randTxt)
+		if err != nil {
+			t.Fatalf("Could not write to plainFile: %+v", err)
+		}
+		size = size + n
+		if size >= 1000000 {
+			break
+		}
 	}
 	plainFile.Close()
 	ak := e3dbClients.RandomSymmetricKey()
 	// encrypt the file
-	_, _, err = e3dbClients.EncryptFile(ptxtFileName, "encrypted", ak)
+	_, _, err = e3dbClients.EncryptFile("plaintext", "encrypted", ak)
 	if err != nil {
 		t.Fatalf("Could not encrypt file: %s", err)
 	}
@@ -354,9 +354,9 @@ func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
 		t.Fatalf("Could not decrypt file: %s", err)
 	}
 	// compare ptxt and decrypted
-	ptxt, err := ioutil.ReadFile(ptxtFileName)
+	ptxt, err := ioutil.ReadFile("plaintext")
 	if err != nil {
-		t.Fatalf("Could not read %+v file: %+v", ptxtFileName, err)
+		t.Fatalf("Could not read plaintext file: %+v", err)
 	}
 	decrypted, err := ioutil.ReadFile("decrypted")
 	if err != nil {
@@ -366,17 +366,17 @@ func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
 	if !compare {
 		t.Fatalf("Plaintext and decrypted files do not match")
 	}
-	err = os.Remove(ptxtFileName)
+	err = os.Remove("plaintext")
 	if err != nil {
-		t.Fatalf("Could not delete %+v: %+v", ptxtFileName, err)
+		t.Fatalf("Could not delete plaintext file: %+v", err)
 	}
 	err = os.Remove("encrypted")
 	if err != nil {
-		t.Fatalf("Could not delete encrypted: %+v", err)
+		t.Fatalf("Could not delete encrypted file: %+v", err)
 	}
 	err = os.Remove("decrypted")
 	if err != nil {
-		t.Fatalf("Could not delete decrypted: %+v", err)
+		t.Fatalf("Could not delete decrypted file: %+v", err)
 	}
 }
 
