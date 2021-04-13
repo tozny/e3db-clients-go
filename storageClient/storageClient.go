@@ -2,6 +2,7 @@ package storageClient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -63,6 +64,33 @@ func (c *StorageClient) SignNote(note Note, privateSigningKey e3dbClients.Signin
 	}
 
 	return note, nil
+}
+
+// DecryptNote in place decrypts a note's data. This method is not idempotent and will error if called multiple times.
+func (c *StorageClient) DecryptNote(note *Note) error {
+	privateKey, err := e3dbClients.DecodeSymmetricKey(c.EncryptionKeys.Private.Material)
+	if err != nil {
+		return err
+	}
+	ak, err := e3dbClients.DecryptEAK(note.EncryptedAccessKey, note.WriterEncryptionKey, privateKey)
+	if err != nil {
+		return err
+	}
+	writerPublicSigningKey, err := e3dbClients.PublicSigningKeyFromEncodedString(note.WriterSigningKey)
+	if err != nil {
+		return err
+	}
+
+	signatureSalt, err := e3dbClients.VerifyField("signature", note.Signature, writerPublicSigningKey, "")
+	if err != nil {
+		return err
+	}
+	decryptedData, err := e3dbClients.DecryptSignedData(note.Data, ak, writerPublicSigningKey, signatureSalt)
+	if err != nil {
+		return err
+	}
+	note.Data = decryptedData
+	return nil
 }
 
 // WriteNote writes the specified note to the server, returning the written note and error (if any)
@@ -323,7 +351,17 @@ func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroup
 	return result, err
 }
 
+// ReadNote retrieves a note by noteID
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
+	return c.readNote(ctx, "", noteID, eacpParams)
+}
+
+// ReadNoteByName retrieves a note by name (id_string)
+func (c *StorageClient) ReadNoteByName(ctx context.Context, noteName string, eacpParams map[string]string) (*Note, error) {
+	return c.readNote(ctx, noteName, "", eacpParams)
+}
+
+func (c *StorageClient) readNote(ctx context.Context, noteName string, noteID string, eacpParams map[string]string) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
@@ -333,21 +371,30 @@ func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams 
 	// Set appropriate request query params & headers for satisfying
 	// a note's required EACPs
 	urlParams := req.URL.Query()
-	if eacpParams != nil {
-		for key, val := range eacpParams {
-			var isHeaderEACP bool
-			for _, eacpHeader := range EACPHeaders {
-				if key == eacpHeader {
-					isHeaderEACP = true
-					break
-				}
-			}
-			if !isHeaderEACP {
-				urlParams.Set(key, val)
+	for key, val := range eacpParams {
+		var isHeaderEACP bool
+		for _, eacpHeader := range EACPHeaders {
+			if key == eacpHeader {
+				isHeaderEACP = true
+				break
 			}
 		}
+		if isHeaderEACP {
+			req.Header.Add(key, val)
+		} else {
+			urlParams.Set(key, val)
+		}
 	}
-	urlParams.Set("note_id", noteID)
+
+	if noteName != "" && noteID != "" {
+		return result, errors.New("readNote: noteName and noteID may not be set at the same time")
+	}
+	if noteName != "" {
+		urlParams.Set("id_string", noteName)
+	}
+	if noteID != "" {
+		urlParams.Set("note_id", noteID)
+	}
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err

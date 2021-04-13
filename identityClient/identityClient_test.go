@@ -1624,7 +1624,7 @@ func TestDescribeApplicationRoleReturnsCreatedApplicationRole(t *testing.T) {
 		t.Errorf("expected result role name to be '%s', was '%s'", roleName, actual.Name)
 	}
 
-	roleDescription := (roleName + " description")
+	roleDescription := roleName + " description"
 
 	if actual.Description != roleDescription {
 		t.Errorf("expected result role description to be '%s', was '%s'", roleDescription, actual.Description)
@@ -1677,7 +1677,7 @@ func TestListApplicationRoleReturnsCreatedApplicationRoles(t *testing.T) {
 	if len(actual) != expectedNumberOfAplicationRoles {
 		t.Errorf("expected %d number of realm roles, recieved %+v", expectedNumberOfAplicationRoles, actual)
 	}
-	roleDescription := (roleName + " description")
+	roleDescription := roleName + " description"
 	var found bool
 	for _, role := range actual {
 		if role.Name == roleName {
@@ -2996,7 +2996,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidClientIDs(t *testing.T
 	anonConfig := e3dbClients.ClientConfig{
 		Host: toznyCyclopsHost,
 	}
-	anonClient :=New(anonConfig)
+	anonClient := New(anonConfig)
 	registerResponse, err := anonClient.RegisterIdentity(testContext, registerParams)
 	if err != nil {
 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
@@ -3070,7 +3070,7 @@ func TestSearchingIdentitiesWithClientIDsValidRealmReturnsSuccess(t *testing.T) 
 		RealmName:              realm.Name,
 		Identity: Identity{
 			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType:  encryptionKeyPair.Public.Material},
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
 			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
 			FirstName:   identityFirstName,
 			LastName:    identityLastName,

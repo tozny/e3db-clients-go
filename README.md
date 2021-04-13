@@ -59,32 +59,32 @@ From a go package
 package main
 
 import (
-    "github.com/tozny/e3db-clients-go"
-    "github.com/tozny/e3db-clients-go/hookClient"
-    "context"
+	"context"
+	"github.com/tozny/e3db-clients-go"
+	"github.com/tozny/e3db-clients-go/hookClient"
 )
 
 func main() {
-    config := e3dbClients.ClientConfig{
-        APIKey:    "E3DBAPIKEYID",
-        APISecret: "E3DBAPIKEYSECRET",
-        Host:      "https://api.e3db.com",
-    }
-    client := hookClient.New(ValidClientConfig, config.Host)
-    createHookRequest := hookClient.CreateHookRequest{
-        WebhookURL: "https://en8781lpip6xb.x.pipedream.net/",
-        Triggers: []hookClient.HookTrigger{
-            hookClient.HookTrigger{
-                Enabled:  true,
-                APIEvent: "authorizer_added",
-            },
-        },
-    }
-    ctx := context.TODO()
-    response, err := client.CreateHook(ctx, createHookRequest)
-    if err != nil {
-        t.Errorf("Error %s calling CreateHook with %+v\n", err, createHookRequest)
-    }
+	config := e3dbClients.ClientConfig{
+		APIKey:    "E3DBAPIKEYID",
+		APISecret: "E3DBAPIKEYSECRET",
+		Host:      "https://api.e3db.com",
+	}
+	client := hookClient.New(ValidClientConfig, config.Host)
+	createHookRequest := hookClient.CreateHookRequest{
+		WebhookURL: "https://en8781lpip6xb.x.pipedream.net/",
+		Triggers: []hookClient.HookTrigger{
+			hookClient.HookTrigger{
+				Enabled:  true,
+				APIEvent: "authorizer_added",
+			},
+		},
+	}
+	ctx := context.TODO()
+	response, err := client.CreateHook(ctx, createHookRequest)
+	if err != nil {
+		t.Errorf("Error %s calling CreateHook with %+v\n", err, createHookRequest)
+	}
 }
 ```
 

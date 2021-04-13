@@ -734,7 +734,7 @@ func TestListGroupsWithQueenClientForClientWithGroupsReturnsSuccess(t *testing.T
 		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
 	}
 	for _, groupID := range []uuid.UUID{groupCreatedID1, groupCreatedID2} {
-		var found bool = false
+		var found = false
 		for _, group := range responseList.Groups {
 			if group.GroupID == groupID {
 				found = true
@@ -804,7 +804,7 @@ func TestListGroupsWithQueenClientAllAccountReturnsSuccess(t *testing.T) {
 		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
 	}
 	for _, groupID := range []uuid.UUID{groupCreatedID1, groupCreatedID2} {
-		var found bool = false
+		var found = false
 		for _, group := range responseList.Groups {
 			if group.GroupID == groupID {
 				found = true
@@ -864,7 +864,7 @@ func TestListGroupsWithClientForClientWithGroupsReturnsSuccess(t *testing.T) {
 		t.Fatalf("Group LIST: Group was Not Found: %+v Error: %+v ", responseList, err)
 	}
 	for _, groupID := range []uuid.UUID{groupCreatedID1} {
-		var found bool = false
+		var found = false
 		for _, group := range responseList.Groups {
 			if group.GroupID == groupID {
 				found = true
@@ -992,7 +992,7 @@ func TestListGroupsWithQueenClientForClientWithGroupsFilteredByGroupNameReturnsO
 		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseList, err)
 	}
 	for _, groupID := range []uuid.UUID{groupCreatedID1, groupCreatedID2} {
-		var found bool = false
+		var found = false
 		for _, group := range responseList.Groups {
 			if group.GroupID == groupID {
 				found = true
@@ -1132,7 +1132,7 @@ func TestListGroupsWithClientForClientWithGroupsFilteredByGroupNameReturnsAllGro
 		t.Fatalf("Group LIST: Group was Not Found: %+v Error: %+v ", responseList, err)
 	}
 	for _, groupID := range []uuid.UUID{groupCreatedID1, groupCreatedID2} {
-		var found bool = false
+		var found = false
 		for _, group := range responseList.Groups {
 			if group.GroupID == groupID {
 				found = true

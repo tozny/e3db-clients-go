@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/schema"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/request"
 	"github.com/tozny/utils-go/server"
@@ -26,11 +27,14 @@ const (
 	roleMapperResourceName        = "role_mapping"
 	realmLoginPathPrefix          = "/auth/realms"
 	realmLoginPathPostfix         = "/protocol/openid-connect/token"
+	realmLoginAuthPathPostfix     = "/protocol/openid-connect/auth"
 	applicationMapperResourceName = "mapper"
 )
 
 var (
 	internalIdentityServiceBasePath = fmt.Sprintf("/internal%s", identityServiceBasePath)
+	// encoder for http form values
+	httpFormSchemaEncoder = schema.NewEncoder()
 )
 
 // E3dbIdentityClient implements an http client for communication with an e3db Identity service.
@@ -560,6 +564,48 @@ func (c *E3dbIdentityClient) GetToznyHostedBrokerInfo(ctx context.Context) (*Toz
 	}
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &toznyHostedBrokerInfo)
 	return toznyHostedBrokerInfo, err
+}
+
+// InitiateIdentityLogin begins the standard 3rd party login flow with TozID
+func (c *E3dbIdentityClient) InitiateIdentityLogin(ctx context.Context, loginRequest IdentityLoginRequest) (*InitialLoginResponse, error) {
+	var resp *InitialLoginResponse
+	path := c.Host + identityServiceBasePath + "/login"
+	req, err := e3dbClients.CreateRequest("POST", path, loginRequest)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+// IdentitySessionRequest takes url encoded form data to process any additional actions that need to be completed before authenticating
+func (c *E3dbIdentityClient) IdentitySessionRequest(ctx context.Context, realmName string, authRequest InitialLoginResponse) (*IdentitySessionRequestResponse, error) {
+	var resp *IdentitySessionRequestResponse
+	path := c.Host + realmLoginPathPrefix + fmt.Sprintf("/%s", strings.ToLower(realmName)) + realmLoginAuthPathPostfix
+	data := url.Values{}
+	httpFormSchemaEncoder.Encode(authRequest, data)
+	req, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
+	if err != nil {
+		return resp, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	err = e3dbClients.MakeRawServiceCall(c.requester, req.WithContext(ctx), &resp)
+	return resp, err
+}
+
+// IdentityLoginRedirect is the final request made to complete a login flow.
+func (c *E3dbIdentityClient) IdentityLoginRedirect(ctx context.Context, redirectRequest IdentityLoginRedirectRequest) (*IdentityLoginRedirectResponse, error) {
+	var resp *IdentityLoginRedirectResponse
+	path := c.Host + identityServiceBasePath + "/tozid/redirect"
+	req, err := e3dbClients.CreateRequest("POST", path, redirectRequest)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // IdentityLogin logs in the client identity to the specified realm,

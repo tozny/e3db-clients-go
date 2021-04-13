@@ -437,7 +437,7 @@ func (c *E3dbPDSClient) DecryptRecord(ctx context.Context, record Record) (Recor
 		return record, err
 	}
 	// Return the decrypted record
-	record.Data = *decrypted
+	record.Data = decrypted
 	return record, err
 }
 
@@ -474,7 +474,7 @@ func (c *E3dbPDSClient) DecryptGroupRecordWithGroupEncryptedAccessKey(ctx contex
 		return record, err
 	}
 	// Return the decrypted record
-	record.Data = *decrypted
+	record.Data = decrypted
 	return record, err
 }
 

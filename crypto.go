@@ -30,6 +30,7 @@ const (
 	NISTCryptographicMode    = "NIST"
 	SymmetricKeySize         = 32
 	SigningKeySize           = 64
+	PublicSigningKeySize     = 32
 	NonceSize                = 24
 	SaltSize                 = 16
 	AccountDerivationRounds  = 1000
@@ -42,12 +43,39 @@ const (
 	FILE_BLOCK_SIZE              = 65536
 )
 
+var (
+	PublicKeySizeError         = fmt.Errorf("the provided key was not %v bytes long", PublicSigningKeySize)
+	SignatureVerificationError = fmt.Errorf("the provided message could not be verified with the provided key")
+)
+
 // SymmetricKey is used for fast encryption of larger amounts of data
 // also referred to as the 'SecretKey'
 type SymmetricKey *[SymmetricKeySize]byte
 
 // SigningKey is used for fast signing and verifying properties of data
 type SigningKey *[SigningKeySize]byte
+
+// PublicSigningKey is used to verify a signatures
+type PublicSigningKey = *[PublicSigningKeySize]byte
+
+// PublicSigningKeyFromBytes returns a PublicSigningKey derived from a byte slice
+func PublicSigningKeyFromBytes(publicSigningKeyBytes []byte) (PublicSigningKey, error) {
+	if len(publicSigningKeyBytes) != PublicSigningKeySize {
+		return nil, fmt.Errorf("PublicSigningKey must be %d bytes. Provided slice was %d bytes", PublicSigningKeySize, len(publicSigningKeyBytes))
+	}
+	var psk *[PublicSigningKeySize]byte
+	copy(psk[:], publicSigningKeyBytes)
+	return psk, nil
+}
+
+// PublicSigningKeyFromEncodedString returns a PublicSigningKey derived from a base64 encoded string
+func PublicSigningKeyFromEncodedString(publicSigningKey string) (PublicSigningKey, error) {
+	pskBytes, err := Base64Decode(publicSigningKey)
+	if err != nil {
+		return nil, err
+	}
+	return PublicSigningKeyFromBytes(pskBytes)
+}
 
 // Nonce is a type that represents nonce randomly generated unique value that is used once in encrypting data.
 type Nonce *[NonceSize]byte
@@ -60,6 +88,12 @@ type Key struct {
 
 // Keys is a map of key type to key material
 type Keys map[string]string
+
+// DecryptedData is a map of arbitrary key value pairs where value has been decrypted
+type DecryptedData = map[string]string
+
+// EncryptedData is a map of arbitrary key value pairs where the value is in an encrypted, "dotted quad" format
+type EncryptedData = map[string]string
 
 // AsymmetricKeypair wraps a public and private key used for
 // asymmetric cryptographic operations.
@@ -132,9 +166,9 @@ func GenerateKeyPair() (EncryptionKeys, error) {
 
 // EncryptData encrypts a collection of data of string key and values using
 // Tozny v1 Record encryption, returning the encrypted data.
-func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
+func EncryptData(data map[string]string, ak SymmetricKey) *EncryptedData {
 	encryptedData := make(map[string]string)
-	for k, v := range Data {
+	for k, v := range data {
 		dk := RandomSymmetricKey()
 		ef, efN := SecretBoxEncryptToBase64([]byte(v), dk)
 		edk, edkN := SecretBoxEncryptToBase64(dk[:], ak)
@@ -143,14 +177,31 @@ func EncryptData(Data map[string]string, ak SymmetricKey) *map[string]string {
 	return &encryptedData
 }
 
+// DecryptSignedData decrypts and verifies signed payloads for data that has been encrypted and signed using TFSP1;ED25519;BLAKE2B
+func DecryptSignedData(data map[string]string, ak SymmetricKey, psk PublicSigningKey, salt string) (DecryptedData, error) {
+	// the verify function uses the provided public signing key and salt to verify "key-message" pairs that are passed
+	// as parameters, message should be a TFSP1;ED25519;BLAKE2B formatted string. The returned value is the unsigned message only.
+	verify := func(key, message string) (string, error) {
+		verifiedMessage, err := VerifyField(key, message, psk, salt)
+		return verifiedMessage, err
+	}
+	return DecryptDataWithProcessFunction(data, ak, verify)
+}
+
 // DecryptData decrypts a collection of data of string key and values encrypted using Tozny v1 Record encryption,
 // returning the decrypted data and error (if any).
-func DecryptData(Data map[string]string, ak SymmetricKey) (*map[string]string, error) {
+func DecryptData(data map[string]string, ak SymmetricKey) (DecryptedData, error) {
+	return DecryptDataWithProcessFunction(data, ak, func(key string, message string) (string, error) { return message, nil })
+}
+
+// DecryptDataWithProcessFunction decrypts a map of key value pairs where values are encrypted using Tozny v1 Record encryption
+// after description a provided function is run against each key-value pair. The result of the function if err = nil is set as the value
+func DecryptDataWithProcessFunction(data map[string]string, ak SymmetricKey, postprocess func(key string, value string) (string, error)) (DecryptedData, error) {
 	decryptedData := make(map[string]string)
-	for k, v := range Data {
+	for k, v := range data {
 		fields := strings.SplitN(v, ".", 4)
 		if len(fields) != 4 {
-			return &decryptedData, errors.New("invalid record data format")
+			return decryptedData, errors.New("invalid record data format")
 		}
 
 		edk := fields[0]
@@ -160,19 +211,22 @@ func DecryptData(Data map[string]string, ak SymmetricKey) (*map[string]string, e
 
 		dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
 		if err != nil {
-			return &decryptedData, err
+			return decryptedData, err
 		}
 
 		dk := MakeSymmetricKey(dkBytes)
 		field, err := SecretBoxDecryptFromBase64(ef, efN, dk)
 		if err != nil {
-			return &decryptedData, errors.New("decryption of field data failed")
+			return decryptedData, errors.New("decryption of field data failed")
 		}
-
-		decryptedData[k] = string(field)
+		processedField, err := postprocess(k, string(field))
+		if err != nil {
+			return decryptedData, fmt.Errorf("decryption post processing failed: %w", err)
+		}
+		decryptedData[k] = processedField
 	}
 
-	return &decryptedData, nil
+	return decryptedData, nil
 }
 
 // EncryptPrivateKey Encrypts a private key using a keypair.
@@ -405,6 +459,29 @@ func Sign(message []byte, key SigningKey) []byte {
 	return bytes[:offset]
 }
 
+// Verify a signature of message using the provided public key, for messages signed with TFSP1;ED25519;BLAKE2B
+func Verify(signature string, message string, publicSigningKey PublicSigningKey) (string, error) {
+	messageBytes, err := Base64Decode(message)
+	if err != nil {
+		return "", err
+	}
+	// This double encoding is required for TFSP1;ED25519;BLAKE2B signed messages,
+	// as an artifact of the initial JS implementation
+	doubleEncodedHash := []byte(Base64Encode(messageBytes))
+	signatureBytes, err := Base64Decode(signature)
+	if err != nil {
+		return "", err
+	}
+	signedMessage := append(signatureBytes, doubleEncodedHash...)
+	var psk [32]byte
+	copy(psk[:], (*publicSigningKey)[:])
+	outputBytes, verified := sign.Open(nil, signedMessage, &psk)
+	if !verified {
+		return "", SignatureVerificationError
+	}
+	return Base64Encode(outputBytes), nil
+}
+
 // SignField signs a field - a key value string pair - using Tozny Field Signing Version 1 (TFSV1) protocol
 // https://github.com/tozny/internal-docs/blob/master/tozny-platform/notes/tozny-field-signing.md
 // in a way compatible with the JS SDK implementation of TFSV1
@@ -413,13 +490,10 @@ func SignField(fieldName, fieldValue string, privateSigningKey SigningKey, salt 
 	// Construct the complete message to sign over
 	message := salt + fieldName + fieldValue
 	// Hash the message
-	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	hashedMessage, err := HashString(message)
 	if err != nil {
 		return "", err
 	}
-	hashedMessageAccumlator.Write([]byte(message))
-	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
-	hashedMessage := Base64Encode(hashedMessageBytes)
 	// Sign over the hashed message
 	signatureBytes := Sign([]byte(hashedMessage), privateSigningKey)
 	signature := Base64Encode(signatureBytes)
@@ -428,6 +502,50 @@ func SignField(fieldName, fieldValue string, privateSigningKey SigningKey, salt 
 	signedFieldPrefix := strings.Join(signedFieldPrexixes, ";")
 
 	return signedFieldPrefix + fieldValue, nil
+}
+
+// HashString returns a base64 encoded Blake2b hash of the provided message
+func HashString(message string) (string, error) {
+	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	if err != nil {
+		return "", err
+	}
+	hashedMessageAccumlator.Write([]byte(message))
+	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
+	hashedMessage := Base64Encode(hashedMessageBytes)
+	return hashedMessage, nil
+}
+
+// VerifyField verifies TFSP1;ED25519;BLAKE2B fields using the provided public key and salt. Returning the unsigned message and error if any.
+func VerifyField(fieldName, fieldValue string, publicSigningKey PublicSigningKey, salt string) (string, error) {
+	parts := strings.SplitN(fieldValue, ";", 4)
+	if parts[0] != ToznyFieldSignatureVersionV1 {
+		return "", fmt.Errorf("VerifyField: The field signature version was not a known value and could not be verified. Provided version: %s", parts[0])
+	}
+	if len(parts) != 4 {
+		return "", fmt.Errorf("VerfiyField: The field %s could not be verified. A known signature version was provided but signature was malformed", fieldName)
+	}
+	if salt != "" && salt != parts[1] {
+		return "", fmt.Errorf("VerifyField: The field %s could not be verified. Invalid salt on signature", fieldName)
+	}
+	// Sum of the len of the first three parts plus the 3 semicolons removed in the split
+	headerLength := len(parts[0]) + len(parts[1]) + len(parts[2]) + 3
+	signatureLength, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return "", err
+	}
+	plainTextIndex := headerLength + signatureLength
+	signature := fieldValue[headerLength:plainTextIndex]
+	plaintext := fieldValue[plainTextIndex:]
+	messageHash, err := HashString(parts[1] + fieldName + plaintext)
+	if err != nil {
+		return "", err
+	}
+	_, err = Verify(signature, messageHash, publicSigningKey)
+	if err != nil {
+		return "", err
+	}
+	return plaintext, nil
 }
 
 // DeriveSymmetricKey create a symmetric encryption key from a seed and a salt
@@ -467,6 +585,52 @@ func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte)
 	copy((*privateKey)[:], privateKeyBytes[:])
 	copy((*publicKey)[:], privateKeyBytes[32:])
 	return publicKey, privateKey
+}
+
+// DeriveIdentityCredentials derives a set of encryption keys, signing keys and a note name for the given parameters using pbkdf2
+func DeriveIdentityCredentials(username string, password string, realmName string, nameSalt string) (string, EncryptionKeys, SigningKeys, error) {
+	nameSeed := fmt.Sprintf("%s@realm:%s", username, realmName)
+	if nameSalt != "" {
+		nameSeed = fmt.Sprintf("%s:%s", nameSalt, nameSeed)
+	}
+	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	if err != nil {
+		return "", EncryptionKeys{}, SigningKeys{}, err
+	}
+	hashedMessageAccumlator.Write([]byte(nameSeed))
+	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
+	noteName := Base64Encode(hashedMessageBytes)
+	cryptoPublicKey, cryptoPrivateKey := DeriveCryptoKey(
+		[]byte(password),
+		[]byte(nameSeed),
+		IdentityDerivationRounds,
+	)
+	cryptoKeyPair := EncryptionKeys{
+		Public: Key{
+			Type:     DefaultEncryptionKeyType,
+			Material: Base64Encode(cryptoPublicKey[:]),
+		},
+		Private: Key{
+			Type:     DefaultEncryptionKeyType,
+			Material: Base64Encode(cryptoPrivateKey[:]),
+		},
+	}
+	signingPublicKey, signingPrivateKey := DeriveSigningKey(
+		[]byte(password),
+		[]byte(cryptoKeyPair.Public.Material+cryptoKeyPair.Private.Material),
+		IdentityDerivationRounds,
+	)
+	signingKeyPair := SigningKeys{
+		Public: Key{
+			Type:     DefaultSigningKeyType,
+			Material: Base64Encode(signingPublicKey[:]),
+		},
+		Private: Key{
+			Type:     DefaultSigningKeyType,
+			Material: Base64Encode(signingPrivateKey[:]),
+		},
+	}
+	return noteName, cryptoKeyPair, signingKeyPair, nil
 }
 
 // EncryptFile encrypts the contents of the file plainFileName using the ak and stores the ciphertext in encryptedFileName

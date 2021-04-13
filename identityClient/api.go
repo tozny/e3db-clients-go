@@ -2,6 +2,7 @@ package identityClient
 
 import (
 	"github.com/google/uuid"
+	"time"
 )
 
 const (
@@ -119,6 +120,70 @@ type RegisterIdentityRequest struct {
 type RegisterIdentityResponse struct {
 	Identity                   Identity  `json:"identity"`
 	RealmBrokerIdentityToznyID uuid.UUID `json:"realm_broker_identity_tozny_id,omitempty"`
+}
+
+// IdentityLoginRequest wraps parameters needed to initiate an identity login session.
+type IdentityLoginRequest struct {
+	Username    string `json:"username"`
+	RedirectURL string `json:"redirect_url"`
+	RealmName   string `json:"realm_name"`
+	AppName     string `json:"app_name"`
+	LoginStyle  string `json:"login_style"`
+}
+
+// InitialLoginResponse is returned by the login endpoint on success
+type InitialLoginResponse struct {
+	Nonce         string `json:"nonce" schema:"nonce"`
+	ClientID      string `json:"client_id" schema:"client_id"`
+	ResponseType  string `json:"response_type" schema:"response_type"`
+	Scope         string `json:"scope" schema:"scope"`
+	RedirectURI   string `json:"redirect_uri" schema:"redirect_uri"`
+	ResponseMode  string `json:"response_mode" schema:"response_mode"`
+	State         string `json:"state" schema:"state"`
+	Username      string `json:"username" schema:"username"`
+	Target        string `json:"target" schema:"target"`
+	AuthSessionID string `json:"auth_session_id" schema:"auth_session_id"`
+	Federated     bool   `json:"federated" schema:"federated"`
+}
+
+// IdentitySessionRequestResponse is returned by the IdentitySesssionRequest. It contains data related to what additional
+// actions are needed to create a session and how to create the session
+type IdentitySessionRequestResponse struct {
+	LoginAction     bool                   `json:"login_action"`
+	LoginActionType string                 `json:"type"`
+	ActionURL       string                 `json:"action_url"`
+	Fields          map[string]string      `json:"fields"`
+	Context         map[string]string      `json:"context"`
+	ContentType     string                 `json:"content_type"`
+	Message         SessionResponseMessage `json:"message"`
+}
+
+// SessionResponseMessage provides information reagarding the error status of login actions
+// IsError is the most reliable source of information if the login action was successful or not
+type SessionResponseMessage struct {
+	Summary     string `json:"summary"`
+	MessageType string `json:"type"`
+	IsError     bool   `json:"error"`
+	Warning     bool   `json:"warning"`
+	Success     bool   `json:"success"`
+}
+
+// IdentityLoginRedirectRequest wraps parameters need to complete an identity login
+type IdentityLoginRedirectRequest struct {
+	RealmName     string `json:"realm_name"`
+	SessionCode   string `json:"session_code"`
+	Execution     string `json:"execution"`
+	TabID         string `json:"tab_id"`
+	ClientID      string `json:"client_id"`
+	AuthSessionId string `json:"auth_session_id"`
+}
+
+// IdentityLoginRedirectResponse is returned by the IdentityLoginRedirect and contains access tokens for
+// retrieving clients and sessions
+type IdentityLoginRedirectResponse struct {
+	AccessToken string    `json:"access_token"`
+	TokenType   string    `json:"token_type"`
+	Expiry      time.Time `json:"expiry"`
 }
 
 // IdentityLoginResponse wraps an extended OpenID v1.0 compatible Token Response
