@@ -27,7 +27,9 @@ var (
 	cyclopsServiceHost = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
 	testCtx            = context.Background()
 	ClientServiceHost  = os.Getenv("CLIENT_SERVICE_HOST")
-	FILE_BLOCK_SIZE 	 = 65536
+	plaintextFileName  = "plaintext"
+	encryptedFileName  = "encrypted"
+	decryptedFileName  = "decrypted"
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -275,10 +277,16 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 
 func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 	// create a plaintext file and file with a random string that is smaller than the blockSize
-	plainFile, err := os.Create("plaintext")
+	plainFile, err := os.Create(plaintextFileName)
 	if err != nil {
 		t.Fatalf("Could not create plainFile: %+v", err)
 	}
+	defer func() {
+		err := os.Remove(plaintextFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", plaintextFileName, err)
+		}
+	}()
 	randTxt, _ := e3dbClients.GenerateRandomString(500)
 	_, err = plainFile.WriteString(randTxt)
 	if err != nil {
@@ -287,51 +295,57 @@ func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
 	plainFile.Close()
 	ak := e3dbClients.RandomSymmetricKey()
 	// encrypt the file
-	_, _, err = e3dbClients.EncryptFile("plaintext", "encrypted", ak)
+	_, _, err = e3dbClients.EncryptFile(plaintextFileName, encryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Could not encrypt file: %s", err)
 	}
+	defer func() {
+		err := os.Remove(encryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", encryptedFileName, err)
+		}
+	}()
 	// decrypt the file
-	err = e3dbClients.DecryptFile("encrypted", "decrypted", ak)
+	err = e3dbClients.DecryptFile(encryptedFileName, decryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Could not decrypt file: %s", err)
 	}
 	// compare ptxt and decrypted
-	ptxt, err := ioutil.ReadFile("plaintext")
+	ptxt, err := ioutil.ReadFile(plaintextFileName)
 	if err != nil {
-		t.Fatalf("Could not read plaintext file: %+v", err)
+		t.Fatalf("Could not read %+v file: %+v", plaintextFileName, err)
 	}
-	decrypted, err := ioutil.ReadFile("decrypted")
+	decrypted, err := ioutil.ReadFile(decryptedFileName)
 	if err != nil {
-		t.Fatalf("Could not read decrypted file: %+v", err)
+		t.Fatalf("Could not read %+v file: %+v", decryptedFileName, err)
 	}
+	defer func() {
+		err := os.Remove(decryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", decryptedFileName, err)
+		}
+	}()
 	compare := bytes.Equal(ptxt, decrypted)
 	if !compare {
 		t.Fatalf("Plaintext and decrypted files do not match")
-	}
-	err = os.Remove("plaintext")
-	if err != nil {
-		t.Fatalf("Could not delete plaintext: %+v", err)
-	}
-	err = os.Remove("encrypted")
-	if err != nil {
-		t.Fatalf("Could not delete encrypted: %+v", err)
-	}
-	err = os.Remove("decrypted")
-	if err != nil {
-		t.Fatalf("Could not delete decrypted: %+v", err)
 	}
 }
 
 func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
 	// create a 1 MB plaintext file with random strings
-	plainFile, err := os.Create("plaintext")
+	plainFile, err := os.Create(plaintextFileName)
 	if err != nil {
 		t.Fatalf("Could not create plainFile: %+v", err)
 	}
+	defer func() {
+		err := os.Remove(plaintextFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", plaintextFileName, err)
+		}
+	}()
 	size := 0
 	for {
-		randTxt, _ := e3dbClients.GenerateRandomString(FILE_BLOCK_SIZE)
+		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FILE_BLOCK_SIZE)
 		n, err := plainFile.WriteString(randTxt)
 		if err != nil {
 			t.Fatalf("Could not write to plainFile: %+v", err)
@@ -344,39 +358,39 @@ func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
 	plainFile.Close()
 	ak := e3dbClients.RandomSymmetricKey()
 	// encrypt the file
-	_, _, err = e3dbClients.EncryptFile("plaintext", "encrypted", ak)
+	_, _, err = e3dbClients.EncryptFile(plaintextFileName, encryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Could not encrypt file: %s", err)
 	}
+	defer func() {
+		err := os.Remove(encryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", encryptedFileName, err)
+		}
+	}()
 	// decrypt the file
-	err = e3dbClients.DecryptFile("encrypted", "decrypted", ak)
+	err = e3dbClients.DecryptFile(encryptedFileName, decryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Could not decrypt file: %s", err)
 	}
 	// compare ptxt and decrypted
-	ptxt, err := ioutil.ReadFile("plaintext")
+	ptxt, err := ioutil.ReadFile(plaintextFileName)
 	if err != nil {
 		t.Fatalf("Could not read plaintext file: %+v", err)
 	}
-	decrypted, err := ioutil.ReadFile("decrypted")
+	decrypted, err := ioutil.ReadFile(decryptedFileName)
 	if err != nil {
 		t.Fatalf("Could not read decrypted file: %+v", err)
 	}
+	defer func() {
+		err := os.Remove(decryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", decryptedFileName, err)
+		}
+	}()
 	compare := bytes.Equal(ptxt, decrypted)
 	if !compare {
 		t.Fatalf("Plaintext and decrypted files do not match")
-	}
-	err = os.Remove("plaintext")
-	if err != nil {
-		t.Fatalf("Could not delete plaintext file: %+v", err)
-	}
-	err = os.Remove("encrypted")
-	if err != nil {
-		t.Fatalf("Could not delete encrypted file: %+v", err)
-	}
-	err = os.Remove("decrypted")
-	if err != nil {
-		t.Fatalf("Could not delete decrypted file: %+v", err)
 	}
 }
 

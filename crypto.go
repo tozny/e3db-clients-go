@@ -495,7 +495,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
-			fmt.Println("Error closing file: ", err)
+			fmt.Println("e3db-clients-go:EncryptFile: error closing file: ", err)
 		}
 	}()
 	// create random header and write to encrypted file
@@ -566,7 +566,7 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
-			fmt.Println("Error closing file: ", err)
+			fmt.Println("e3db-clients-go:DecryptFile: error closing file: ", err)
 		}
 	}()
 	readFileHeader, err := os.Open(encryptedFileName)
@@ -575,7 +575,7 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	}
 	defer func() {
 		if err = readFileHeader.Close(); err != nil {
-			fmt.Println("Error closing header file: ", err)
+			fmt.Println("e3db-clients-go:DecryptFile: error closing header file: ", err)
 		}
 	}()
 
