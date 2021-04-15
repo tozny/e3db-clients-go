@@ -550,8 +550,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	}
 	// calculate the checksum
 	md5 := hasher.Sum(nil)
-	checksum := Base64Encode(md5)
-
+	checksum := base64.StdEncoding.EncodeToString(md5)
 	return size, checksum, nil
 }
 
