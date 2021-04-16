@@ -4,10 +4,14 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha512"
+	"crypto/md5"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"bufio"
+	"strconv"
 
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
@@ -15,6 +19,7 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/nacl/sign"
 	"golang.org/x/crypto/pbkdf2"
+	"github.com/tozny/e3db-clients-go/secretstream"
 )
 
 const (
@@ -33,6 +38,8 @@ const (
 	// "794253a4-310b-449d-9d8d-4575e8923f40" and a version string
 	// "TFSP1;ED25519;BLAKE2B"
 	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
+	FILE_VERSION = 3
+	FILE_BLOCK_SIZE = 65536
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data
@@ -460,4 +467,178 @@ func DeriveSigningKey(seed []byte, salt []byte, iter int) (*[32]byte, *[64]byte)
 	copy((*privateKey)[:], privateKeyBytes[:])
 	copy((*publicKey)[:], privateKeyBytes[32:])
 	return publicKey, privateKey
+}
+
+// EncryptFile encrypts the contents of the file plainFileName using the ak and stores the ciphertext in encryptedFileName
+func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey) (int, string, error) {
+	hasher := md5.New()
+	var dk []byte
+	dkSymmetric := RandomSymmetricKey()
+	dk = dkSymmetric[:]
+	edk, edkN := SecretBoxEncryptToBase64(dk[:], ak)
+	headerText := fmt.Sprintf("%v.%s.%s.", FILE_VERSION, edk, edkN)
+	headerBytes := []byte(headerText)
+	hasher.Write(headerBytes)
+	// create and open encryptedFileName
+	tempFile, err := os.Create(encryptedFileName)
+	if err != nil {
+		return 0, "", err
+	}
+	// write the header to the encrypted file
+	size, err := tempFile.Write(headerBytes)
+	if err != nil {
+		return 0, "", err
+	}
+	readFile, err := os.Open(plainFileName)
+	if err != nil {
+		return 0, "", err
+	}
+	defer func() {
+		if err = readFile.Close(); err != nil {
+			fmt.Println("e3db-clients-go:EncryptFile: error closing file: ", err)
+		}
+	}()
+	// create random header and write to encrypted file
+	var header []byte
+	nonce := RandomNonce()
+	header = nonce[:]
+	x, err := tempFile.Write(header)
+	if err != nil {
+		return 0, "", err
+	}
+	size += x
+	hasher.Write(header)
+	// create a new encryption stream
+	encryptor, err := secretstream.NewEncryptor(header, dk)
+	if err != nil {
+		return 0, "", err
+	}
+	r := bufio.NewReader(readFile)
+	var nextBlock []byte
+	headBlock := make([]byte, FILE_BLOCK_SIZE)
+	m, err := r.Read(headBlock)
+	if err != nil {
+		return 0, "", err
+	}
+	var block []byte
+	// encrypt each block of the file with the appropriate tag
+	for {
+		nextBlock = make([]byte, FILE_BLOCK_SIZE)
+		n, err := r.Read(nextBlock)
+		var tag byte
+		if err != nil {
+			tag = secretstream.TagFinal
+		} else {
+			tag = secretstream.TagMessage
+		}
+		readBlock := headBlock[0:m]
+		block, err = encryptor.Push(readBlock, nil, tag)
+		if err != nil {
+			return 0, "", err
+		}
+		y, err := tempFile.Write(block)
+		if err != nil {
+			return 0, "", err
+		}
+		size += y
+		hasher.Write(block)
+		if tag == secretstream.TagFinal {
+			break
+		}
+		copy(headBlock, nextBlock)
+		m = n
+	}
+	// calculate the checksum
+	md5 := hasher.Sum(nil)
+	checksum := Base64Encode(md5)
+
+	return size, checksum, nil
+}
+
+// DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
+func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) (error) {
+	extraHeaderSize := secretstream.HeaderBytes
+	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
+
+	readFile, err := os.Open(encryptedFileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err = readFile.Close(); err != nil {
+			fmt.Println("e3db-clients-go:DecryptFile: error closing file: ", err)
+		}
+	}()
+	readFileHeader, err := os.Open(encryptedFileName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err = readFileHeader.Close(); err != nil {
+			fmt.Println("e3db-clients-go:DecryptFile: error closing header file: ", err)
+		}
+	}()
+
+	decryptedFile, err := os.Create(decryptedFileName)
+	if err != nil {
+		return err
+	}
+
+	r := bufio.NewReader(readFileHeader)
+	readFirst := make([]byte, 4096)
+
+	n, err := r.Read(readFirst)
+	if err != nil {
+		return err
+	}
+	// read header and extract version, edk, edkN
+	readHeaderBlock := readFirst[0:n]
+	headerString := string(readHeaderBlock)
+	s := strings.Split(headerString, ".")
+	version, err := strconv.Atoi(s[0])
+	if err != nil || version != FILE_VERSION {
+		return err
+	}
+	edk := s[1]
+	edkN := s[2]
+	// get the dk
+	dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
+	if err != nil {
+		return err
+	}
+	var dk []byte
+	dkSymm := MakeSymmetricKey(dkBytes)
+	dk = dkSymm[:]
+	headerLength := len(s[0] + s[1] + s[2]) + 3
+	readHeader := make([]byte, headerLength)
+	readExtraHeader := make([]byte, extraHeaderSize)
+	readCtxt := make([]byte, blockSize)
+
+	_, err = readFile.Read(readHeader)	
+	if err != nil {
+		return err
+	}
+	// get the extra header and use it to make decryption stream
+	n, err = readFile.Read(readExtraHeader)
+	if err != nil {
+		return err
+	}
+	decryptor, err := secretstream.NewDecryptor(readExtraHeader[0:n], dk)
+	// read each block and decrypt, writing the result to the decrypted file
+	for {
+		n, err = readFile.Read(readCtxt)
+		msg, tag, err := decryptor.Pull(readCtxt[0:n], nil)
+		if err != nil {
+			return err
+		}
+		_, err = decryptedFile.Write(msg)
+		if err != nil {
+			return err
+		}
+		if tag == secretstream.TagFinal {
+			break
+		}
+	}
+	decryptedFile.Close()
+	return nil
 }
