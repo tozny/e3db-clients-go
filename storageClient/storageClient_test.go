@@ -193,10 +193,11 @@ func TestWriteFileAsDeployed(t *testing.T) {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, resp)
 	}
 	// Register the file as being written
-	_, err = pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
+	rsp, err := storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
+	t.Logf("resp: %+v", rsp.Metadata.FileMeta)
 }
 
 func TestWriteFileWithBigMetadataKey(t *testing.T) {
@@ -368,10 +369,38 @@ func TestWriteEncryptedFile(t *testing.T) {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, uploadResp)
 	} 
 	// Register the file as being written
-	_, err = pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
+	// response, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
+	t.Logf("pending fileid: %+v", pendingFileURL.PendingFileID)
+	response, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
+	recordID := response.Metadata.RecordID
+	t.Logf("record id: %+v", recordID)
+	fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
+	if err != nil {
+		t.Fatalf("file response failed: %+v", err)
+	}
+	t.Logf("response: %+v", fileResp)
+
+	// var createdRecordIDs []string
+	// createdRecordIDs = append(createdRecordIDs, recordID.String())
+	// params := pdsClient.BatchGetRecordsRequest{
+	// 	RecordIDs: createdRecordIDs,
+	// 	IncludeData: true,
+	// }
+	// batchRecords, err := pdsServiceClient.BatchGetRecords(testCtx, params)
+	// if err != nil {
+	// 	t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+	// }
+	// record1 := batchRecords.Records[0]
+	// t.Logf("record: %+v", record1)
+
+	// resp, err := storageClient.DownloadFile(url, "enc.bin")
+	// if err != nil || resp != "" {
+	// 	t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
+	// }
+	// t.Logf("resp: %+v", resp)
 }
 
 func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {

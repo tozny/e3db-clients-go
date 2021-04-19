@@ -748,6 +748,18 @@ func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCr
 	return e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
 }
 
+func (c *E3dbPDSClient) GetFileRecord(ctx context.Context, pendingFileID string) (*Record, error) {
+	var result *Record
+	path := c.Host + "/" + PDSServiceBasePath + "/files/" + pendingFileID
+	fmt.Println("path in get file record: ", path)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 // New returns a new E3dbPDSClient configured with the specified apiKey and apiSecret values.
 func New(config e3dbClients.ClientConfig) E3dbPDSClient {
 	authService := authClient.New(config)
