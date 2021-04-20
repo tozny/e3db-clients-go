@@ -329,7 +329,7 @@ func TestWriteEncryptedFile(t *testing.T) {
 		}
 	}
 	plainFile.Close()
-
+	// Encrypt the contents of the plaintext file
 	size, checksum, err := e3dbClients.EncryptFile(plaintextFileName, encryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Could not encrypt %+v: %+v", plaintextFileName, err)
@@ -374,13 +374,14 @@ func TestWriteEncryptedFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
-
+	// Get the file record & the fileURL
 	recordID := response.Metadata.RecordID
 	fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
 	if err != nil {
 		t.Fatalf("file response failed: %+v", err)
 	}
 	fileURL := fileResp.Metadata.FileMeta.FileURL
+	// Read the file into a file
 	resp, err := storageClient.DownloadFile(fileURL, downloadedFileName)
 	if err != nil || resp != "" {
 		t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
@@ -391,6 +392,7 @@ func TestWriteEncryptedFile(t *testing.T) {
 			t.Logf("Could not delete %s: %+v", downloadedFileName, err)
 		}
 	}()
+	// Decrypt the downloaded file
 	err = e3dbClients.DecryptFile(downloadedFileName, decryptedFileName, ak)
 	if err != nil {
 		t.Fatalf("Decryption failed: %+v", err)
@@ -401,20 +403,20 @@ func TestWriteEncryptedFile(t *testing.T) {
 			t.Logf("Could not delete %s: %+v", decryptedFileName, err)
 		}
 	}()
-	// compare encrypted and downloaded
+	// Compare encrypted and downloaded
 	encrypted, err := ioutil.ReadFile(encryptedFileName)
 	if err != nil {
-		t.Fatalf("Could not read %+v file: %+v", encryptedFileName, err)
+		t.Fatalf("Could not read %s file: %+v", encryptedFileName, err)
 	}
 	downloaded, err := ioutil.ReadFile(downloadedFileName)
 	if err != nil {
-		t.Fatalf("Could not read %+v file: %+v", downloadedFileName, err)
+		t.Fatalf("Could not read %s file: %+v", downloadedFileName, err)
 	}
 	compare := bytes.Equal(encrypted, downloaded)
 	if !compare {
 		t.Fatalf("%s and %s files do not match", encryptedFileName, downloadedFileName)
 	}
-	// compare plaintext and decrypted
+	// Compare plaintext and decrypted
 	ptxt, err := ioutil.ReadFile(plaintextFileName)
 	if err != nil {
 		t.Fatalf("Could not read %s file: %+v", plaintextFileName, err)
