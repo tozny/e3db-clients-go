@@ -17,8 +17,8 @@ import (
 const (
 	storageServiceBasePath = "/v2/storage"
 	// storageServiceBasePath1 = "/v1/storage"
-	EmailOTPQueryParam     = "email_otp"
-	ToznyOTPQueryParam     = "tozny_otp"
+	EmailOTPQueryParam = "email_otp"
+	ToznyOTPQueryParam = "tozny_otp"
 	// The TozID JWT signed OIDC ID token issued as part of a valid TozID realm login session that contains the one time password as the `nonce` claim and TozID as the authorizing party (`azp`) claim.
 	TozIDLoginTokenHeader           = "X-TOZID-LOGIN-TOKEN"
 	ReadContentGroupCapability      = "READ_CONTENT"
@@ -517,17 +517,6 @@ func (c *StorageClient) WriteFile(ctx context.Context, params Record) (*PendingF
 	var result *PendingFileResponse
 	path := c.Host + storageServiceBasePath + "/files"
 	req, err := e3dbClients.CreateRequest("POST", path, params)
-	if err != nil {
-		return result, err
-	}
-	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
-	return result, err
-}
-
-func (c *StorageClient) FileCommitString(ctx context.Context, pendingFileID string) (*Record, error) {
-	var result *Record
-	path := c.Host + storageServiceBasePath + "/files/" + pendingFileID
-	req, err := e3dbClients.CreateRequest("PATCH", path, nil)
 	if err != nil {
 		return result, err
 	}

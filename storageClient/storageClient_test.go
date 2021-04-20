@@ -1,6 +1,7 @@
 package storageClient_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/base64"
@@ -8,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"bytes"
 	"net/http"
 	"os"
 	"strings"
@@ -367,21 +367,22 @@ func TestWriteEncryptedFile(t *testing.T) {
 	uploadResp, err := storageClient.UploadFile(pendingFileURL.FileURL, encryptedFileName, checksum, size)
 	if err != nil || uploadResp != 0 {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, uploadResp)
-	} 
+	}
 	// Register the file as being written
 	// response, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
 	t.Logf("pending fileid: %+v", pendingFileURL.PendingFileID)
-	response, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
+	_, err = storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
-	recordID := response.Metadata.RecordID
-	t.Logf("record id: %+v", recordID)
-	fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
-	if err != nil {
-		t.Fatalf("file response failed: %+v", err)
-	}
-	t.Logf("response: %+v", fileResp)
+
+	// recordID := response.Metadata.RecordID
+	// t.Logf("record id: %+v", recordID)
+	// fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
+	// if err != nil {
+	// 	t.Fatalf("file response failed: %+v", err)
+	// }
+	// t.Logf("response: %+v", fileResp)
 
 	// var createdRecordIDs []string
 	// createdRecordIDs = append(createdRecordIDs, recordID.String())
