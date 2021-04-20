@@ -1,25 +1,25 @@
 package e3dbClients
 
 import (
+	"bufio"
 	"crypto/ed25519"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha512"
-	"crypto/md5"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
-	"strings"
-	"bufio"
 	"strconv"
+	"strings"
 
+	"github.com/tozny/e3db-clients-go/secretstream"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/nacl/sign"
 	"golang.org/x/crypto/pbkdf2"
-	"github.com/tozny/e3db-clients-go/secretstream"
 )
 
 const (
@@ -38,8 +38,8 @@ const (
 	// "794253a4-310b-449d-9d8d-4575e8923f40" and a version string
 	// "TFSP1;ED25519;BLAKE2B"
 	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
-	FILE_VERSION = 3
-	FILE_BLOCK_SIZE = 65536
+	FILE_VERSION                 = 3
+	FILE_BLOCK_SIZE              = 65536
 )
 
 // SymmetricKey is used for fast encryption of larger amounts of data
@@ -555,7 +555,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 }
 
 // DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
-func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) (error) {
+func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) error {
 	extraHeaderSize := secretstream.HeaderBytes
 	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
 
@@ -608,12 +608,12 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	var dk []byte
 	dkSymm := MakeSymmetricKey(dkBytes)
 	dk = dkSymm[:]
-	headerLength := len(s[0] + s[1] + s[2]) + 3
+	headerLength := len(s[0]+s[1]+s[2]) + 3
 	readHeader := make([]byte, headerLength)
 	readExtraHeader := make([]byte, extraHeaderSize)
 	readCtxt := make([]byte, blockSize)
 
-	_, err = readFile.Read(readHeader)	
+	_, err = readFile.Read(readHeader)
 	if err != nil {
 		return err
 	}

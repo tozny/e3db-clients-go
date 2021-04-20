@@ -85,6 +85,18 @@ func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegiste
 	return result, err
 }
 
+// BackfillClientSigningKeys assigns signing keys to clients with none set
+func (c *ClientServiceClient) BackfillClientSigningKeys(ctx context.Context, params BackfillClientSigningKeysRequest) (*Client, error) {
+	var result *Client
+	path := c.Host + "/" + ClientServiceBasePath + params.ClientID.String() + "/keys"
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 // GetClient gets a client for clientID.
 func (c *ClientServiceClient) GetClient(ctx context.Context, clientID string) (*ClientGetResponse, error) {
 	var result *ClientGetResponse
