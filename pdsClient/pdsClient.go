@@ -748,6 +748,7 @@ func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCr
 	return e3dbClients.DecryptEAK(encryptedAccessKey, accessKeyResponse.AuthorizerPublicKey.Curve25519, rawEncryptionKey)
 }
 
+// GetFileRecord gets a record for the file with the specified pendingFileID and returns it.
 func (c *E3dbPDSClient) GetFileRecord(ctx context.Context, pendingFileID uuid.UUID) (*Record, error) {
 	var result *Record
 	path := c.Host + "/" + PDSServiceBasePath + "/files/" + pendingFileID.String()

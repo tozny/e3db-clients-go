@@ -15,7 +15,7 @@ func (c *StorageClient) UploadFile(url string, encryptedFileName string, checksu
 	defer file.Close()
 	req, err := http.NewRequest("PUT", url, file)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	req.Header.Set("Content-MD5", checksum)
 	req.Header.Set("Content-Type", "application/octet-stream")
@@ -30,7 +30,7 @@ func (c *StorageClient) UploadFile(url string, encryptedFileName string, checksu
 func (c *StorageClient) DownloadFile(url string, encryptedFileName string) (string, error) {
 	file, err := os.Create(encryptedFileName)
 	if err != nil {
-		return "", err
+		return fmt.Sprintf("e3db-clients-go:DownloadFile: error creating file %s", encryptedFileName), err
 	}
 	defer file.Close()
 	resp, err := http.Get(url)
@@ -43,7 +43,7 @@ func (c *StorageClient) DownloadFile(url string, encryptedFileName string) (stri
 	}
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return "", err
+		return fmt.Sprintf("e3db-clients-go:DownloadFile: error copying response to %s", encryptedFileName), err
 	}
 	return "", nil
 }
