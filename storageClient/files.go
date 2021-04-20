@@ -1,13 +1,13 @@
 package storageClient
 
 import (
-	"os"
-	"net/http"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
 )
 
-func (c *StorageClient) UploadFile(url string, encryptedFileName string, checksum string, size int) (int, error){
+func (c *StorageClient) UploadFile(url string, encryptedFileName string, checksum string, size int) (int, error) {
 	file, err := os.Open(encryptedFileName)
 	if err != nil {
 		return 0, err
@@ -27,30 +27,23 @@ func (c *StorageClient) UploadFile(url string, encryptedFileName string, checksu
 	return 0, nil
 }
 
-func (c *StorageClient) DownloadFile(url string, encryptedFileName string) (string, error){
-	fmt.Println("url in download:", url)
+func (c *StorageClient) DownloadFile(url string, encryptedFileName string) (string, error) {
 	file, err := os.Create(encryptedFileName)
-
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("resp is:", resp)
-		fmt.Println("err is:", err)
-		return "get failed", err
+		return "e3db-clients-go:DownloadFile: get failed", err
 	}
 	defer resp.Body.Close()
-	fmt.Println("status code: ", resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
-		return "wrong status code", nil
+		return fmt.Sprintf("e3db-clients-go:DownloadFile: status is %d", resp.StatusCode), nil
 	}
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("resp:", resp)
-	fmt.Println("err:", err)
-	return "", err
+	return "", nil
 }

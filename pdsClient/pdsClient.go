@@ -751,7 +751,6 @@ func (c *E3dbPDSClient) GetOrCreateAccessKey(ctx context.Context, params GetOrCr
 func (c *E3dbPDSClient) GetFileRecord(ctx context.Context, pendingFileID uuid.UUID) (*Record, error) {
 	var result *Record
 	path := c.Host + "/" + PDSServiceBasePath + "/files/" + pendingFileID.String()
-	fmt.Println("path in get file record: ", path)
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err

@@ -30,6 +30,7 @@ var (
 	plaintextFileName  = "plaintext"
 	encryptedFileName  = "encrypted"
 	decryptedFileName  = "decrypted"
+	downloadedFileName = "downloaded"
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -193,11 +194,10 @@ func TestWriteFileAsDeployed(t *testing.T) {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, resp)
 	}
 	// Register the file as being written
-	rsp, err := storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
+	_, err = pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
-	t.Logf("resp: %+v", rsp.Metadata.FileMeta)
 }
 
 func TestWriteFileWithBigMetadataKey(t *testing.T) {
@@ -354,8 +354,9 @@ func TestWriteEncryptedFile(t *testing.T) {
 				"key": "value",
 			},
 			FileMeta: &storageClientV2.FileMeta{
-				Size:     int64(size),
-				Checksum: checksum,
+				Size:        int64(size),
+				Checksum:    checksum,
+				Compression: "raw",
 			},
 		},
 	}
@@ -369,39 +370,63 @@ func TestWriteEncryptedFile(t *testing.T) {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, uploadResp)
 	}
 	// Register the file as being written
-	// response, err := pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
-	t.Logf("pending fileid: %+v", pendingFileURL.PendingFileID)
-	_, err = storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
+	response, err := storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
 	}
 
-	// recordID := response.Metadata.RecordID
-	// t.Logf("record id: %+v", recordID)
-	// fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
-	// if err != nil {
-	// 	t.Fatalf("file response failed: %+v", err)
-	// }
-	// t.Logf("response: %+v", fileResp)
-
-	// var createdRecordIDs []string
-	// createdRecordIDs = append(createdRecordIDs, recordID.String())
-	// params := pdsClient.BatchGetRecordsRequest{
-	// 	RecordIDs: createdRecordIDs,
-	// 	IncludeData: true,
-	// }
-	// batchRecords, err := pdsServiceClient.BatchGetRecords(testCtx, params)
-	// if err != nil {
-	// 	t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
-	// }
-	// record1 := batchRecords.Records[0]
-	// t.Logf("record: %+v", record1)
-
-	// resp, err := storageClient.DownloadFile(url, "enc.bin")
-	// if err != nil || resp != "" {
-	// 	t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
-	// }
-	// t.Logf("resp: %+v", resp)
+	recordID := response.Metadata.RecordID
+	fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
+	if err != nil {
+		t.Fatalf("file response failed: %+v", err)
+	}
+	fileURL := fileResp.Metadata.FileMeta.FileURL
+	resp, err := storageClient.DownloadFile(fileURL, downloadedFileName)
+	if err != nil || resp != "" {
+		t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
+	}
+	defer func() {
+		err := os.Remove(downloadedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", downloadedFileName, err)
+		}
+	}()
+	err = e3dbClients.DecryptFile(downloadedFileName, decryptedFileName, ak)
+	if err != nil {
+		t.Fatalf("Decryption failed: %+v", err)
+	}
+	defer func() {
+		err := os.Remove(decryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", decryptedFileName, err)
+		}
+	}()
+	// compare encrypted and downloaded
+	encrypted, err := ioutil.ReadFile(encryptedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %+v file: %+v", encryptedFileName, err)
+	}
+	downloaded, err := ioutil.ReadFile(downloadedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %+v file: %+v", downloadedFileName, err)
+	}
+	compare := bytes.Equal(encrypted, downloaded)
+	if !compare {
+		t.Fatalf("%s and %s files do not match", encryptedFileName, downloadedFileName)
+	}
+	// compare plaintext and decrypted
+	ptxt, err := ioutil.ReadFile(plaintextFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", plaintextFileName, err)
+	}
+	decrypted, err := ioutil.ReadFile(decryptedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", decryptedFileName, err)
+	}
+	compare2 := bytes.Equal(ptxt, decrypted)
+	if !compare2 {
+		t.Fatalf("%s and %s file contents do not match", plaintextFileName, decryptedFileName)
+	}
 }
 
 func TestEncryptAndDecryptFileSingleBlock(t *testing.T) {
