@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/file"
 	"github.com/tozny/e3db-clients-go/pdsClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
@@ -365,7 +366,13 @@ func TestWriteEncryptedFile(t *testing.T) {
 		t.Fatalf("Call to file post should return 200 level status code returned %+v", err)
 	}
 	// Write the file to the server directed location
-	uploadResp, err := storageClient.UploadFile(pendingFileURL.FileURL, encryptedFileName, checksum, size)
+	uploadRequest := file.UploadRequest{
+		URL:               pendingFileURL.FileURL,
+		EncryptedFileName: encryptedFileName,
+		Checksum:          checksum,
+		Size:              size,
+	}
+	uploadResp, err := file.UploadFile(uploadRequest)
 	if err != nil || uploadResp != 0 {
 		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, uploadResp)
 	}
@@ -382,7 +389,11 @@ func TestWriteEncryptedFile(t *testing.T) {
 	}
 	fileURL := fileResp.Metadata.FileMeta.FileURL
 	// Read the file into a file
-	resp, err := storageClient.DownloadFile(fileURL, downloadedFileName)
+	downloadRequest := file.DownloadRequest{
+		URL:               fileURL,
+		EncryptedFileName: downloadedFileName,
+	}
+	resp, err := file.DownloadFile(downloadRequest)
 	if err != nil || resp != "" {
 		t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
 	}
