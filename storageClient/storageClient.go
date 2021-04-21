@@ -512,6 +512,8 @@ func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record
 	return result, err
 }
 
+// WriteFile writes the pending files to the pending file table, returning a pendingFileID and pendingFileURL.
+// 'Compression' must be nonempty in params FileMeta, otherwise it will cause an error even though the error is not returned.
 func (c *StorageClient) WriteFile(ctx context.Context, params Record) (*PendingFileResponse, error) {
 	var result *PendingFileResponse
 	path := c.Host + storageServiceBasePath + "/files"

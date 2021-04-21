@@ -1,6 +1,7 @@
 package storageClient_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/base64"
@@ -8,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"bytes"
 	"net/http"
 	"os"
 	"strings"
@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/file"
 	"github.com/tozny/e3db-clients-go/pdsClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
@@ -30,6 +31,7 @@ var (
 	plaintextFileName  = "plaintext"
 	encryptedFileName  = "encrypted"
 	decryptedFileName  = "decrypted"
+	downloadedFileName = "downloaded"
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -272,6 +274,171 @@ func TestWriteFileWithBigMetadataKey(t *testing.T) {
 	_, err = pdsServiceClient.FileCommit(testCtx, pendingFileURL.PendingFileID.String())
 	if err != nil {
 		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v and with field value of length %d", err, numberOfMetadataFieldCharacters)
+	}
+}
+
+func TestWriteEncryptedFile(t *testing.T) {
+	// Create account, pds & storage clients
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	storageClient := storageClientV2.New(queenClientConfig)
+	pdsServiceClient := pdsClient.New(queenClientConfig)
+	clientID := queenClientConfig.ClientID
+	// Create an access key to allow for decrypting records of this type
+	recordType := "test2"
+	ak := e3dbClients.RandomSymmetricKey()
+	eak, err := e3dbClients.EncryptAccessKey(ak, queenClientConfig.EncryptionKeys)
+	if err != nil {
+		t.Fatalf("Could not encrypt access key: %+v", err)
+	}
+	putEAKParams := pdsClient.PutAccessKeyRequest{
+		WriterID:           clientID,
+		UserID:             clientID,
+		ReaderID:           clientID,
+		RecordType:         recordType,
+		EncryptedAccessKey: eak,
+	}
+	_, err = pdsServiceClient.PutAccessKey(testCtx, putEAKParams)
+	if err != nil {
+		t.Errorf("Error trying to put access key for %+v %s", clientID, err)
+	}
+	// create a 1 MB plaintext file with random strings
+	plainFile, err := os.Create(plaintextFileName)
+	if err != nil {
+		t.Fatalf("Could not create plainFile: %+v", err)
+	}
+	defer func() {
+		err := os.Remove(plaintextFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", plaintextFileName, err)
+		}
+	}()
+	size := 0
+	for {
+		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FILE_BLOCK_SIZE)
+		n, err := plainFile.WriteString(randTxt)
+		if err != nil {
+			t.Fatalf("Could not write to plainFile: %+v", err)
+		}
+		size = size + n
+		if size >= 1000000 {
+			break
+		}
+	}
+	plainFile.Close()
+	// Encrypt the contents of the plaintext file
+	size, checksum, err := e3dbClients.EncryptFile(plaintextFileName, encryptedFileName, ak)
+	if err != nil {
+		t.Fatalf("Could not encrypt %+v: %+v", plaintextFileName, err)
+	}
+	defer func() {
+		err := os.Remove(encryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", encryptedFileName, err)
+		}
+	}()
+	// Initiate the request to create a file
+	clientUUID, err := uuid.Parse(clientID)
+	if err != nil {
+		t.Fatalf("%s Could not parse string client id %s to uuid", err, clientID)
+	}
+	fileRecordToWrite := storageClientV2.Record{
+		Metadata: storageClientV2.Meta{
+			WriterID: clientUUID,
+			UserID:   clientUUID,
+			Type:     recordType,
+			Plain: map[string]string{
+				"key": "value",
+			},
+			FileMeta: &storageClientV2.FileMeta{
+				Size:        int64(size),
+				Checksum:    checksum,
+				Compression: "raw",
+			},
+		},
+	}
+	pendingFileURL, err := storageClient.WriteFile(testCtx, fileRecordToWrite)
+	if err != nil {
+		t.Fatalf("Call to file post should return 200 level status code returned %+v", err)
+	}
+	// Write the file to the server directed location
+	uploadRequest := file.UploadRequest{
+		URL:               pendingFileURL.FileURL,
+		EncryptedFileName: encryptedFileName,
+		Checksum:          checksum,
+		Size:              size,
+	}
+	uploadResp, err := file.UploadFile(uploadRequest)
+	if err != nil || uploadResp != 0 {
+		t.Fatalf("Put to pendingFileURL with presigned URL should not error %+v resp %+v", err, uploadResp)
+	}
+	// Register the file as being written
+	response, err := storageClient.FileCommit(testCtx, pendingFileURL.PendingFileID)
+	if err != nil {
+		t.Fatalf("Pending file commit should not fail for file that has been loaded to datastore %+v", err)
+	}
+	// Get the file record & the fileURL
+	recordID := response.Metadata.RecordID
+	fileResp, err := pdsServiceClient.GetFileRecord(testCtx, recordID)
+	if err != nil {
+		t.Fatalf("file response failed: %+v", err)
+	}
+	fileURL := fileResp.Metadata.FileMeta.FileURL
+	// Read the file into a file
+	downloadRequest := file.DownloadRequest{
+		URL:               fileURL,
+		EncryptedFileName: downloadedFileName,
+	}
+	resp, err := file.DownloadFile(downloadRequest)
+	if err != nil || resp != "" {
+		t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
+	}
+	defer func() {
+		err := os.Remove(downloadedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", downloadedFileName, err)
+		}
+	}()
+	// Decrypt the downloaded file
+	err = e3dbClients.DecryptFile(downloadedFileName, decryptedFileName, ak)
+	if err != nil {
+		t.Fatalf("Decryption failed: %+v", err)
+	}
+	defer func() {
+		err := os.Remove(decryptedFileName)
+		if err != nil {
+			t.Logf("Could not delete %s: %+v", decryptedFileName, err)
+		}
+	}()
+	// Compare encrypted and downloaded
+	encrypted, err := ioutil.ReadFile(encryptedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", encryptedFileName, err)
+	}
+	downloaded, err := ioutil.ReadFile(downloadedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", downloadedFileName, err)
+	}
+	compare := bytes.Equal(encrypted, downloaded)
+	if !compare {
+		t.Fatalf("%s and %s files do not match", encryptedFileName, downloadedFileName)
+	}
+	// Compare plaintext and decrypted
+	ptxt, err := ioutil.ReadFile(plaintextFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", plaintextFileName, err)
+	}
+	decrypted, err := ioutil.ReadFile(decryptedFileName)
+	if err != nil {
+		t.Fatalf("Could not read %s file: %+v", decryptedFileName, err)
+	}
+	compare2 := bytes.Equal(ptxt, decrypted)
+	if !compare2 {
+		t.Fatalf("%s and %s file contents do not match", plaintextFileName, decryptedFileName)
 	}
 }
 
