@@ -63,9 +63,9 @@ func PublicSigningKeyFromBytes(publicSigningKeyBytes []byte) (PublicSigningKey, 
 	if len(publicSigningKeyBytes) != PublicSigningKeySize {
 		return nil, fmt.Errorf("PublicSigningKey must be %d bytes. Provided slice was %d bytes", PublicSigningKeySize, len(publicSigningKeyBytes))
 	}
-	var psk *[PublicSigningKeySize]byte
+	var psk [PublicSigningKeySize]byte
 	copy(psk[:], publicSigningKeyBytes)
-	return psk, nil
+	return &psk, nil
 }
 
 // PublicSigningKeyFromEncodedString returns a PublicSigningKey derived from a base64 encoded string
