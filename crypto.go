@@ -41,6 +41,10 @@ const (
 	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
 	FILE_VERSION                 = 3
 	FILE_BLOCK_SIZE              = 65536
+	PublicSigningKeyLength       = 43
+	PrivateSigningKeyLength      = 86
+	PublicEncryptionKeyLength    = 43
+	PrivateEncryptionKeyLength   = 43
 )
 
 var (
