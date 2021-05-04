@@ -24,6 +24,10 @@ const (
 	ReadContentGroupCapability      = "READ_CONTENT"
 	ShareContentGroupCapability     = "SHARE_CONTENT"
 	ManageMembershipGroupCapability = "MANAGE_MEMBERSHIP"
+	PublicSigningKeySize            = 43
+	PrivateSigningKeySize           = 86
+	PublicEncryptionKeySize         = 43
+	PrivateEncryptionKeySize        = 43
 )
 
 var (
