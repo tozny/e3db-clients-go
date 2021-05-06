@@ -38,9 +38,12 @@ const (
 	// The UUIDv5 is derived from a fixed namespace UUIDv4
 	// "794253a4-310b-449d-9d8d-4575e8923f40" and a version string
 	// "TFSP1;ED25519;BLAKE2B"
-	ToznyFieldSignatureVersionV1 = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
-	FILE_VERSION                 = 3
-	FILE_BLOCK_SIZE              = 65536
+	ToznyFieldSignatureVersionV1         = "e7737e7c-1637-511e-8bab-93c4f3e26fd9" // UUIDv5 TFSP1;ED25519;BLAKE2B
+	FileVersion                          = 3
+	FileBlockSize                        = 65536
+	Base64EncodedPublicSigningKeyLength  = 43
+	Base64EncodedPrivateSigningKeyLength = 86
+	Base64EncodedSymmetricKeyLength      = 43
 )
 
 var (
@@ -640,7 +643,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	dkSymmetric := RandomSymmetricKey()
 	dk = dkSymmetric[:]
 	edk, edkN := SecretBoxEncryptToBase64(dk[:], ak)
-	headerText := fmt.Sprintf("%v.%s.%s.", FILE_VERSION, edk, edkN)
+	headerText := fmt.Sprintf("%v.%s.%s.", FileVersion, edk, edkN)
 	headerBytes := []byte(headerText)
 	hasher.Write(headerBytes)
 	// create and open encryptedFileName
@@ -679,7 +682,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	}
 	r := bufio.NewReader(readFile)
 	var nextBlock []byte
-	headBlock := make([]byte, FILE_BLOCK_SIZE)
+	headBlock := make([]byte, FileBlockSize)
 	m, err := r.Read(headBlock)
 	if err != nil {
 		return 0, "", err
@@ -687,7 +690,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	var block []byte
 	// encrypt each block of the file with the appropriate tag
 	for {
-		nextBlock = make([]byte, FILE_BLOCK_SIZE)
+		nextBlock = make([]byte, FileBlockSize)
 		n, err := r.Read(nextBlock)
 		var tag byte
 		if err != nil {
@@ -721,7 +724,7 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 // DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
 func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) error {
 	extraHeaderSize := secretstream.HeaderBytes
-	blockSize := secretstream.AdditionalBytes + FILE_BLOCK_SIZE
+	blockSize := secretstream.AdditionalBytes + FileBlockSize
 
 	readFile, err := os.Open(encryptedFileName)
 	if err != nil {
@@ -759,7 +762,7 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	headerString := string(readHeaderBlock)
 	s := strings.Split(headerString, ".")
 	version, err := strconv.Atoi(s[0])
-	if err != nil || version != FILE_VERSION {
+	if err != nil || version != FileVersion {
 		return err
 	}
 	edk := s[1]
