@@ -319,7 +319,7 @@ func TestWriteEncryptedFile(t *testing.T) {
 	}()
 	size := 0
 	for {
-		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FILE_BLOCK_SIZE)
+		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FileBlockSize)
 		n, err := plainFile.WriteString(randTxt)
 		if err != nil {
 			t.Fatalf("Could not write to plainFile: %+v", err)
@@ -512,7 +512,7 @@ func TestEncryptAndDecryptFileMultipleBlocks(t *testing.T) {
 	}()
 	size := 0
 	for {
-		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FILE_BLOCK_SIZE)
+		randTxt, _ := e3dbClients.GenerateRandomString(e3dbClients.FileBlockSize)
 		n, err := plainFile.WriteString(randTxt)
 		if err != nil {
 			t.Fatalf("Could not write to plainFile: %+v", err)
