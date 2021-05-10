@@ -41,24 +41,24 @@ func UploadFile(uploadReq UploadRequest) (int, error) {
 }
 
 // DownloadFile gets the file contents from the specified URL and streams the body into the specified file
-func DownloadFile(downloadReq DownloadRequest) (string, error) {
+func DownloadFile(downloadReq DownloadRequest) error {
 	file, err := os.Create(downloadReq.EncryptedFileName)
 	if err != nil {
-		return fmt.Sprintf("e3db-clients-go:DownloadFile: error creating file %s", downloadReq.EncryptedFileName), err
+		return err
 	}
 	defer file.Close()
 	resp, err := http.Get(downloadReq.URL)
 	if err != nil {
-		return "e3db-clients-go:DownloadFile: get failed", err
+		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Sprintf("e3db-clients-go:DownloadFile: status is %d", resp.StatusCode), nil
+		return fmt.Errorf("e3db-clients-go:DownloadFile: status is %d", resp.StatusCode)
 	}
 	// reads chunks from resp.Body, writes to the encrypted file, and then repeats until the end of resp.Body
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return fmt.Sprintf("e3db-clients-go:DownloadFile: error copying response to %s", downloadReq.EncryptedFileName), err
+		return err
 	}
-	return "", nil
+	return nil
 }
