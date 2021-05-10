@@ -734,13 +734,14 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 }
 
 // DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
-func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) (string, error) {
+// If a file called encryptedFileName exists in this directory, it will be overwritten by this method.
+func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) error {
 	extraHeaderSize := secretstream.HeaderBytes
 	blockSize := secretstream.AdditionalBytes + FileBlockSize
 
 	readFile, err := os.Open(encryptedFileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
@@ -749,7 +750,7 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	}()
 	readFileHeader, err := os.Open(encryptedFileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer func() {
 		if err = readFileHeader.Close(); err != nil {
@@ -757,9 +758,9 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 		}
 	}()
 
-	decryptedFile, err := ioutil.TempFile("", decryptedFileName)
+	decryptedFile, err := os.Create(decryptedFileName)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	r := bufio.NewReader(readFileHeader)
@@ -767,7 +768,7 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 
 	n, err := r.Read(readFirst)
 	if err != nil {
-		return "", err
+		return err
 	}
 	// read header and extract version, edk, edkN
 	readHeaderBlock := readFirst[0:n]
@@ -775,14 +776,14 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 	s := strings.Split(headerString, ".")
 	version, err := strconv.Atoi(s[0])
 	if err != nil || version != FileVersion {
-		return "", err
+		return err
 	}
 	edk := s[1]
 	edkN := s[2]
 	// get the dk
 	dkBytes, err := SecretBoxDecryptFromBase64(edk, edkN, ak)
 	if err != nil {
-		return "", err
+		return err
 	}
 	var dk []byte
 	dkSymm := MakeSymmetricKey(dkBytes)
@@ -794,12 +795,12 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 
 	_, err = readFile.Read(readHeader)
 	if err != nil {
-		return "", err
+		return err
 	}
 	// get the extra header and use it to make decryption stream
 	n, err = readFile.Read(readExtraHeader)
 	if err != nil {
-		return "", err
+		return err
 	}
 	decryptor, err := secretstream.NewDecryptor(readExtraHeader[0:n], dk)
 	// read each block and decrypt, writing the result to the decrypted file
@@ -807,16 +808,16 @@ func DecryptFile(encryptedFileName string, decryptedFileName string, ak Symmetri
 		n, err = readFile.Read(readCtxt)
 		msg, tag, err := decryptor.Pull(readCtxt[0:n], nil)
 		if err != nil {
-			return "", err
+			return err
 		}
 		_, err = decryptedFile.Write(msg)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if tag == secretstream.TagFinal {
 			break
 		}
 	}
 	decryptedFile.Close()
-	return decryptedFile.Name(), nil
+	return nil
 }
