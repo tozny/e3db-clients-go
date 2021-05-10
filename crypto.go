@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -636,8 +637,14 @@ func DeriveIdentityCredentials(username string, password string, realmName strin
 	return noteName, cryptoKeyPair, signingKeyPair, nil
 }
 
+type EncryptedFileInfo struct {
+	EncryptedFileName string
+	Size              int
+	Checksum          string
+}
+
 // EncryptFile encrypts the contents of the file plainFileName using the ak and stores the ciphertext in encryptedFileName
-func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey) (int, string, error) {
+func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey) (*EncryptedFileInfo, error) {
 	hasher := md5.New()
 	var dk []byte
 	dkSymmetric := RandomSymmetricKey()
@@ -647,18 +654,18 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	headerBytes := []byte(headerText)
 	hasher.Write(headerBytes)
 	// create and open encryptedFileName
-	tempFile, err := os.Create(encryptedFileName)
+	tempFile, err := ioutil.TempFile("", encryptedFileName)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	// write the header to the encrypted file
 	size, err := tempFile.Write(headerBytes)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	readFile, err := os.Open(plainFileName)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	defer func() {
 		if err = readFile.Close(); err != nil {
@@ -671,21 +678,21 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	header = nonce[:]
 	x, err := tempFile.Write(header)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	size += x
 	hasher.Write(header)
 	// create a new encryption stream
 	encryptor, err := secretstream.NewEncryptor(header, dk)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	r := bufio.NewReader(readFile)
 	var nextBlock []byte
 	headBlock := make([]byte, FileBlockSize)
 	m, err := r.Read(headBlock)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	var block []byte
 	// encrypt each block of the file with the appropriate tag
@@ -701,11 +708,11 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 		readBlock := headBlock[0:m]
 		block, err = encryptor.Push(readBlock, nil, tag)
 		if err != nil {
-			return 0, "", err
+			return nil, err
 		}
 		y, err := tempFile.Write(block)
 		if err != nil {
-			return 0, "", err
+			return nil, err
 		}
 		size += y
 		hasher.Write(block)
@@ -718,10 +725,16 @@ func EncryptFile(plainFileName string, encryptedFileName string, ak SymmetricKey
 	// calculate the checksum
 	md5 := hasher.Sum(nil)
 	checksum := base64.StdEncoding.EncodeToString(md5)
-	return size, checksum, nil
+	encryptionInfo := &EncryptedFileInfo{
+		EncryptedFileName: tempFile.Name(),
+		Size:              size,
+		Checksum:          checksum,
+	}
+	return encryptionInfo, nil
 }
 
 // DecryptFile decrypts the contents of the file encryptedFileName using the ak and stores the plaintext in decryptedFileName
+// If a file called encryptedFileName exists in this directory, it will be overwritten by this method.
 func DecryptFile(encryptedFileName string, decryptedFileName string, ak SymmetricKey) error {
 	extraHeaderSize := secretstream.HeaderBytes
 	blockSize := secretstream.AdditionalBytes + FileBlockSize
