@@ -393,9 +393,9 @@ func TestWriteEncryptedFile(t *testing.T) {
 		URL:               fileURL,
 		EncryptedFileName: downloadedFileName,
 	}
-	resp, err := file.DownloadFile(downloadRequest)
-	if err != nil || resp != "" {
-		t.Fatalf("download failed: err: %+v resp: %+v", err, resp)
+	err = file.DownloadFile(downloadRequest)
+	if err != nil {
+		t.Fatalf("download failed: err: %+v", err)
 	}
 	defer func() {
 		err := os.Remove(downloadedFileName)
