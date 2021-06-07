@@ -3202,8 +3202,7 @@ func TestUpdateRealmSetting(t *testing.T) {
 	if realmInfo.SecretsEnabled != true {
 		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.SecretsEnabled, realmInfo)
 	}
-	// I appended NONE to the list not replaced, if we replace i will need to update this
-	if realmInfo.MFAAvailable[1] != "None" {
+	if realmInfo.MFAAvailable[0] != "None" {
 		t.Fatalf("Error Expected %+v, Received %+v", settingRequest.MFAAvailable, realmInfo)
 	}
 
