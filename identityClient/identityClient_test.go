@@ -3107,3 +3107,210 @@ func TestSearchingIdentitiesWithClientIDsValidRealmReturnsSuccess(t *testing.T) 
 		t.Fatalf("Error Returning correct Identities, Expected %+v, Received %+v", requestParam.IdentityClientIDs, identities.SearchedIdentitiesInformation)
 	}
 }
+
+func TestUpdateRealmSetting(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create Realm
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	// defer delete
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	identityName := "Katie"
+	identityEmail := "katie@tozny.com"
+	identityFirstName := "Katie"
+	identityLastName := "Rock"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	// Register Identity to Realm
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: toznyCyclopsHost,
+	}
+	anonClient := New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	// Check Current Setttings
+	realmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if realmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	// Update Realm Setting
+	// Not updating EmailLookUps which should be true!
+	// Golang for empty bools default is false , so this should assure that doesnt happen
+	settingRequest := RealmSettingsUpdateRequest{
+		MFAAvailable:   []string{"None"},
+		SecretsEnabled: true,
+	}
+
+	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm settings for Realm %+v", err, realmName)
+	}
+	// Check current Settings
+	realmInfo, err = identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if realmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.SecretsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.SecretsEnabled, realmInfo)
+	}
+	// I appended NONE to the list not replaced, if we replace i will need to update this
+	if realmInfo.MFAAvailable[1] != "None" {
+		t.Fatalf("Error Expected %+v, Received %+v", settingRequest.MFAAvailable, realmInfo)
+	}
+
+	if realmInfo.EmailLookupsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
+	}
+}
+
+func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create Realm
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	// defer delete
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	identityName := "Katie"
+	identityEmail := "katie@tozny.com"
+	identityFirstName := "Katie"
+	identityLastName := "Rock"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	// Register Identity to Realm
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: toznyCyclopsHost,
+	}
+	anonClient := New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	// Check Current Setttings
+	realmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if realmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.EmailLookupsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
+	}
+	if realmInfo.MFAAvailable[0] != "GoogleAuthenticator" {
+		t.Fatalf("Error Expected Google Authenticator, Received %+v", realmInfo)
+	}
+	// Update Realm Setting with no new settings
+	// resulting in no changes
+	settingRequest := RealmSettingsUpdateRequest{}
+	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm settings for Realm %+v", err, realmName)
+	}
+	// Check current Settings should be the same as above
+	realmInfo, err = identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if realmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+	}
+	if realmInfo.EmailLookupsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
+	}
+	if realmInfo.MFAAvailable[0] != "GoogleAuthenticator" {
+		t.Fatalf("Error Expected Google Authenticator, Received %+v", realmInfo)
+	}
+}
