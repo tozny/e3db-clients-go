@@ -820,7 +820,7 @@ type SearchIdentitiesInformation struct {
 
 // RealmSettingsUpdateRequest wraps the setting available for realm admins to update
 type RealmSettingsUpdateRequest struct {
-	SecretsEnabled      bool     `json:"secrets_enabled"`
-	MFAAvailable        []string `json:"mfa_available"`
-	EmailLookupsEnabled bool     `sql:"email_lookups_enabled"`
+	SecretsEnabled      *bool     `json:"secrets_enabled,omitempty"`
+	MFAAvailable        *[]string `json:"mfa_available,omitempty"`
+	EmailLookupsEnabled *bool     `json:"email_lookups_enabled,omitempty"`
 }

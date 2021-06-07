@@ -3110,7 +3110,7 @@ func TestSearchingIdentitiesWithClientIDsValidRealmReturnsSuccess(t *testing.T) 
 
 func TestUpdateRealmSetting(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
@@ -3129,45 +3129,6 @@ func TestUpdateRealmSetting(t *testing.T) {
 	}
 	// defer delete
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	// Register Identity to Realm
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	_, err = anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
 	// Check Current Setttings
 	realmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
 	if err != nil {
@@ -3182,9 +3143,10 @@ func TestUpdateRealmSetting(t *testing.T) {
 	// Update Realm Setting
 	// Not updating EmailLookUps which should be true!
 	// Golang for empty bools default is false , so this should assure that doesnt happen
+	secretsEnabled := true
 	settingRequest := RealmSettingsUpdateRequest{
-		MFAAvailable:   []string{"None"},
-		SecretsEnabled: true,
+		MFAAvailable:   &([]string{"None"}),
+		SecretsEnabled: &(secretsEnabled),
 	}
 
 	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, settingRequest)
@@ -3213,7 +3175,7 @@ func TestUpdateRealmSetting(t *testing.T) {
 
 func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
@@ -3232,45 +3194,6 @@ func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 	}
 	// defer delete
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
-	accountToken := createAccountResponse.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
-	}
-	identityName := "Katie"
-	identityEmail := "katie@tozny.com"
-	identityFirstName := "Katie"
-	identityLastName := "Rock"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	// Register Identity to Realm
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realm.Name,
-		Identity: Identity{
-			Name:        identityName,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-			Email:       identityEmail,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
-	}
-	anonClient := New(anonConfig)
-	_, err = anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
 	// Check Current Setttings
 	realmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
 	if err != nil {
