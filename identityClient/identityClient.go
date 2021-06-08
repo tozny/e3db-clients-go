@@ -949,7 +949,7 @@ func New(config e3dbClients.ClientConfig) E3dbIdentityClient {
 
 // RealmSettingsUpdate updates realm settings available for realm admins to update
 func (c *E3dbIdentityClient) RealmSettingsUpdate(ctx context.Context, realmName string, params RealmSettingsUpdateRequest) error {
-	path := c.Host + identityServiceBasePath + "/realm/info/" + realmName
+	path := c.Host + identityServiceBasePath + "/admin/realm/info/" + realmName
 	req, err := e3dbClients.CreateRequest(http.MethodPatch, path, params)
 	if err != nil {
 		return err
