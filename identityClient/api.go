@@ -1,8 +1,9 @@
 package identityClient
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -68,6 +69,8 @@ type PrivateRealmInfo struct {
 	BrokerIdentityToznyID uuid.UUID `json:"broker_id,omitempty"`
 	Domain                string    `json:"domain"`
 	SecretsEnabled        bool      `json:"secrets_enabled"`
+	MFAAvailable          []string  `json:"mfa_available"`
+	EmailLookupsEnabled   bool      `json:"email_lookups_enabled"`
 }
 
 // Sovereign represents the top level user of a realm
@@ -813,4 +816,11 @@ type SearchIdentitiesInformation struct {
 	RealmEmail    string    `json:"realm_email"`
 	UserID        string    `json:"user_id"`
 	ClientID      uuid.UUID `json:"client_id"`
+}
+
+// RealmSettingsUpdateRequest wraps the setting available for realm admins to update
+type RealmSettingsUpdateRequest struct {
+	SecretsEnabled      *bool     `json:"secrets_enabled,omitempty"`
+	MFAAvailable        *[]string `json:"mfa_available,omitempty"`
+	EmailLookupsEnabled *bool     `json:"email_lookups_enabled,omitempty"`
 }
