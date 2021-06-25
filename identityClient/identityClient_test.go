@@ -80,7 +80,7 @@ func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestCreateRealmCreatesRealmWithUserDefinedName"
+	realmName := uniqueString("TestCreateRealmCreatesRealmWithUserDefinedName")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -104,7 +104,7 @@ func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestDescribeRealmReturnsDetailsOfCreatedRealm"
+	realmName := uniqueString("TestDescribeRealmReturnsDetailsOfCreatedRealm")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -132,7 +132,7 @@ func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestDescribeRealmReturnsDetailsOfCreatedRealm"
+	realmName := uniqueString("TestDescribeRealmReturnsDetailsOfCreatedRealm")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -142,6 +142,7 @@ func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
 	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.Name)
 	if err != nil {
 		t.Fatalf("error %s describing realm %+v using %+v", err, realm, identityServiceClient)
@@ -172,7 +173,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestRegisterIdentityWithCreatedRealm"
+	realmName := uniqueString("TestRegisterIdentityWithCreatedRealm")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -232,7 +233,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestIdentityLoginWithRegisteredIdentity"
+	realmName := uniqueString("TestIdentityLoginWithRegisteredIdentity")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -295,7 +296,7 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestInternalIdentityLoginWithAuthenticatedRealmIdentity"
+	realmName := uniqueString("TestInternalIdentityLoginWithAuthenticatedRealmIdentity")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -378,7 +379,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestInternalLDAPCrud"
+	realmName := uniqueString("TestInternalLDAPCrud")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -526,7 +527,7 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 	}
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := "TestRegisterRealmBrokerIdentityWithCreatedRealm"
+	realmName := uniqueString("TestRegisterRealmBrokerIdentityWithCreatedRealm")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
