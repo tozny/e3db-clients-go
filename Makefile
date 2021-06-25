@@ -55,6 +55,10 @@ it : lint
 test-identity:
 	go test  -v  identityClient/identityClient_test.go identityClient/identityClient.go identityClient/api.go 
 
+# Run Internal Identity Integration Tests
+test-intenal-identity:
+	go test  -v  identityClient/identityClient_internal_test.go identityClient/identityClient.go identityClient/api.go 
+
 # Run all Storage Integration tests
 test-storage:
 	go test -count=1 -v storageClient/storageClient_test.go
