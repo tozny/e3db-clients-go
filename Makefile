@@ -62,3 +62,6 @@ test-intenal-identity:
 # Run all Storage Integration tests
 test-storage:
 	go test -count=1 -v storageClient/storageClient_test.go
+# Run all Account-V2 Integration tests
+test-account-v2:
+	go test -count=1 -v accountClient/accountClientV2_test.go

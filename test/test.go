@@ -100,6 +100,87 @@ func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, a
 	return MakeE3DBAccountWithEmail(t, accounter, accountTag, fmt.Sprintf("test+%s@example.com", accountTag), authNHost)
 }
 
+// CreateE3DBAccountWithEmail attempts to create a valid e3db account returning the root client config for the created account and error (if any).
+func CreateE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccountClient, accountTag string, email string, authNHost string) (e3dbClients.ClientConfig, *accountClient.CreateAccountResponse, error) {
+	var accountClientConfig = e3dbClients.ClientConfig{
+		Host:      accounter.Host,
+		AuthNHost: authNHost,
+	}
+	var accountResponse *accountClient.CreateAccountResponse
+	// Generate info for creating a new account
+	const saltSize = 16
+	saltSeed := [saltSize]byte{}
+	_, err := rand.Read(saltSeed[:])
+	if err != nil {
+		t.Logf("Failed creating encryption key pair salt: %s", err)
+		return accountClientConfig, accountResponse, err
+	}
+	salt := base64.RawURLEncoding.EncodeToString(saltSeed[:])
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Logf("Failed generating encryption key pair %s", err)
+		return accountClientConfig, accountResponse, err
+	}
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Logf("Failed generating signing key pair %s", err)
+		return accountClientConfig, accountResponse, err
+	}
+	signingKey := signingKeys.Public.Material
+	backupSigningKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Logf("Failed generating backup signing key pair %s", err)
+		return accountClientConfig, accountResponse, err
+	}
+	backupSigningKey := backupSigningKeys.Public.Material
+	createAccountParams := accountClient.CreateAccountRequest{
+		Profile: accountClient.Profile{
+			Name:               accountTag,
+			Email:              email,
+			AuthenticationSalt: salt,
+			EncodingSalt:       salt,
+			SigningKey: accountClient.EncryptionKey{
+				Ed25519: signingKey,
+			},
+			PaperAuthenticationSalt: salt,
+			PaperEncodingSalt:       salt,
+			PaperSigningKey: accountClient.EncryptionKey{
+				Ed25519: backupSigningKey,
+			},
+		},
+		Account: accountClient.Account{
+			Company: "ACME Testing",
+			Plan:    "free0",
+			PublicKey: accountClient.ClientKey{
+				Curve25519: encryptionKeyPair.Public.Material,
+			},
+			SigningKey: accountClient.EncryptionKey{
+				Ed25519: signingKey,
+			},
+		},
+	}
+	// Create an account and client for that account using the specified params
+	ctx := context.Background()
+	accountResponse, err = accounter.CreateAccount(ctx, createAccountParams)
+	if err != nil {
+		t.Logf("Error %s creating account with params %+v\n", err, createAccountParams)
+		return accountClientConfig, accountResponse, err
+	}
+	accountClientConfig.ClientID = accountResponse.Account.Client.ClientID
+	accountClientConfig.APIKey = accountResponse.Account.Client.APIKeyID
+	accountClientConfig.APISecret = accountResponse.Account.Client.APISecretKey
+	accountClientConfig.SigningKeys = signingKeys
+	accountClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
+		Private: e3dbClients.Key{
+			Material: encryptionKeyPair.Private.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+		Public: e3dbClients.Key{
+			Material: encryptionKeyPair.Public.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+	}
+	return accountClientConfig, accountResponse, err
+}
+
 // RegisterClient is a helper method to generate a client with the client service,
 // returns a registration response and a config for the created client without the Host field populated.
 func RegisterClient(ctx context.Context, clientServiceHost string, registrationToken string, clientName string) (*clientServiceClient.ClientRegisterResponse, e3dbClients.ClientConfig, error) {

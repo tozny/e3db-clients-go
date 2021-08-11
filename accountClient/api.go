@@ -1,8 +1,6 @@
 package accountClient
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -218,17 +216,7 @@ type InternalSigClientInfoResponse struct {
 	SigningKey string    `json:"signing_key"`
 }
 
-// InitUpdateEmailRequest wraps values needed to issue a request to start an email update
-type InitiateUpdateEmailRequest struct {
-	AccountID    uuid.UUID `json:"account_id"`
-	CurrentEmail string    `json:"current_email"`
-	NewEmail     string    `json:"new_email"`
-}
-
-// InitUpdateEmailResponse wraps data returned from /profile/email endpoint
-type InitiateUpdateEmailResponse struct {
-	AccountID    uuid.UUID `json:"account_id"`
-	CurrentEmail string    `json:"current_email"`
-	NewEmail     string    `json:"new_email"`
-	CreatedAt    time.Time `json:"created_at"`
+// DeleteAccountRequestData wraps the values needed for account deletion
+type DeleteAccountRequestData struct {
+	AccountID uuid.UUID
 }
