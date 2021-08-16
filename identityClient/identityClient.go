@@ -150,6 +150,18 @@ func (c *E3dbIdentityClient) DescribeRealmRole(ctx context.Context, params Descr
 	return role, err
 }
 
+// UpdateRealmRole updates the specified realm role, returning error (if any).
+func (c *E3dbIdentityClient) UpdateRealmRole(ctx context.Context, params UpdateRealmRoleRequest) (*Role, error) {
+	var role *Role
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + roleResourceName + "/" + params.RoleID
+	req, err := e3dbClients.CreateRequest("PUT", path, params.Role)
+	if err != nil {
+		return role, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &role)
+	return role, err
+}
+
 // CreateRealmRole creates a realm role using the specified parameters,
 // returning the created realm role or error (if any).
 func (c *E3dbIdentityClient) CreateRealmRole(ctx context.Context, params CreateRealmRoleRequest) (*Role, error) {
