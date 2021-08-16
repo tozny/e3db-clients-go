@@ -52,6 +52,17 @@ func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID s
 	return result, err
 }
 
+// InternalAccountDelete deletes the account info for an accountID,
+// requires the bootstrap client.
+func (c *E3dbAccountClient) InternalAccountDelete(ctx context.Context, accountID string) error {
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/" + accountID
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, 0)
+	}
+	return e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
+}
+
 // InternalGetClientAccount attempts to get the account id and other account information for the specified client id
 func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, error) {
 	var result *InternalGetClientAccountResponse

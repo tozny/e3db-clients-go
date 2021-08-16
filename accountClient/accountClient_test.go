@@ -219,3 +219,17 @@ func TestInitEmailUpdateWithTwoReqsFails(t *testing.T) {
 		t.Fatalf("A second email update was initiated with same AccountID\n Email Req: (%+v) \n error %+v", newEmailReq, err)
 	}
 }
+func TestInternalAccountDeleteReturnsSuccess(t *testing.T) {
+	// Create internal account client
+	accounter := accountClient.New(ValidClientConfig)
+	accountTag := uuid.New().String()
+	_, response, err := test.MakeE3DBAccount(t, &accounter, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Failure Creating New Account\n %+v", err)
+	}
+	// Delete Account
+	err = accounter.InternalAccountDelete(testCtx, response.Profile.AccountID)
+	if err != nil {
+		t.Fatalf("Failure Removing Account\n: %+v", err)
+	}
+}
