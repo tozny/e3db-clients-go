@@ -16,9 +16,13 @@ const (
 
 // E3dbAccountClient implements an http client for communication with an e3db Account service.
 type E3dbAccountClientV2 struct {
-	APIKey    string
-	APISecret string
-	Host      string
+	APIKey         string
+	APISecret      string
+	Host           string
+	ClientID       string
+	httpClient     *http.Client
+	EncryptionKeys e3dbClients.EncryptionKeys
+	SigningKeys    e3dbClients.SigningKeys
 	*authClient.E3dbAuthClient
 	requester request.Requester
 }
@@ -31,7 +35,7 @@ func (c *E3dbAccountClientV2) ServiceCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
+	err = e3dbClients.MakePublicCall(ctx, c.requester, req, nil)
 	return err
 }
 
@@ -43,30 +47,30 @@ func (c *E3dbAccountClientV2) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
+	err = e3dbClients.MakePublicCall(ctx, c.requester, req, nil)
 	return err
 }
 
-// InitEmailUpdate attempts to start the email update process
-func (c *E3dbAccountClientV2) InitiateEmailUpdate(ctx context.Context, params InitiateUpdateEmailRequest) (*InitiateUpdateEmailResponse, error) {
-	var result *InitiateUpdateEmailResponse
-	path := c.Host + "/" + AccountServiceV2BasePath + "/profile/email"
-	request, err := e3dbClients.CreateRequest("POST", path, params)
+// DeleteAccount deletes all the resources for an account, this endpoint has queen authentication and can be disabled
+func (c *E3dbAccountClientV2) DeleteAccount(ctx context.Context, params DeleteAccountRequestData) error {
+	path := c.Host + "/" + AccountServiceV2BasePath + "/" + params.AccountID.String()
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
-		return result, err
+		return err
 	}
-	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), request, &result)
-	return result, err
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 }
 
 // NewV2 returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func NewV2(config e3dbClients.ClientConfig) E3dbAccountClientV2 {
 	authService := authClient.New(config)
 	return E3dbAccountClientV2{
-		config.APIKey,
-		config.APISecret,
-		config.Host,
-		&authService,
-		request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
+		Host:           config.Host,
+		SigningKeys:    config.SigningKeys,
+		EncryptionKeys: config.EncryptionKeys,
+		ClientID:       config.ClientID,
+		httpClient:     &http.Client{},
+		E3dbAuthClient: &authService,
+		requester:      request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }

@@ -160,65 +160,6 @@ func TestInternalGetClientAccountReturnsClientsAccountId(t *testing.T) {
 	}
 }
 
-func TestInitEmailUpdateWithValidAccountSucceeds(t *testing.T) {
-	// make internal account client (v1)
-	registrationClient := accountClient.New(ValidClientConfig)
-	_, resp, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), e3dbAuthHost)
-	if err != nil {
-		t.Fatalf("Could not register account %s\n", err)
-	}
-	// make internal account client (v2)
-	updateClient := accountClient.NewV2(ValidClientConfigV2)
-	accountID, err := uuid.Parse(resp.Profile.AccountID)
-	if err != nil {
-		t.Fatalf("Could not parse AccountID %+v\n AccountID: %+v", err, resp.Profile.AccountID)
-	}
-	newEmailReq := accountClient.InitiateUpdateEmailRequest{
-		AccountID:    accountID,
-		CurrentEmail: resp.Profile.Email,
-		NewEmail:     "test" + uuid.New().String() + "@example.com",
-	}
-	// Make request to post / initiate the  email update
-	response, err := updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
-	if err != nil {
-		t.Fatalf("Failed to initiate email update \n Email Req: (%+v) \n error %+v", newEmailReq, err)
-	}
-	if response.CurrentEmail != newEmailReq.CurrentEmail {
-		t.Fatalf("CurrentEmail (%+v) passed in does not match CurrentEmail in response (%+v) for request (%+v)", response.CurrentEmail, newEmailReq.CurrentEmail, newEmailReq)
-	}
-	if response.NewEmail != newEmailReq.NewEmail {
-		t.Fatalf("NewEamil (%+v) passed in does not match NewEmail in response (%+v) for request (%+v)", response.NewEmail, newEmailReq.NewEmail, newEmailReq)
-	}
-}
-
-func TestInitEmailUpdateWithTwoReqsFails(t *testing.T) {
-	registrationClient := accountClient.New(ValidClientConfig)
-	_, resp, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), e3dbAuthHost)
-	if err != nil {
-		t.Fatalf("Could not register account %s\n", err)
-	}
-	updateClient := accountClient.NewV2(ValidClientConfigV2)
-	accountID, err := uuid.Parse(resp.Profile.AccountID)
-	if err != nil {
-		t.Fatalf("Could not parse AccountID from response %+v\nAccountID: %+v", err, resp.Profile.AccountID)
-	}
-	newEmailReq := accountClient.InitiateUpdateEmailRequest{
-		AccountID:    accountID,
-		CurrentEmail: resp.Profile.Email,
-		NewEmail:     "test" + uuid.New().String() + "@example.com",
-	}
-	// Make request to post / initiate the email update & verify it's successful
-	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
-	if err != nil {
-		t.Fatalf("Failed to initiate email update \n Email Req: (%+v) \n error %+v", newEmailReq, err)
-	}
-	// Make request to post / initiate the same email update again & verify it fails
-	_, err = updateClient.InitiateEmailUpdate(testCtx, newEmailReq)
-	t.Logf("Error: %+v", err)
-	if err == nil {
-		t.Fatalf("A second email update was initiated with same AccountID\n Email Req: (%+v) \n error %+v", newEmailReq, err)
-	}
-}
 func TestInternalAccountDeleteReturnsSuccess(t *testing.T) {
 	// Create internal account client
 	accounter := accountClient.New(ValidClientConfig)
