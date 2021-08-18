@@ -76,7 +76,7 @@ func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, para
 // Register registers a client.
 func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
 	var result *ClientRegisterResponse
-	path := c.Host + "/" + "v1/account/e3db/clients/register"
+	path := c.Host + "/" + ClientServiceBasePath
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err

@@ -1,6 +1,7 @@
 module github.com/tozny/e3db-clients-go
 
 require (
+	github.com/gbrlsnchs/jwt/v2 v2.0.0
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/schema v1.2.0
 	github.com/tozny/utils-go v0.0.35
