@@ -687,6 +687,13 @@ type DeleteRealmRoleRequest struct {
 	RoleID    string
 }
 
+// UpdateRealmRoleRequest wraps parameters for updating a realm role
+type UpdateRealmRoleRequest struct {
+	RealmName string
+	RoleID    string
+	Role      Role `json:"role"`
+}
+
 // DescribeRealmRoleRequest wraps parameters for describing a realm role
 type DescribeRealmRoleRequest = DeleteRealmRoleRequest
 
