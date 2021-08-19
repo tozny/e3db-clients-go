@@ -85,6 +85,18 @@ func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegiste
 	return result, err
 }
 
+// InternalRegister registers a client returning details about the registered client and error (if any).
+func (c *ClientServiceClient) InternalRegister(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
+	var result *ClientRegisterResponse
+	path := c.Host + "/" + ClientServiceBasePath
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakePublicCall(ctx, c.requester, req, &result)
+	return result, err
+}
+
 // BackfillClientSigningKeys assigns signing keys to clients with none set
 func (c *ClientServiceClient) BackfillClientSigningKeys(ctx context.Context, params BackfillClientSigningKeysRequest) (*Client, error) {
 	var result *Client
