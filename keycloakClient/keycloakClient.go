@@ -181,8 +181,8 @@ func (c *Client) post(accessToken string, data interface{}, url string, realm Re
 		return "", e3dbClients.NewError(err.Error(), path, response.StatusCode)
 	}
 	location := response.Header.Get("Location")
-	// Might need to change this to account for different content types
 	return location, nil
+
 }
 
 func (c *Client) CreateRealm(accessToken string, realm RealmRepresentation) (string, error) {
