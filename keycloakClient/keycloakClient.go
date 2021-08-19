@@ -1,6 +1,8 @@
 package keycloakClient
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,10 +11,13 @@ import (
 	"sync"
 	"time"
 
+	jwt "github.com/gbrlsnchs/jwt/v2"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 )
 
-const ()
+const (
+	realmRootPath = "/auth/admin/realms"
+)
 
 var (
 	RefreshExhaustedError = errors.New("refresh token exhausted")
@@ -117,6 +122,73 @@ func (c *Client) doTokenRequest(realm string, body string) (*TokenInfo, error) {
 	return tokenInfo, nil
 }
 
+func setAuthorizationAndHostHeaders(req *http.Request, accessToken string) (*http.Request, error) {
+	host, err := extractHostFromToken(accessToken)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Add("X-Forwarded-Proto", "https")
+	// is this always the content type? fails with 415 if content type isn't specified
+	req.Header.Add("Content-Type", "application/json")
+	req.Host = host
+	return req, nil
+}
+
+func extractHostFromToken(token string) (string, error) {
+	issuer, err := extractIssuerFromToken(token)
+	if err != nil {
+		return "", err
+	}
+	urlIssuer, err := url.Parse(issuer)
+	if err != nil {
+		return "", fmt.Errorf("Could not parse token issuer URL %+v with err: %+v", issuer, err)
+	}
+
+	return urlIssuer.Host, nil
+}
+
+func extractIssuerFromToken(token string) (string, error) {
+	payload, _, err := jwt.Parse(token)
+	if err != nil {
+		return "", fmt.Errorf("Could not parse token %s with error: %+v", token, err)
+	}
+	var jot Token
+	err = jwt.Unmarshal(payload, &jot)
+	if err != nil {
+		return "", fmt.Errorf("Could not unmarshal token with payload %+v with error: %+v", payload, err)
+	}
+	return jot.Issuer, nil
+}
+
+func (c *Client) post(accessToken string, data interface{}, url string, realm RealmRepresentation) (string, error) {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(realm)
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("POST", path, buf)
+	if err != nil {
+		return "", err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return "", err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return "", e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	location := response.Header.Get("Location")
+	return location, nil
+
+}
+
+func (c *Client) CreateRealm(accessToken string, realm RealmRepresentation) (string, error) {
+	return c.post(accessToken, nil, realmRootPath, realm)
+}
+
 // New returns a keycloak client
 func New(config Config) (*Client, error) {
 	urlToken, err := url.Parse(config.AddrTokenProvider)
@@ -136,4 +208,22 @@ func New(config Config) (*Client, error) {
 		httpClient:       &httpClient,
 		tokens:           map[string]*TokenInfo{},
 	}, nil
+}
+
+type Token struct {
+	hdr            *header
+	Issuer         string `json:"iss,omitempty"`
+	Subject        string `json:"sub,omitempty"`
+	ExpirationTime int64  `json:"exp,omitempty"`
+	NotBefore      int64  `json:"nbf,omitempty"`
+	IssuedAt       int64  `json:"iat,omitempty"`
+	ID             string `json:"jti,omitempty"`
+	Username       string `json:"preferred_username,omitempty"`
+}
+
+type header struct {
+	Algorithm   string `json:"alg,omitempty"`
+	KeyID       string `json:"kid,omitempty"`
+	Type        string `json:"typ,omitempty"`
+	ContentType string `json:"cty,omitempty"`
 }

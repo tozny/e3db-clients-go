@@ -65,3 +65,7 @@ test-storage:
 # Run all Account-V2 Integration tests
 test-account-v2:
 	go test -count=1 -v accountClient/accountClientV2_test.go
+
+# Run all KeycloakClient Integration tests
+test-keycloak:
+	go test -count=1 -v KeycloakClient/keycloakClient_test.go KeycloakClient/KeycloakClient.go KeycloakClient/api.go 
