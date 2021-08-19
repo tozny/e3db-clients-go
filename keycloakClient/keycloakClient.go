@@ -161,10 +161,10 @@ func extractIssuerFromToken(token string) (string, error) {
 	return jot.Issuer, nil
 }
 
-func (c *Client) post(accessToken string, data interface{}, url string, realm RealmRepresentation) (string, error) {
+func (c *Client) post(accessToken string, data interface{}, url string) (string, error) {
 	path := c.apiURL.String() + url
 	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(realm)
+	err := json.NewEncoder(buf).Encode(data)
 	if err != nil {
 		return "", err
 	}
@@ -184,9 +184,85 @@ func (c *Client) post(accessToken string, data interface{}, url string, realm Re
 	return location, nil
 
 }
+func (c *Client) delete(accessToken string, data interface{}, url string) error {
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
 
+}
+func (c *Client) get(accessToken string, data interface{}, url string) error {
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, data)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
+
+}
+func (c *Client) put(accessToken string, data interface{}, url string) error {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("PUT", path, buf)
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
+
+}
+
+// CreateRealm creates the realm from its RealmRepresentation, returning error (if any).
 func (c *Client) CreateRealm(accessToken string, realm RealmRepresentation) (string, error) {
-	return c.post(accessToken, nil, realmRootPath, realm)
+	return c.post(accessToken, realm, realmRootPath)
+}
+
+// UpdateRealm update the top lovel information of the realm. Any user, role or client information
+// from the realm representation will be ignored.
+func (c *Client) UpdateRealm(accessToken string, realmName string, realm RealmRepresentation) error {
+	return c.put(accessToken, realm, fmt.Sprintf("%s/%s", realmRootPath, realmName))
+}
+
+// DeleteRealm proxies the request for realm deletion, returning error (if any)
+func (c *Client) DeleteRealm(accessToken string, realmName string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s", realmRootPath, realmName))
+}
+
+// GetRealm get the top level represention of the realm. Nested information like users are
+// not included.
+func (c *Client) GetRealm(accessToken string, realmName string) (RealmRepresentation, error) {
+	var response = RealmRepresentation{}
+	var err = c.get(accessToken, &response, fmt.Sprintf("%s/%s", realmRootPath, realmName))
+	return response, err
 }
 
 // New returns a keycloak client
