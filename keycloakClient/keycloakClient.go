@@ -16,17 +16,24 @@ import (
 )
 
 const (
-	realmRootPath            = "/auth/admin/realms"
-	userExtensionPath        = "/auth/realms"
-	clientResourceName       = "clients"
-	roleResourceName         = "roles"
-	roleByIDResourceName     = "roles-by-id"
-	groupResourceName        = "groups"
-	roleMappingResourceName  = "role-mappings"
-	realmResourceName        = "realm"
-	adminResourceName        = "admin"
-	userResourceName         = "users"
-	defaultGroupResourceName = "default-groups"
+	realmRootPath                   = "/auth/admin/realms"
+	userExtensionPath               = "/auth/realms"
+	clientResourceName              = "clients"
+	roleResourceName                = "roles"
+	roleByIDResourceName            = "roles-by-id"
+	groupResourceName               = "groups"
+	roleMappingResourceName         = "role-mappings"
+	realmResourceName               = "realm"
+	adminResourceName               = "admin"
+	userResourceName                = "users"
+	defaultGroupResourceName        = "default-groups"
+	clientSecretResourceName        = "client-secret"
+	protocolMapperResourceName      = "protocol-mappers"
+	modelsResourceName              = "models"
+	protocolResourceName            = "protocol"
+	optionalClientScopeResourceName = "optional-client-scopes"
+	defaultClientScopeResourceName  = "default-client-scopes"
+	defaultResourceName             = "default"
 )
 
 var (
@@ -396,7 +403,7 @@ func (c *Client) GetClients(accessToken string, realmName string, paramKV ...str
 	if len(paramKV) > 0 {
 		urlParams := req.URL.Query()
 		// Sketchy
-		for i := 0; i < len(paramKV)%2; i += 2 {
+		for i := 0; i < len(paramKV)/2; i += 2 {
 			urlParams.Set(paramKV[i], paramKV[i+1])
 		}
 		req.URL.RawQuery = urlParams.Encode()
@@ -702,4 +709,182 @@ func (c *Client) GetGroupsOfUser(accessToken string, realmName, userID string) (
 	var resp = []GroupRepresentation{}
 	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, groupResourceName))
 	return resp, err
+}
+
+// GetUsers returns a list of users, filtered according to the query parameters.
+// Parameters: email, first (paging offset, int), firstName, lastName, username,
+// max (maximum result size, default = 100),
+// search (string contained in username, firstname, lastname or email)
+func (c *Client) GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (Users, error) {
+	var err error
+	var resp Users
+	if len(paramKV)%2 != 0 {
+		return nil, fmt.Errorf("the number of key/val parameters should be even")
+	}
+	url := fmt.Sprintf("%s/%s/%s", realmRootPath, targetRealmName, userResourceName)
+	path := c.apiURL.String() + url
+
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return resp, err
+	}
+	if len(paramKV) > 0 {
+		urlParams := req.URL.Query()
+		// Sketchy
+		for i := 0; i < len(paramKV)/2; i += 2 {
+			urlParams.Set(paramKV[i], paramKV[i+1])
+		}
+		req.URL.RawQuery = urlParams.Encode()
+	}
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+
+// CreateUser creates the user from its UserRepresentation. The username must be unique.
+func (c *Client) CreateUser(accessToken string, reqRealmName, targetRealmName string, user UserRepresentation) (string, error) {
+	return c.post(accessToken, user, fmt.Sprintf("%s/%s/%s", realmRootPath, targetRealmName, userResourceName))
+
+}
+
+// GetUser get the represention of the user.
+func (c *Client) GetUser(accessToken string, realmName, userID string) (UserRepresentation, error) {
+	var resp = UserRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID))
+	return resp, err
+}
+
+// JoinGroup adds a user to a group by ID.
+func (c *Client) JoinGroup(accessToken string, realmName, userID, groupID string) error {
+	return c.put(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, groupResourceName, groupID))
+}
+
+// LeaveGroup removes a user from a group by ID.
+func (c *Client) LeaveGroup(accessToken string, realmName, userID, groupID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, groupResourceName, groupID))
+}
+
+// DeleteUser deletes the user.
+func (c *Client) DeleteUser(accessToken string, realmName, userID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID))
+}
+
+// GetSecret get the client secret. idClient is the id of client (not client-id).
+func (c *Client) GetSecret(accessToken string, realmName, idClient string) (CredentialRepresentation, error) {
+	var resp = CredentialRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, idClient, clientSecretResourceName))
+	return resp, err
+}
+
+// CreateProtocolMapper creates a new protocol mapper for the client
+func (c *Client) CreateProtocolMapper(accessToken string, realmName string, clientId string, protocolMapper ProtocolMapperRepresentation) (string, error) {
+	return c.post(accessToken, protocolMapper, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName))
+}
+
+// DeleteProtocolMapper deletes a protocol mapper from the client
+func (c *Client) DeleteProtocolMapper(accessToken string, realmName string, clientId string, protocolMapperID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName, protocolMapperID))
+}
+
+// GetProtocolMappers gets all mappers of a given protocol for the client
+func (c *Client) GetProtocolMappers(accessToken string, realmName string, clientId string, protocol string) ([]ProtocolMapperRepresentation, error) {
+	var resp = []ProtocolMapperRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, protocolResourceName, protocol))
+	return resp, err
+}
+
+// GetProtocolMapper gets a specific protocol mapper’s representation
+func (c *Client) GetProtocolMapper(accessToken string, realmName string, clientId string, protocolmapperID string) (ProtocolMapperRepresentation, error) {
+	var resp = ProtocolMapperRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName, protocolmapperID))
+	return resp, err
+}
+
+// GetRealmDefaultClientScopes gets realm configuration for scopes which are added as client default scopes when a new client is created
+// GET /auth/admin/realms/demorealm/default-default-client-scopes HTTP/1.1
+// [
+//     {
+//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//         "name":"profile"
+//     },
+//     {
+//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//         "name":"email"
+//     },
+//     {
+//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//         "name":"web-origins"
+//     }
+// ]
+func (c *Client) GetRealmDefaultClientScopes(accessToken string, realmName string) ([]ClientScopeRepresentation, error) {
+	var resp = []ClientScopeRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s-%s", realmRootPath, realmName, defaultResourceName, defaultClientScopeResourceName))
+	return resp, err
+}
+
+// RemoveRealmDefaultClientScope changes the default client scopes for a realm to add the scope represented by scopeId
+// DELETE /auth/admin/realms/demorealm/default-default-client-scopes/2c683450-ae2d-48ef-ace3-bc9101b2c4d1 HTTP/1.1
+// 204
+func (c *Client) RemoveRealmDefaultClientScope(accessToken string, realmName, scope string) error {
+	err := c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s-%s/%s", realmRootPath, realmName, defaultResourceName, defaultClientScopeResourceName, scope))
+	return err
+}
+
+// GetDefaultClientScopes gets realm configuration for scopes which are added as client default scopes when a new client is created
+// GET /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/default-client-scopes HTTP/1.1
+// [
+//     {
+//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//         "name":"profile"
+//     },
+//     {
+//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//         "name":"email"
+//     },
+//     {
+//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//         "name":"web-origins"
+//     }
+// ]
+func (c *Client) GetDefaultClientScopes(accessToken string, realmName, client string) ([]ClientScopeRepresentation, error) {
+	var resp = []ClientScopeRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, client, defaultClientScopeResourceName))
+	return resp, err
+}
+
+// RemoveDefaultClientScope changes the default client scopes for a realm to add the scope represented by scopeId
+// DELETE /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/default-client-scopes/7efa02d9-0a1e-496d-abf7-d9edb80e47b3 HTTP/1.1
+// 204
+func (c *Client) RemoveDefaultClientScope(accessToken string, realmName, client, scope string) error {
+	err := c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, client, defaultClientScopeResourceName, scope))
+	return err
+}
+
+// GetOptionalClientScopes gets realm configuration for scopes which are added as client optional scopes when a new client is created
+// GET /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/optional-client-scopes HTTP/1.1
+// [
+//     {
+//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//         "name":"profile"
+//     },
+//     {
+//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//         "name":"email"
+//     },
+//     {
+//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//         "name":"web-origins"
+//     }
+// ]
+func (c *Client) GetOptionalClientScopes(accessToken string, realmName, client string) ([]ClientScopeRepresentation, error) {
+	var resp = []ClientScopeRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, client, optionalClientScopeResourceName))
+	return resp, err
+}
+
+// RemoveOptionalClientScope changes the optional client scopes for a realm to add the scope represented by scopeId
+// DELETE /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/optional-client-scopes/7efa02d9-0a1e-496d-abf7-d9edb80e47b3 HTTP/1.1
+// 204
+func (c *Client) RemoveOptionalClientScope(accessToken string, realmName, client, scope string) error {
+	err := c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, client, optionalClientScopeResourceName, scope))
+	return err
 }

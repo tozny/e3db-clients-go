@@ -460,3 +460,15 @@ type UserDetailsRepresentation struct {
 	Groups         *[]GroupRepresentation  `json:"groups,omitempty"`
 	Attributes     *map[string][]string    `json:"attributes,omitempty"`
 }
+
+type Users []UserRepresentation
+
+// ClientScopeRepresentation wraps keycloak client scope data
+type ClientScopeRepresentation struct {
+	Id              *string                         `json:"id,omitempty"`
+	Name            *string                         `json:"name,omitempty"`
+	Description     *string                         `json:"description,omitempty"`
+	Protocol        *string                         `json:"protocol,omitempty"`
+	ProtocolMappers *[]ProtocolMapperRepresentation `json:"protocolMappers,omitempty"`
+	Attributes      *map[string][]string            `json:"attributes,omitempty"`
+}
