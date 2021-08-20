@@ -407,3 +407,56 @@ type RealmRepresentation struct {
 	VerifyEmail                         *bool                                   `json:"verifyEmail,omitempty"`
 	WaitIncrementSeconds                *int32                                  `json:"waitIncrementSeconds,omitempty"`
 }
+type ClientCreateRequest struct {
+	Attributes   *map[string]interface{} `json:"attributes,omitempty"`
+	ClientID     *string                 `json:"clientId,omitempty"`
+	Enabled      *bool                   `json:"enabled,omitempty"`
+	Protocol     *string                 `json:"protocol,omitempty"`
+	RedirectURIs *[]string               `json:"redirectUris,omitempty"`
+}
+
+type MappingsRepresentation struct {
+	ClientMappings *map[string]interface{} `json:"clientMappings,omitempty"`
+	RealmMappings  *[]RoleRepresentation   `json:"realmMappings,omitempty"`
+}
+
+// HTTPError is returned when an error occurred while contacting the keycloak instance.
+type HTTPError struct {
+	HTTPStatus int
+	Message    string
+}
+
+func (e HTTPError) Error() string {
+	return e.Message
+}
+
+type Token struct {
+	hdr            *header
+	Issuer         string `json:"iss,omitempty"`
+	Subject        string `json:"sub,omitempty"`
+	ExpirationTime int64  `json:"exp,omitempty"`
+	NotBefore      int64  `json:"nbf,omitempty"`
+	IssuedAt       int64  `json:"iat,omitempty"`
+	ID             string `json:"jti,omitempty"`
+	Username       string `json:"preferred_username,omitempty"`
+}
+
+type header struct {
+	Algorithm   string `json:"alg,omitempty"`
+	KeyID       string `json:"kid,omitempty"`
+	Type        string `json:"typ,omitempty"`
+	ContentType string `json:"cty,omitempty"`
+}
+
+type UserDetailsRepresentation struct {
+	ID             *string                 `json:"id,omitempty"`
+	Username       *string                 `json:"username,omitempty"`
+	FirstName      *string                 `json:"firstName,omitempty"`
+	LastName       *string                 `json:"lastName,omitempty"`
+	Email          *string                 `json:"email,omitempty"`
+	Enabled        *bool                   `json:"enabled,omitempty"`
+	FederationLink *string                 `json:"federationLink,omitempty"`
+	Roles          *MappingsRepresentation `json:"roles,omitempty"`
+	Groups         *[]GroupRepresentation  `json:"groups,omitempty"`
+	Attributes     *map[string][]string    `json:"attributes,omitempty"`
+}
