@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	realmRootPath = "/auth/admin/realms"
+	realmRootPath      = "/auth/admin/realms"
+	clientResourceName = "clients"
 )
 
 var (
@@ -263,6 +264,67 @@ func (c *Client) GetRealm(accessToken string, realmName string) (RealmRepresenta
 	var response = RealmRepresentation{}
 	var err = c.get(accessToken, &response, fmt.Sprintf("%s/%s", realmRootPath, realmName))
 	return response, err
+}
+
+// GetClient get the representation of the client. idClient is the id of client (not client-id).
+func (c *Client) GetClient(accessToken string, realmName string, idClient string) (ClientRepresentation, error) {
+	var response = ClientRepresentation{}
+	var err = c.get(accessToken, &response, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, idClient))
+	return response, err
+}
+
+// UpdateClient updates the client.
+func (c *Client) UpdateClient(accessToken string, realmName string, clientID string, client ClientRepresentation) error {
+	return c.put(accessToken, client, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID))
+}
+
+// DeleteClient deletes specified client from the realm. id is the id of client (not client-id).
+func (c *Client) DeleteClient(accessToken string, realmName string, clientID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID))
+}
+
+// CreateClient creates a client
+func (c *Client) CreateClient(accessToken string, realmName string, client ClientCreateRequest) (string, error) {
+	return c.post(accessToken, client, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, clientResourceName))
+}
+
+// GetClients returns a list of clients belonging to the realm.
+// Parameters: clientId (filter by clientId),
+// viewableOnly (filter clients that cannot be viewed in full by admin, default="false")
+func (c *Client) GetClients(accessToken string, realmName string, paramKV ...string) ([]ClientRepresentation, error) {
+	var err error
+	var resp = []ClientRepresentation{}
+	if len(paramKV)%2 != 0 {
+		return nil, fmt.Errorf("the number of key/val parameters should be even")
+	}
+	url := fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, clientResourceName)
+	path := c.apiURL.String() + url
+
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return resp, err
+	}
+	if len(paramKV) > 0 {
+		urlParams := req.URL.Query()
+		// Sketchy
+		for i := 0; i < len(paramKV)%2; i += 2 {
+			urlParams.Set(paramKV[i], paramKV[i+1])
+		}
+		req.URL.RawQuery = urlParams.Encode()
+	}
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, data interface{}) error {
+	req, err := setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, data)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), req.URL.Path, response.StatusCode)
+	}
+	return nil
 }
 
 // New returns a keycloak client

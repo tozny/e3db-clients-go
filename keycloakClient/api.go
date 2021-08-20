@@ -407,3 +407,10 @@ type RealmRepresentation struct {
 	VerifyEmail                         *bool                                   `json:"verifyEmail,omitempty"`
 	WaitIncrementSeconds                *int32                                  `json:"waitIncrementSeconds,omitempty"`
 }
+type ClientCreateRequest struct {
+	Attributes   *map[string]interface{} `json:"attributes,omitempty"`
+	ClientID     *string                 `json:"clientId,omitempty"`
+	Enabled      *bool                   `json:"enabled,omitempty"`
+	Protocol     *string                 `json:"protocol,omitempty"`
+	RedirectURIs *[]string               `json:"redirectUris,omitempty"`
+}
