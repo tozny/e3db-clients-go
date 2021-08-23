@@ -20,19 +20,21 @@ type TokenInfo struct {
 
 // Client is the keycloak client which contains a map of current tokens.
 type Client struct {
-	tokenProviderURL *url.URL
-	apiURL           *url.URL
-	httpClient       *http.Client
-	tokens           map[string]*TokenInfo
+	tokenProviderURL                 *url.URL
+	apiURL                           *url.URL
+	httpClient                       *http.Client
+	tokens                           map[string]*TokenInfo
+	refreshAuthTokenBeforeExpiration int32
 }
 
 // Config is the http config used to create a client.
 type Config struct {
-	AddrTokenProvider string
-	AddrAPI           string
-	Timeout           time.Duration
-	EnabledLogging    bool
-	Logger            logging.StructuredLogger
+	AddrTokenProvider                string
+	AddrAPI                          string
+	Timeout                          time.Duration
+	EnabledLogging                   bool
+	Logger                           logging.StructuredLogger
+	RefreshAuthTokenBeforeExpiration int32
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
