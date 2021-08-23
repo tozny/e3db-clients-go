@@ -594,6 +594,11 @@ func (c *Client) GetClientRole(accessToken string, realmName string, clientID st
 	return resp, err
 }
 
+// UpdateClientRoleByID updates a specific client role’s representation
+func (c *Client) UpdateClientRoleByID(accessToken string, realmName string, roleId string, role RoleRepresentation) error {
+	return c.put(accessToken, role, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, roleByIDResourceName, roleId))
+}
+
 // GetRealmRoles gets all roles for the realm
 // GET /auth/admin/realms/demorealm/roles HTTP/1.1
 // [{

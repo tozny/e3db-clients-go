@@ -694,6 +694,9 @@ type UpdateRealmRoleRequest struct {
 	Role      Role `json:"role"`
 }
 
+// UpdateApplicationClientRoleRequest wraps the parameters for updating a application client role
+type UpdateApplicationClientRoleRequest = UpdateRealmRoleRequest
+
 // DescribeRealmRoleRequest wraps parameters for describing a realm role
 type DescribeRealmRoleRequest = DeleteRealmRoleRequest
 
