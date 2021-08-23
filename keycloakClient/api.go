@@ -472,3 +472,49 @@ type ClientScopeRepresentation struct {
 	ProtocolMappers *[]ProtocolMapperRepresentation `json:"protocolMappers,omitempty"`
 	Attributes      *map[string][]string            `json:"attributes,omitempty"`
 }
+
+type UserFederationProviderRepresentation struct {
+	Id          *string `json:"id,omitempty"`
+	DisplayName *string `json:"name,omitempty"`
+	// The id of the resource the provider is attached to
+	// will be realm id for a user federation provider or
+	// provider id for a user federation provider mapper
+	ParentId *string `json:"parentId,omitempty"`
+	// User viewable type of the provider
+	ProviderId *string `json:"providerId,omitempty"`
+	// Keycloak defined type corresponding to the ProviderId
+	ProviderType *string              `json:"providerType,omitempty"`
+	Config       *map[string][]string `json:"config,omitempty"`
+}
+
+type UserFederationProviderMapperRepresentation = UserFederationProviderRepresentation
+
+type AuthenticationExecutionInfoRepresentation struct {
+	Alias                *string   `json:"alias,omitempty"`
+	AuthenticationConfig *string   `json:"authenticationConfig,omitempty"`
+	AuthenticationFlow   *bool     `json:"authenticationFlow,omitempty"`
+	Configurable         *bool     `json:"configurable,omitempty"`
+	DisplayName          *string   `json:"displayName,omitempty"`
+	FlowId               *string   `json:"flowId,omitempty"`
+	Id                   *string   `json:"id,omitempty"`
+	Index                *int32    `json:"index,omitempty"`
+	Level                *int32    `json:"level,omitempty"`
+	ProviderId           *string   `json:"providerId,omitempty"`
+	Requirement          *string   `json:"requirement,omitempty"`
+	RequirementChoices   *[]string `json:"requirementChoices,omitempty"`
+}
+
+type InitiatePKCELogin struct {
+	Nonce               string `schema:"nonce"`
+	ClientID            string `schema:"client_id"`
+	ResponseType        string `schema:"response_type"`
+	Scope               string `schema:"scope"`
+	RedirectURI         string `schema:"redirect_uri"`
+	ResponseMode        string `schema:"response_mode"`
+	State               string `schema:"state"`
+	Username            string `schema:"username"`
+	Target              string `schema:"target"`
+	AuthSessionID       string `schema:"auth_session_id"`
+	CodeChallenge       string `schema:"code_challenge"`
+	CodeChallengeMethod string `schema:"code_challenge_method"`
+}

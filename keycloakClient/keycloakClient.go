@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,6 +35,11 @@ const (
 	optionalClientScopeResourceName = "optional-client-scopes"
 	defaultClientScopeResourceName  = "default-client-scopes"
 	defaultResourceName             = "default"
+	componentsResourceName          = "components"
+	UserFederationProviderType      = "org.keycloak.storage.UserStorageProvider"
+	authenticationResourceName      = "authentication"
+	logoutResourceName              = "logout"
+	initiateLoginPath               = "/auth/realms/%s/protocol/openid-connect/auth"
 )
 
 var (
@@ -172,7 +178,20 @@ func setAuthorizationAndHostHeaders(req *http.Request, accessToken string) (*htt
 	req.Host = host
 	return req, nil
 }
-
+func setAuthorizationAndHostHeadersPlusSessionToken(req *http.Request, accessToken string, sessionToken string) (*http.Request, error) {
+	host, err := extractHostFromToken(accessToken)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Add("X-Forwarded-Proto", "https")
+	// This may need to be a Add
+	req.Header.Set("X-Tozny-Session", sessionToken)
+	// is this always the content type? fails with 415 if content type isn't specified
+	req.Header.Add("Content-Type", "application/json")
+	req.Host = host
+	return req, nil
+}
 func extractHostFromToken(token string) (string, error) {
 	issuer, err := extractIssuerFromToken(token)
 	if err != nil {
@@ -211,6 +230,29 @@ func (c *Client) post(accessToken string, data interface{}, url string) (string,
 		return "", err
 	}
 	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return "", err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return "", e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	location := response.Header.Get("Location")
+	return location, nil
+
+}
+func (c *Client) postWithToznySessionToken(accessToken string, data interface{}, url string, sessionToken string) (string, error) {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("POST", path, buf)
+	if err != nil {
+		return "", err
+	}
+	req, err = setAuthorizationAndHostHeadersPlusSessionToken(req, accessToken, sessionToken)
 	if err != nil {
 		return "", err
 	}
@@ -336,6 +378,73 @@ func createVanillaRequest(method string, path string, params interface{}) (*http
 		}
 	}
 	return request, nil
+}
+
+// makePlainTextCall sends a request, return the plain text response and error (if any).
+func makePlainTextCall(accessToken string, request *http.Request) (string, error) {
+	var body string
+	client := &http.Client{}
+
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	request.Header.Set("X-Forwarded-Proto", "https")
+	request.Header.Set("Content-Type", "text/plain")
+
+	response, err := client.Do(request)
+	if err != nil {
+		requestURL := request.URL.String()
+		return body, HTTPError{
+			HTTPStatus: response.StatusCode,
+			Message:    fmt.Sprintf("%s: server http error %d", requestURL, response.StatusCode),
+		}
+	}
+	defer response.Body.Close()
+	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
+		requestURL := request.URL.String()
+		return body, HTTPError{
+			HTTPStatus: response.StatusCode,
+			Message:    fmt.Sprintf("%s: server http error %d", requestURL, response.StatusCode),
+		}
+	}
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return body, err
+	}
+
+	body = string(bodyBytes)
+	return body, nil
+}
+
+// makePlainTextCall sends a request, return the plain text response and error (if any).
+func makeNonAuthenticatedPlainTextCall(request *http.Request) (string, error) {
+	var body string
+	client := &http.Client{}
+
+	request.Header.Set("X-Forwarded-Proto", "https")
+	request.Header.Set("Content-Type", "text/plain")
+
+	response, err := client.Do(request)
+	if err != nil {
+		requestURL := request.URL.String()
+		return body, HTTPError{
+			HTTPStatus: response.StatusCode,
+			Message:    fmt.Sprintf("%s: server http error %d", requestURL, response.StatusCode),
+		}
+	}
+	defer response.Body.Close()
+	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
+		requestURL := request.URL.String()
+		return body, HTTPError{
+			HTTPStatus: response.StatusCode,
+			Message:    fmt.Sprintf("%s: server http error %d", requestURL, response.StatusCode),
+		}
+	}
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return body, err
+	}
+
+	body = string(bodyBytes)
+	return body, nil
 }
 
 // CreateRealm creates the realm from its RealmRepresentation, returning error (if any).
@@ -887,4 +996,214 @@ func (c *Client) GetOptionalClientScopes(accessToken string, realmName, client s
 func (c *Client) RemoveOptionalClientScope(accessToken string, realmName, client, scope string) error {
 	err := c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, client, optionalClientScopeResourceName, scope))
 	return err
+}
+
+// GetUserFederationProviderMapper returns the representation of the specified UserFederationProviderMapper or error (if any).
+func (c *Client) GetUserFederationProviderMapper(accessToken string, realmName, userFederationProviderMapperID string) (UserFederationProviderMapperRepresentation, error) {
+	resp := UserFederationProviderMapperRepresentation{}
+	err := c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, componentsResourceName, userFederationProviderMapperID))
+	return resp, err
+}
+
+// CreateUserFederationProviderMapper creates a user federation provider mapper for a realm for mapping attributes from
+// synced users from an external source, returning the location of the created provider mapper or error (if any).
+func (c *Client) CreateUserFederationProviderMapper(accessToken string, realmName string, userFederationProviderMapper UserFederationProviderMapperRepresentation) (string, error) {
+	return c.post(accessToken, userFederationProviderMapper, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName))
+}
+
+// GetUserFederationProviderMappers returns a list of UserFederationProviderMappers belonging to the realm
+// or error (if any).
+func (c *Client) GetUserFederationProviderMappers(accessToken string, realmName string, userFederationProviderID string, mapperType string) ([]UserFederationProviderMapperRepresentation, error) {
+	resp := []UserFederationProviderMapperRepresentation{}
+
+	url := fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName)
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+
+	urlParams := req.URL.Query()
+	urlParams.Set("parent", userFederationProviderID)
+	urlParams.Set("type", mapperType)
+	req.URL.RawQuery = urlParams.Encode()
+
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+
+}
+
+// DeleteUserFederationProviderMapper deletes the specified UserFederationProviderMapper from the realm.
+func (c *Client) DeleteUserFederationProviderMapper(accessToken string, realmName, userFederationProviderMapperID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, componentsResourceName, userFederationProviderMapperID))
+}
+
+func (c *Client) GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]RoleRepresentation, error) {
+	var resp = []RoleRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
+	return resp, err
+}
+
+// GetClientRoleMappings gets client-level role mappings for the user, and the app.
+func (c *Client) GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]RoleRepresentation, error) {
+	var resp = []RoleRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, clientResourceName, clientID))
+	return resp, err
+}
+
+// AddClientRoleMapping add client-level roles to the user role mapping.
+func (c *Client) AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []RoleRepresentation) error {
+	_, err := c.post(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, clientResourceName, clientID))
+	return err
+}
+
+// CreateUserFederationProvider creates a user federation provider for a realm for syncing users from an external source,
+// returning the location of the created provider or error (if any).
+func (c *Client) CreateUserFederationProvider(accessToken string, realmName string, userFederationProvider UserFederationProviderRepresentation) (string, error) {
+	return c.post(accessToken, userFederationProvider, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName))
+}
+
+// DeleteUserFederationProvider deletes the specified UserFederationProvider from the realm.
+func (c *Client) DeleteUserFederationProvider(accessToken string, realmName, userFederationProviderID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, componentsResourceName, userFederationProviderID))
+}
+
+// GetUserFederationProvider returns the representation of the specified UserFederationProvider or error (if any).
+func (c *Client) GetUserFederationProvider(accessToken string, realmName, userFederationProviderID string) (UserFederationProviderRepresentation, error) {
+	resp := UserFederationProviderRepresentation{}
+	err := c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, componentsResourceName, userFederationProviderID))
+	return resp, err
+}
+
+// GetUserFederationProviders returns a list of UserFederationProviders belonging to the realm
+// or error (if any).
+func (c *Client) GetUserFederationProviders(accessToken string, realmName string, realmId string) ([]UserFederationProviderRepresentation, error) {
+	resp := []UserFederationProviderRepresentation{}
+	url := fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName)
+	path := c.apiURL.String() + url
+
+	req, err := http.NewRequest("GET", path, nil)
+	urlParams := req.URL.Query()
+	urlParams.Set("parent", realmId)
+	urlParams.Set("type", UserFederationProviderType)
+	req.URL.RawQuery = urlParams.Encode()
+
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+
+// CreateAuthenticationExecutionForFlow add a new authentication execution to a flow.
+// 'flowAlias' is the alias of the parent flow.
+func (c *Client) CreateAuthenticationExecutionForFlow(accessToken string, realmName, flowAlias, provider string) (string, error) {
+	var m = map[string]string{"provider": provider}
+	return c.post(accessToken, m, fmt.Sprintf("%s/%s/%s/flows/%s/executions/execution", realmRootPath, realmName, authenticationResourceName, flowAlias))
+}
+
+// UpdateAuthenticationExecutionForFlow updates the authentication executions of a flow.
+func (c *Client) UpdateAuthenticationExecutionForFlow(accessToken string, realmName, flowAlias string, authExecInfo AuthenticationExecutionInfoRepresentation) error {
+	return c.put(accessToken, authExecInfo, fmt.Sprintf("%s/%s/%s/flows/%s/executions", realmRootPath, realmName, authenticationResourceName, flowAlias))
+}
+
+// CreateFlowWithExecutionForExistingFlow add a new flow with a new execution to an existing flow.
+// 'flowAlias' is the alias of the parent authentication flow.
+func (c *Client) CreateFlowWithExecutionForExistingFlow(accessToken string, realmName, flowAlias, alias, flowType, provider, description string) (string, error) {
+	var m = map[string]string{"alias": alias, "type": flowType, "provider": provider, "description": description}
+	return c.post(accessToken, m, fmt.Sprintf("%s/%s/%s/flows/%s/executions/flow", realmRootPath, realmName, authenticationResourceName, flowAlias))
+}
+
+// GetAuthenticationExecutionForFlow returns the authentication executions for a flow.
+func (c *Client) GetAuthenticationExecutionForFlow(accessToken string, realmName, flowAlias string) ([]AuthenticationExecutionInfoRepresentation, error) {
+	var resp = []AuthenticationExecutionInfoRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/flows/%s/executions", realmRootPath, realmName, authenticationResourceName, flowAlias))
+	return resp, err
+}
+
+// CreateAuthenticationFlow creates a new authentication flow.
+func (c *Client) CreateAuthenticationFlow(accessToken string, realmName string, authFlow AuthenticationFlowRepresentation) (string, error) {
+	return c.post(accessToken, authFlow, fmt.Sprintf("%s/%s/%s/flows", realmRootPath, realmName, authenticationResourceName))
+}
+
+// GetSAMLDescription gets the saml description for a client. idClient is the id of client (not client-id).
+// GET https://id.tozny.com/auth/admin/realms/demorealm/clients/13be9337-b349-4e1a-9b1a-32fd227e0d0f/installation/providers/saml-idp-descriptor
+// <?xml version="1.0" encoding="UTF-8"?>
+// <EntityDescriptor entityID="https://id.tozny.com/auth/realms/demorealm"
+//                    xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+//                    xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"
+//                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+//    <IDPSSODescriptor WantAuthnRequestsSigned="false"
+//       protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+//       <SingleLogoutService
+//          Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+//          Location="https://id.tozny.com/auth/realms/demorealm/protocol/saml" />
+//       <SingleLogoutService
+//          Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+//          Location="https://id.tozny.com/auth/realms/demorealm/protocol/saml" />
+//    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+//    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+//    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</NameIDFormat>
+//    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+//       <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+//          Location="https://id.tozny.com/auth/realms/demorealm/protocol/saml" />
+//       <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+//          Location="https://id.tozny.com/auth/realms/demorealm/protocol/saml" />
+//       <KeyDescriptor use="signing">
+//         <dsig:KeyInfo>
+//           <dsig:KeyName>xKHm8qTWp9Dppc6jOtcKkN8thWLSJ8OVHeVND7rH-1s</dsig:KeyName>
+//           <dsig:X509Data>
+//             <dsig:X509Certificate>MIICoTCCAYkCBgF1BX2OcTANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAlkZW1vcmVhbG0wHhcNMjAxMDA3MjM1MzM1WhcNMzAxMDA3MjM1NTE1WjAUMRIwEAYDVQQDDAlkZW1vcmVhbG0wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCnwsBYFAnxrr36yjXen3+2LxuDqeBl7+qy+qkAOD91Pe7gokeY9aXkyQedb4kII37i6iPAwtCHg/PjwU3unufqB8hGmy/GTdq95u8DOrKcFDutNG8P/51qxGTDZVni5NzO6kchXSK/RHJgi47vbmPN7MzLZopuw2q1ulXmPkRYEGNALuW3Ofv8AwdvADRj7+Fq7VpIZmHsgMS+ujnnMYtISqENDP5qXAm+k2Ux69rgba5hNcFwwu9sipD+Ybc6MxtQxcKJh9ciPLoq+HYFpoF5uiBSzbgCZ7mrK/7/dZrrYC73+65ZGt6f0VHWMVjwpKUkqlCYOxGqRx7lrpZ967wfAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABTSiOQ+Gi5Qer3nf7xoXbYuzv5/RwcilWOrnEmqLiM84nkH1nAiF0axDBFUv5NpqqEEb2VyyZz+pIfLiEhPwjpy03t24XLAz+S9CsQW7LNtfVobrf52dzofe/5NHymq2WtnBeOtt7HSgHVPUmTzBbA3HDKP5N4p359j32ElxcgSZOmC2IFNDcoVC39pylmTHuZ6MGOD6skeIANXxtU77HKPATLl9AkxOz7k5y+AiBJjsTmYxZVhhr72+8jyumeWq30K8SeO5CryU+JFvz5rljacZspGEgWoqaiqXxtENs9+K29lB1EB9delhSJkZ+u7gxQwkSTVYhkS6FZQfH2tuTE=</dsig:X509Certificate>
+//           </dsig:X509Data>
+//         </dsig:KeyInfo>
+//       </KeyDescriptor>
+//    </IDPSSODescriptor>
+// </EntityDescriptor>
+func (c *Client) GetSAMLDescription(accessToken string, realmName string, idClient string, format string) (string, error) {
+	var description string
+	path := c.apiURL.String() + "/auth/admin/realms/" + realmName + "/clients/" + idClient + "/installation/providers/" + format
+	request, err := createVanillaRequest("GET", path, nil)
+	if err != nil {
+		return description, err
+	}
+	description, err = makePlainTextCall(accessToken, request)
+	return description, err
+}
+
+// GetSAMLDescriptor fetches the public XML IDP descriptor document for a realm
+func (c *Client) GetSAMLDescriptor(realmName string) (string, error) {
+
+	var description string
+	path := c.apiURL.String() + "/auth/realms/" + realmName + "/protocol/saml/descriptor"
+	request, err := createVanillaRequest("GET", path, nil)
+	if err != nil {
+		return description, err
+	}
+	description, err = makeNonAuthenticatedPlainTextCall(request)
+	return description, err
+}
+
+// ExpireSession clears a session based on a valid session token
+func (c *Client) ExpireSession(accessToken, realmName, sessionToken string) error {
+	_, err := c.postWithToznySessionToken(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", userExtensionPath, realmName, adminResourceName, logoutResourceName), sessionToken)
+	return err
+}
+
+// InitiateLogin begins the login flow
+func (c *Client) InitiateLogin(realmName string, loginURLEncoded InitiatePKCELogin) (*http.Response, error) {
+
+	var authPath = fmt.Sprintf(initiateLoginPath, realmName)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(loginURLEncoded)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", authPath, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("X-Forwarded-Proto", "https")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return nil, e3dbClients.NewError(err.Error(), authPath, response.StatusCode)
+	}
+
+	return response.Request.Response, nil
+
 }
