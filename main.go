@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tozny/e3db-clients-go/request"
+	"github.com/tozny/utils-go/logging"
 	"github.com/tozny/utils-go/server"
 	"golang.org/x/oauth2"
 )
@@ -52,6 +53,12 @@ type RequestError struct {
 	message    string
 	URL        string
 	StatusCode int
+}
+
+// LoggingClient is used to log requests and timing based on configuration passed in
+type LoggingClient struct {
+	StandardClient http.Client
+	logging.StructuredLogger
 }
 
 // Error implements the error interface for RequestError.
@@ -262,4 +269,17 @@ func ExtractToznyAuthenticatedClientContext(header http.Header) (ToznyAuthentica
 		return toznyAuthenticatedClientContext, fmt.Errorf("authenticatedClientContext is not properly formatted")
 	}
 	return toznyAuthenticatedClientContext, err
+}
+
+// Do overrides the http Client method, as well as adds extra logging to requests
+func (lc *LoggingClient) Do(req *http.Request) (*http.Response, error) {
+	startTime := time.Now()
+	at := req.Header.Get("Date")
+	if at == "" {
+		at = startTime.String()
+	}
+	resp, err := lc.Do(req)
+	lengthOfRequest := time.Since(startTime)
+	lc.Infof("%s request to %s at %s took %s", req.Method, req.URL, at, lengthOfRequest)
+	return resp, err
 }

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/tozny/utils-go/logging"
 )
 
 // TokenInfo represents a full oAuth2 JWT token response with expiration and refresh.
@@ -29,6 +31,8 @@ type Config struct {
 	AddrTokenProvider string
 	AddrAPI           string
 	Timeout           time.Duration
+	EnabledLogging    bool
+	Logger            logging.StructuredLogger
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
