@@ -62,12 +62,21 @@ func New(config Config) (*Client, error) {
 	httpClient := http.Client{
 		Timeout: config.Timeout,
 	}
-	return &Client{
+	client := Client{
 		tokenProviderURL: urlToken,
 		apiURL:           urlApi,
 		httpClient:       &httpClient,
 		tokens:           map[string]*TokenInfo{},
-	}, nil
+	}
+	// Check if logging is enabled, if it is, pass in logger
+	if config.EnabledLogging {
+		loggingClient := e3dbClients.LoggingClient{
+			StandardClient:   httpClient,
+			StructuredLogger: config.Logger,
+		}
+		client.httpClient = &loggingClient.StandardClient
+	}
+	return &client, nil
 }
 
 // toTokenJson translated the expiration info in a tokenJSON to a full token with time.Time
