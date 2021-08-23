@@ -17,29 +17,35 @@ import (
 )
 
 const (
-	realmRootPath                   = "/auth/admin/realms"
-	userExtensionPath               = "/auth/realms"
-	clientResourceName              = "clients"
-	roleResourceName                = "roles"
-	roleByIDResourceName            = "roles-by-id"
-	groupResourceName               = "groups"
-	roleMappingResourceName         = "role-mappings"
-	realmResourceName               = "realm"
-	adminResourceName               = "admin"
-	userResourceName                = "users"
-	defaultGroupResourceName        = "default-groups"
-	clientSecretResourceName        = "client-secret"
-	protocolMapperResourceName      = "protocol-mappers"
-	modelsResourceName              = "models"
-	protocolResourceName            = "protocol"
-	optionalClientScopeResourceName = "optional-client-scopes"
-	defaultClientScopeResourceName  = "default-client-scopes"
-	defaultResourceName             = "default"
-	componentsResourceName          = "components"
-	UserFederationProviderType      = "org.keycloak.storage.UserStorageProvider"
-	authenticationResourceName      = "authentication"
-	logoutResourceName              = "logout"
-	initiateLoginPath               = "/auth/realms/%s/protocol/openid-connect/auth"
+	realmRootPath                            = "/auth/admin/realms"
+	userExtensionPath                        = "/auth/realms"
+	clientResourceName                       = "clients"
+	roleResourceName                         = "roles"
+	roleByIDResourceName                     = "roles-by-id"
+	groupResourceName                        = "groups"
+	roleMappingResourceName                  = "role-mappings"
+	realmResourceName                        = "realm"
+	adminResourceName                        = "admin"
+	userResourceName                         = "users"
+	defaultGroupResourceName                 = "default-groups"
+	clientSecretResourceName                 = "client-secret"
+	protocolMapperResourceName               = "protocol-mappers"
+	modelsResourceName                       = "models"
+	protocolResourceName                     = "protocol"
+	optionalClientScopeResourceName          = "optional-client-scopes"
+	defaultClientScopeResourceName           = "default-client-scopes"
+	defaultResourceName                      = "default"
+	componentsResourceName                   = "components"
+	UserFederationProviderType               = "org.keycloak.storage.UserStorageProvider"
+	authenticationResourceName               = "authentication"
+	logoutResourceName                       = "logout"
+	initiateLoginPath                        = "/auth/realms/%s/protocol/openid-connect/auth"
+	UserSessionNoteOIDCApplicationMapperType = "oidc-usersessionmodel-note-mapper"
+	UserAttributeOIDCApplicationMapperType   = "oidc-usermodel-attribute-mapper"
+	GroupMembershipOIDCApplicationMapperType = "oidc-group-membership-mapper"
+	RoleListSAMLApplicationMapperType        = "saml-role-list-mapper"
+	UserPropertySAMLApplicationMapperType    = "saml-user-property-mapper"
+	UserFederationProviderLDAPMapperType     = "org.keycloak.storage.ldap.mappers.LDAPStorageMapper"
 )
 
 var (
@@ -63,10 +69,11 @@ func New(config Config) (*Client, error) {
 		Timeout: config.Timeout,
 	}
 	client := Client{
-		tokenProviderURL: urlToken,
-		apiURL:           urlApi,
-		httpClient:       &httpClient,
-		tokens:           map[string]*TokenInfo{},
+		tokenProviderURL:                 urlToken,
+		apiURL:                           urlApi,
+		httpClient:                       &httpClient,
+		tokens:                           map[string]*TokenInfo{},
+		refreshAuthTokenBeforeExpiration: config.RefreshAuthTokenBeforeExpiration,
 	}
 	// Check if logging is enabled, if it is, pass in logger
 	if config.EnabledLogging {
@@ -77,6 +84,28 @@ func New(config Config) (*Client, error) {
 		client.httpClient = &loggingClient.StandardClient
 	}
 	return &client, nil
+}
+
+// AutoRefreshToken starts a process where an access token is kept perpetually
+// warm in the cache, refreshing itself five seconds before it expires.
+func (c *Client) AutoRefreshToken(realm string, username string, password string, onFailure func(error)) {
+	info, err := c.GetTokenInfo(realm, username, password, true)
+	if err != nil {
+		// Unable to fetch the token, allow userland to determine the correct
+		// behavior here -- retry, panic, log, etc...
+		onFailure(err)
+		return
+	}
+	// Refresh before the auth token expires
+	nextRefresh := info.Expires.Sub(time.Now().Add(time.Duration(c.refreshAuthTokenBeforeExpiration) * time.Second))
+	// Pass in arguments to allow original args to get garbage collected.
+	info.refresher = time.AfterFunc(nextRefresh, func(realm, username, password string, onFailure func(error), c *Client) func() {
+		// send back a function which will re-call this method after the timeout
+		// capturing the arguments in a closure.
+		return func() {
+			c.AutoRefreshToken(realm, username, password, onFailure)
+		}
+	}(realm, username, password, onFailure, c))
 }
 
 // toTokenJson translated the expiration info in a tokenJSON to a full token with time.Time
