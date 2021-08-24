@@ -13,7 +13,10 @@ import (
 	"time"
 
 	jwt "github.com/gbrlsnchs/jwt/v2"
+	"github.com/gorilla/schema"
 	e3dbClients "github.com/tozny/e3db-clients-go"
+	"gopkg.in/h2non/gentleman.v2"
+	"gopkg.in/h2non/gentleman.v2/plugins/timeout"
 )
 
 const (
@@ -53,6 +56,7 @@ var (
 	SessionExpiredError   = errors.New("auth session expired")
 	// KeycloakTokenInfoLock allows for access control so only one routine is able to access the Keycloak Token Info
 	KeycloakTokenInfoLock = &sync.Mutex{}
+	encoder               = schema.NewEncoder()
 )
 
 // New returns a keycloak client
@@ -74,6 +78,7 @@ func New(config Config) (*Client, error) {
 		httpClient:                       &httpClient,
 		tokens:                           map[string]*TokenInfo{},
 		refreshAuthTokenBeforeExpiration: config.RefreshAuthTokenBeforeExpiration,
+		config:                           config,
 	}
 	// Check if logging is enabled, if it is, pass in logger
 	if config.EnabledLogging {
@@ -1228,25 +1233,32 @@ func (c *Client) ExpireSession(accessToken, realmName, sessionToken string) erro
 
 // InitiateLogin begins the login flow
 func (c *Client) InitiateLogin(realmName string, loginURLEncoded InitiatePKCELogin) (*http.Response, error) {
-
-	var authPath = fmt.Sprintf(initiateLoginPath, realmName)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(loginURLEncoded)
-	if err != nil {
-		return nil, err
+	// Create Gentleman Client
+	var gentlemanClient = gentleman.New()
+	{
+		gentlemanClient = gentlemanClient.URL(c.config.AddrAPI)
+		gentlemanClient = gentlemanClient.Use(timeout.Request(c.config.Timeout))
 	}
-	req, err := http.NewRequest("POST", authPath, buf)
-	if err != nil {
-		return nil, err
+	// Create Request
+	var req *gentleman.Request
+	{
+		var authPath = fmt.Sprintf(initiateLoginPath, realmName)
+		req = gentlemanClient.Post()
+		req = req.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+		req = req.Path(authPath)
+		req = req.Type("urlencoded")
+		data := url.Values{}
+		encoder.Encode(loginURLEncoded, data)
+		req = req.BodyString(data.Encode())
 	}
-
-	req.Header.Add("X-Forwarded-Proto", "https")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
-	if err != nil {
-		return nil, e3dbClients.NewError(err.Error(), authPath, response.StatusCode)
+	// Send Request
+	var resp *gentleman.Response
+	{
+		var err error
+		resp, err = req.Do()
+		if err != nil {
+			return nil, fmt.Errorf("Could not Initiate Login: Error %+v", err)
+		}
 	}
-
-	return response.Request.Response, nil
-
+	return resp.RawResponse, nil
 }

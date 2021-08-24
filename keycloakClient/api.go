@@ -25,6 +25,7 @@ type Client struct {
 	httpClient                       *http.Client
 	tokens                           map[string]*TokenInfo
 	refreshAuthTokenBeforeExpiration int32
+	config                           Config
 }
 
 // Config is the http config used to create a client.
