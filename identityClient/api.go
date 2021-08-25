@@ -371,6 +371,13 @@ type CreateRealmGroupRequest struct {
 	Group     Group
 }
 
+// UpdateRealmGroupRequest wraps parameters for creating a realm group
+type UpdateRealmGroupRequest struct {
+	RealmName string
+	GroupID   string
+	Group     Group
+}
+
 // DeleteRealmGroupRequest wraps parameters for deleting a realm group
 type DeleteRealmGroupRequest struct {
 	RealmName string

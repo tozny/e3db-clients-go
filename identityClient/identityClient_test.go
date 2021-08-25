@@ -3197,3 +3197,58 @@ func TestUpdateRole(t *testing.T) {
 		t.Fatalf("expected only created role %+v to be listed, got %+v", role, listedRoles)
 	}
 }
+
+func TestUpdateGroup(t *testing.T) {
+	// test setup
+	client := createIdentityServiceClient(t)
+	realm := createRealm(t, client)
+	defer client.DeleteRealm(testContext, realm.Name)
+	groupName := uniqueString("realm group")
+	group := createRealmGroup(t, client, realm.Name, groupName)
+	defer client.DeleteRealmGroup(testContext, DeleteRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group.ID,
+	})
+
+	// test execution
+	updatedGroupName := uniqueString("realm group update")
+	updatedAttributes := map[string][]string{
+		"key1": {"value1"},
+		"key2": {"value2"},
+	}
+	params := UpdateRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group.ID,
+		Group: Group{
+			Name:       updatedGroupName,
+			Attributes: updatedAttributes,
+		},
+	}
+
+	group, err := client.UpdateRealmGroup(testContext, params)
+	if err != nil {
+		t.Fatalf("error updating realm group %+v: %+v", params, err)
+	}
+
+	// test assertion
+	actual, err := client.DescribeRealmGroup(testContext, DescribeRealmGroupRequest{
+		RealmName: realm.Name,
+		GroupID:   group.ID,
+	})
+	if err != nil {
+		t.Fatalf("error %s describing realm group %s using %+v", err, group.ID, client)
+	}
+
+	if len(actual.ID) == 0 {
+		t.Errorf("expected result to have ID")
+	}
+	if actual.Name != updatedGroupName {
+		t.Errorf("expected result group name to be '%s', was '%s'", updatedGroupName, actual.Name)
+	}
+	if _, ok := actual.Attributes["key1"]; !ok {
+		t.Errorf("expected result group attributes to include '%s', was '%s'", "key1", actual.Attributes)
+	}
+	if _, ok := actual.Attributes["key2"]; !ok {
+		t.Errorf("expected result group attributes to include '%s', was '%s'", "key2", actual.Attributes)
+	}
+}

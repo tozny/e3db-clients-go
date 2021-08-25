@@ -484,6 +484,18 @@ func (c *E3dbIdentityClient) CreateRealmGroup(ctx context.Context, params Create
 	return group, err
 }
 
+// UpdateRealmGroup updates the specified realm group, returning error (if any).
+func (c *E3dbIdentityClient) UpdateRealmGroup(ctx context.Context, params UpdateRealmGroupRequest) (*Group, error) {
+	var group *Group
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + groupResourceName + "/" + params.GroupID
+	req, err := e3dbClients.CreateRequest("PUT", path, params.Group)
+	if err != nil {
+		return group, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &group)
+	return group, err
+}
+
 // ListRealmDefaultGroups lists the default groups in a realm.
 func (c *E3dbIdentityClient) ListRealmDefaultGroups(ctx context.Context, params ListRealmGroupsRequest) (*ListRealmGroupsResponse, error) {
 	var groups *ListRealmGroupsResponse

@@ -828,6 +828,11 @@ func (c *Client) CreateGroup(accessToken string, realmName string, group GroupRe
 	return c.post(accessToken, group, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, groupResourceName))
 }
 
+// UpdateGroup updates an existing group for the realm
+func (c *Client) UpdateGroup(accessToken string, realmName string, groupID string, group GroupRepresentation) error {
+	return c.put(accessToken, group, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, groupResourceName, groupID))
+}
+
 // DeleteGroup deletes a group from the realm
 func (c *Client) DeleteGroup(accessToken string, realmName string, groupID string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, groupResourceName, groupID))
