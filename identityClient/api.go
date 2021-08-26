@@ -23,6 +23,9 @@ const (
 	SAMLKeycloakSubsystemDescriptionFormat                  = "keycloak-saml-subsystem"
 	UserSessionNoteOIDCApplicationMapperType                = "oidc-user-session-note-mapper"
 	UserAttributeOIDCApplicationMapperType                  = "oidc-user-attribute-mapper"
+	UserModelRealmRoleOIDCApplicationMapperType             = "oidc-usermodel-realm-role-mapper"
+	UserModelClientRoleOIDCApplicationMapperType            = "oidc-usermodel-client-role-mapper"
+	UserModelAttributeOIDCApplicationMapperType             = "oidc-usermodel-attribute-mapper"
 	GroupMembershipOIDCApplicationMapperType                = "oidc-group-membership-mapper"
 	RoleListSAMLApplicationMapperType                       = "saml-role-list-mapper"
 	UserPropertySAMLApplicationMapperType                   = "saml-user-property-mapper"
@@ -774,6 +777,12 @@ type ApplicationMapper struct {
 	SAMLAttributeNameFormat string `json:"saml_attribute_name_format"`
 	// If true, all roles will be stored under one attribute with multiple attribute values
 	SingleRoleAttribute bool `json:"single_role_attribute"`
+	// The prefix given to to realm roles in this mapping
+	RealmRolePrefix string `json:"realm_role_prefix"`
+	// The Application ClientID for the role mapping
+	ClientRoleClientID string `json:"client_id"`
+	// The prefix given to to client roles in this mapping
+	ClientRolePrefix string `json:"client_role_prefix"`
 }
 
 // ApplicationSAMLDescription wraps values for the SAML XML description for an Application
