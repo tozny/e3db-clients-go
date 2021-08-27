@@ -378,10 +378,10 @@ func (c *E3dbIdentityClient) CreateRealmApplication(ctx context.Context, params 
 	return application, err
 }
 
-// UpdateApplicationClientRole updates the specified client role, returning error (if any).
-func (c *E3dbIdentityClient) UpdateApplicationClientRole(ctx context.Context, params UpdateApplicationClientRoleRequest) (*Role, error) {
+// UpdateApplicationRole updates the specified client role, returning the updated role and error (if any).
+func (c *E3dbIdentityClient) UpdateApplicationRole(ctx context.Context, params UpdateApplicationRoleRequest) (*Role, error) {
 	var role *Role
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + "role"
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + "role" + "/" + url.QueryEscape(params.Role.Name)
 	req, err := e3dbClients.CreateRequest("PUT", path, params.Role)
 	if err != nil {
 		return role, err
