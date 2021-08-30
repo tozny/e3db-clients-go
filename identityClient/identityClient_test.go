@@ -56,6 +56,258 @@ var (
 	bootstrapClient                = New(BootIdentityClientConfig)
 )
 
+func createIdentityServiceClient(t *testing.T) E3dbIdentityClient {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	return identityServiceClient
+}
+
+func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, string) {
+	accountTag := uuid.New().String()
+	queenClientInfo, accountInfo, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := accountInfo.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, registrationToken)
+	}
+	return identityServiceClient, registrationToken
+}
+
+func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) *RegisterIdentityResponse {
+	identityTag := uuid.New().String()
+	identityName := "Freud" + identityTag
+	identityEmail := "freud+" + identityTag + "@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realmName,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	return identity
+}
+
+func uniqueString(prefix string) string {
+	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
+}
+
+func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
+	unique := uniqueString("realm")
+	params := CreateRealmRequest{
+		RealmName:     unique,
+		SovereignName: "realmsovereign",
+	}
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	return realm
+}
+
+func createRealmApplication(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) *Application {
+	unique := uniqueString("realmapplication")
+	params := CreateRealmApplicationRequest{
+		RealmName: realmName,
+		Application: Application{
+			ClientID: unique,
+			Name:     unique,
+			Active:   true,
+			Protocol: ProtocolOIDC,
+			OIDCSettings: ApplicationOIDCSettings{
+				RootURL: "https://jenkins.acme.com",
+			},
+		},
+	}
+
+	application, err := identityServiceClient.CreateRealmApplication(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error %s creating realm %s application %+v using %+v", err, realmName, params, identityServiceClient)
+	}
+
+	return application
+}
+
+func createRealmApplicationRole(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string, roleName string) *ApplicationRole {
+	params := CreateRealmApplicationRoleRequest{
+		RealmName:     realmName,
+		ApplicationID: applicationID,
+		ApplicationRole: ApplicationRole{
+			Name:        roleName,
+			Description: fmt.Sprintf("%s description", roleName),
+		},
+	}
+
+	applicationRole, err := identityServiceClient.CreateRealmApplicationRole(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error %s creating realm application role %+v using %+v", err, params, identityServiceClient)
+	}
+
+	return applicationRole
+}
+
+func listRealmApplicationRoles(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string) []ApplicationRole {
+	params := ListRealmApplicationRolesRequest{
+		RealmName:     realmName,
+		ApplicationID: applicationID,
+	}
+	applicationRoles, err := identityServiceClient.ListRealmApplicationRoles(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing realm application roles: %+v", err)
+	}
+
+	return applicationRoles.ApplicationRoles
+}
+
+func groupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, identity string) []Group {
+	params := RealmIdentityRequest{
+		RealmName:  realmName,
+		IdentityID: identity,
+	}
+
+	groups, err := identityServiceClient.GroupMembership(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing default realm groups: %+v", err)
+	}
+
+	return groups.Groups
+}
+
+func updateGroupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, identity string, groups []string) {
+	params := UpdateIdentityGroupMembershipRequest{
+		RealmName:  realmName,
+		IdentityID: identity,
+		Groups:     groups,
+	}
+	var err error
+	switch method {
+	case "join":
+		err = identityServiceClient.JoinGroups(testContext, params)
+		break
+	case "leave":
+		err = identityServiceClient.LeaveGroups(testContext, params)
+		break
+	case "update":
+		err = identityServiceClient.UpdateGroupMembership(testContext, params)
+		break
+	default:
+		err = fmt.Errorf("Unknown method for update default realm groups")
+	}
+
+	if err != nil {
+		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
+	}
+}
+
+func createRealmGroup(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, groupName string) *Group {
+	params := CreateRealmGroupRequest{
+		RealmName: realmName,
+		Group: Group{
+			Name: groupName,
+		},
+	}
+
+	group, err := identityServiceClient.CreateRealmGroup(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error creating realm group %+v: %+v", params, err)
+	}
+
+	return group
+}
+
+func listRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
+	params := ListRealmGroupsRequest{
+		RealmName: realmName,
+	}
+
+	groups, err := identityServiceClient.ListRealmGroups(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing realm application roles: %+v", err)
+	}
+
+	return groups.Groups
+}
+
+func listDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
+	params := ListRealmGroupsRequest{
+		RealmName: realmName,
+	}
+
+	groups, err := identityServiceClient.ListRealmDefaultGroups(testContext, params)
+
+	if err != nil {
+		t.Fatalf("error listing default realm groups: %+v", err)
+	}
+
+	return groups.Groups
+}
+
+func updateDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, groups []string) {
+	params := UpdateGroupListRequest{
+		RealmName: realmName,
+		Groups:    groups,
+	}
+	var err error
+	switch method {
+	case "add":
+		err = identityServiceClient.AddRealmDefaultGroups(testContext, params)
+		break
+	case "remove":
+		err = identityServiceClient.RemoveRealmDefaultGroups(testContext, params)
+		break
+	case "replace":
+		err = identityServiceClient.ReplaceRealmDefaultGroups(testContext, params)
+		break
+	default:
+		err = fmt.Errorf("Unknown method for update default realm groups")
+	}
+
+	if err != nil {
+		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
+	}
+}
+
 func TestHealthCheckPassesIfServiceIsRunning(t *testing.T) {
 	err := anonymousIdentityServiceClient.HealthCheck(testContext)
 	if err != nil {
@@ -981,188 +1233,6 @@ func TestIdentityDetails(t *testing.T) {
 	}
 }
 
-func createIdentityServiceClient(t *testing.T) E3dbIdentityClient {
-	accountTag := uuid.New().String()
-	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-	return identityServiceClient
-}
-
-func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, string) {
-	accountTag := uuid.New().String()
-	queenClientInfo, accountInfo, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
-	if err != nil {
-		t.Fatalf("Error %s making new account", err)
-	}
-	queenClientInfo.Host = toznyCyclopsHost
-	identityServiceClient := New(queenClientInfo)
-
-	queenClientInfo.Host = e3dbAccountHost
-	accountToken := accountInfo.AccountServiceToken
-	queenAccountClient := accountClient.New(queenClientInfo)
-	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
-	if err != nil {
-		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, registrationToken)
-	}
-	return identityServiceClient, registrationToken
-}
-
-func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) *RegisterIdentityResponse {
-	identityTag := uuid.New().String()
-	identityName := "Freud" + identityTag
-	identityEmail := "freud+" + identityTag + "@example.com"
-	identityFirstName := "Sigmund"
-	identityLastName := "Freud"
-	signingKeys, err := e3dbClients.GenerateSigningKeys()
-	if err != nil {
-		t.Fatalf("error %s generating identity signing keys", err)
-	}
-	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
-	if err != nil {
-		t.Fatalf("error %s generating encryption keys", err)
-	}
-	registerParams := RegisterIdentityRequest{
-		RealmRegistrationToken: registrationToken,
-		RealmName:              realmName,
-		Identity: Identity{
-			Name:        identityName,
-			Email:       identityEmail,
-			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
-			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
-			FirstName:   identityFirstName,
-			LastName:    identityLastName,
-		},
-	}
-	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
-	}
-	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
-	if err != nil {
-		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
-	}
-	return identity
-}
-
-func uniqueString(prefix string) string {
-	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
-}
-
-func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
-	unique := uniqueString("realm")
-	params := CreateRealmRequest{
-		RealmName:     unique,
-		SovereignName: "realmsovereign",
-	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	return realm
-}
-
-func createRealmApplication(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) *Application {
-	unique := uniqueString("realmapplication")
-	params := CreateRealmApplicationRequest{
-		RealmName: realmName,
-		Application: Application{
-			ClientID: unique,
-			Name:     unique,
-			Active:   true,
-			Protocol: ProtocolOIDC,
-			OIDCSettings: ApplicationOIDCSettings{
-				RootURL: "https://jenkins.acme.com",
-			},
-		},
-	}
-
-	application, err := identityServiceClient.CreateRealmApplication(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error %s creating realm %s application %+v using %+v", err, realmName, params, identityServiceClient)
-	}
-
-	return application
-}
-
-func createRealmApplicationRole(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string, roleName string) *ApplicationRole {
-	params := CreateRealmApplicationRoleRequest{
-		RealmName:     realmName,
-		ApplicationID: applicationID,
-		ApplicationRole: ApplicationRole{
-			Name:        roleName,
-			Description: fmt.Sprintf("%s description", roleName),
-		},
-	}
-
-	applicationRole, err := identityServiceClient.CreateRealmApplicationRole(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error %s creating realm application role %+v using %+v", err, params, identityServiceClient)
-	}
-
-	return applicationRole
-}
-
-func listRealmApplicationRoles(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, applicationID string) []ApplicationRole {
-	params := ListRealmApplicationRolesRequest{
-		RealmName:     realmName,
-		ApplicationID: applicationID,
-	}
-	applicationRoles, err := identityServiceClient.ListRealmApplicationRoles(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error listing realm application roles: %+v", err)
-	}
-
-	return applicationRoles.ApplicationRoles
-}
-
-func groupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, identity string) []Group {
-	params := RealmIdentityRequest{
-		RealmName:  realmName,
-		IdentityID: identity,
-	}
-
-	groups, err := identityServiceClient.GroupMembership(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error listing default realm groups: %+v", err)
-	}
-
-	return groups.Groups
-}
-
-func updateGroupMembership(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, identity string, groups []string) {
-	params := UpdateIdentityGroupMembershipRequest{
-		RealmName:  realmName,
-		IdentityID: identity,
-		Groups:     groups,
-	}
-	var err error
-	switch method {
-	case "join":
-		err = identityServiceClient.JoinGroups(testContext, params)
-		break
-	case "leave":
-		err = identityServiceClient.LeaveGroups(testContext, params)
-		break
-	case "update":
-		err = identityServiceClient.UpdateGroupMembership(testContext, params)
-		break
-	default:
-		err = fmt.Errorf("Unknown method for update default realm groups")
-	}
-
-	if err != nil {
-		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
-	}
-}
-
 func TestDeleteIdentityRemoves(t *testing.T) {
 	client, registrationToken := createIdentityServiceClientAndToken(t)
 
@@ -1525,76 +1595,6 @@ func TestDeletedApplicationRoleIsNotListed(t *testing.T) {
 
 	if len(actual) != len(defaultRoles) {
 		t.Errorf("expected %d after deleting the role created, recieved %+v", len(defaultRoles), actual)
-	}
-}
-
-func createRealmGroup(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, groupName string) *Group {
-	params := CreateRealmGroupRequest{
-		RealmName: realmName,
-		Group: Group{
-			Name: groupName,
-		},
-	}
-
-	group, err := identityServiceClient.CreateRealmGroup(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error creating realm group %+v: %+v", params, err)
-	}
-
-	return group
-}
-
-func listRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
-	params := ListRealmGroupsRequest{
-		RealmName: realmName,
-	}
-
-	groups, err := identityServiceClient.ListRealmGroups(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error listing realm application roles: %+v", err)
-	}
-
-	return groups.Groups
-}
-
-func listDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) []Group {
-	params := ListRealmGroupsRequest{
-		RealmName: realmName,
-	}
-
-	groups, err := identityServiceClient.ListRealmDefaultGroups(testContext, params)
-
-	if err != nil {
-		t.Fatalf("error listing default realm groups: %+v", err)
-	}
-
-	return groups.Groups
-}
-
-func updateDefaultRealmGroups(t *testing.T, identityServiceClient E3dbIdentityClient, method string, realmName string, groups []string) {
-	params := UpdateGroupListRequest{
-		RealmName: realmName,
-		Groups:    groups,
-	}
-	var err error
-	switch method {
-	case "add":
-		err = identityServiceClient.AddRealmDefaultGroups(testContext, params)
-		break
-	case "remove":
-		err = identityServiceClient.RemoveRealmDefaultGroups(testContext, params)
-		break
-	case "replace":
-		err = identityServiceClient.ReplaceRealmDefaultGroups(testContext, params)
-		break
-	default:
-		err = fmt.Errorf("Unknown method for update default realm groups")
-	}
-
-	if err != nil {
-		t.Fatalf("error updating default realm groups with method %q and request %+v: %+v", method, params, err)
 	}
 }
 
