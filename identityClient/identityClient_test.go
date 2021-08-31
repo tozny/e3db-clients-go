@@ -129,6 +129,23 @@ func uniqueString(prefix string) string {
 
 	return fmt.Sprintf("%s%d", prefix, rand.Int())
 }
+
+func createRealmWithParams(t *testing.T, identityServiceClient E3dbIdentityClient, params CreateRealmRequest) *Realm {
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err == nil {
+		return realm
+	}
+
+	t.Log("=================================")
+	t.Log("FAILED to create realm, RE-TRY...")
+	t.Log("=================================")
+
+	realm, err = identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+
+	return realm
 }
 
 func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
@@ -137,11 +154,8 @@ func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm 
 		RealmName:     unique,
 		SovereignName: "realmsovereign",
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
-	return realm
+
+	return createRealmWithParams(t, identityServiceClient, params)
 }
 
 func createRealmApplication(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) *Application {
@@ -340,10 +354,7 @@ func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Errorf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	if realm.Name != realmName {
 		t.Errorf("expected realm name to be %+v , got %+v", realmName, realm)
@@ -364,10 +375,7 @@ func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.Name)
 	if err != nil {
@@ -392,10 +400,7 @@ func TestDeleteRealmDeletesCreatedRealm(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	describedRealm, err := identityServiceClient.DescribeRealm(testContext, realm.Name)
 	if err != nil {
@@ -433,10 +438,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "freud@example.com"
@@ -493,10 +495,7 @@ func TestIdentityLoginWithRegisteredIdentity(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -556,10 +555,7 @@ func TestRegisterRealmBrokerIdentityWithCreatedRealm(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -632,13 +628,7 @@ func TestApplicationCRD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
-
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	autoGeneratedApplications, err := identityServiceClient.ListRealmApplications(testContext, realm.Name)
@@ -725,13 +715,7 @@ func TestProviderCRD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
-
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	autoGeneratedProviders, err := identityServiceClient.ListRealmProviders(testContext, realm.Name)
@@ -836,13 +820,7 @@ func TestProviderMapperCRD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
-
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	realmProviderCreateParams := CreateRealmProviderRequest{
@@ -1006,10 +984,7 @@ func TestListIdentitiesPaginates(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	// Register multiple identities
 	// These identities can use the same keys...
@@ -1107,10 +1082,7 @@ func TestListIdentitiesRespectsOffest(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	// Register multiple identities
 	// These identities can use the same keys...
@@ -1186,10 +1158,7 @@ func TestIdentityDetails(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	// Fetch Identity Details for SovereignIdentity
@@ -1952,10 +1921,7 @@ func TestRealmRoleCRD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	autoGeneratedRealmRoles, err := identityServiceClient.ListRealmRoles(testContext, realm.Name)
@@ -2038,11 +2004,7 @@ func TestFetchApplicationSecret(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
-
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	realmApplicationCreateParams := CreateRealmApplicationRequest{
@@ -2092,11 +2054,7 @@ func TestFetchApplicationSAMLSDescription(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
-
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	realmApplicationCreateParams := CreateRealmApplicationRequest{
@@ -2157,10 +2115,7 @@ func TestApplicationMapperCRD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	// Ensure realm is cleaned up even if test fails
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	// Create realm OIDC application
@@ -2262,10 +2217,7 @@ func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2341,10 +2293,7 @@ func TestSearchingIdentitiesWithEmailValidRealmInvalidIdentitiesReturnsSuccess(t
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	requestParam := SearchRealmIdentitiesRequest{
 		RealmName:      realm.Name,
@@ -2370,10 +2319,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2453,10 +2399,7 @@ func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2533,10 +2476,7 @@ func TestSearchingIdentitiesWithUsernameValidRealmInvalidIdentitiesReturnsSucces
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	requestParam := SearchRealmIdentitiesRequest{
 		RealmName:         realm.Name,
@@ -2561,10 +2501,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2645,10 +2582,7 @@ func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	//defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2716,10 +2650,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidClientIDs(t *testing.T
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2800,10 +2731,7 @@ func TestSearchingIdentitiesWithClientIDsValidRealmReturnsSuccess(t *testing.T) 
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
@@ -2881,10 +2809,7 @@ func TestUpdateRealmSetting(t *testing.T) {
 		SovereignName: sovereignName,
 	}
 	// Create Realm
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	// defer delete
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	// Check Current Setttings
@@ -2946,10 +2871,7 @@ func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 		SovereignName: sovereignName,
 	}
 	// Create Realm
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	// defer delete
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	// Check Current Setttings
@@ -3009,10 +2931,7 @@ func TestRealmRoleCRUD(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	autoGeneratedRealmRoles, err := identityServiceClient.ListRealmRoles(testContext, realm.Name)
@@ -3126,10 +3045,7 @@ func TestUpdateRole(t *testing.T) {
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v", err, params, identityServiceClient)
-	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	autoGeneratedRealmRoles, err := identityServiceClient.ListRealmRoles(testContext, realm.Name)
