@@ -53,7 +53,7 @@ it : lint
 
 # Run all Identity Integration tests
 test-identity:
-	go test  -v  identityClient/identityClient_test.go identityClient/identityClient.go identityClient/api.go 
+	go test -timeout 20m -v identityClient/identityClient_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run Internal Identity Integration Tests
 test-intenal-identity:
