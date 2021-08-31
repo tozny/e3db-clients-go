@@ -13,6 +13,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
+	"github.com/tozny/utils-go"
 )
 
 var (
@@ -131,18 +132,22 @@ func uniqueString(prefix string) string {
 }
 
 func createRealmWithParams(t *testing.T, identityServiceClient E3dbIdentityClient, params CreateRealmRequest) *Realm {
-	realm, err := identityServiceClient.CreateRealm(testContext, params)
-	if err == nil {
-		return realm
+	var realm *Realm
+	var err error
+	retries := 2
+
+	ready := func() bool {
+		realm, err = identityServiceClient.CreateRealm(testContext, params)
+		if err != nil {
+			t.Logf("FAILED to create realm. Will try %d times in total.", retries+1)
+			return false
+		}
+		return true
 	}
 
-	t.Log("=================================")
-	t.Log("FAILED to create realm, RE-TRY...")
-	t.Log("=================================")
-
-	realm, err = identityServiceClient.CreateRealm(testContext, params)
-	if err != nil {
-		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	success := utils.Await(ready, retries)
+	if !success {
+		t.Fatalf("%s realm creation failed after %d retries; %+v %+v\n", err, retries, params, identityServiceClient)
 	}
 
 	return realm
