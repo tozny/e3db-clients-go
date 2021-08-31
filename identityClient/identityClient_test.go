@@ -3,6 +3,7 @@ package identityClient
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -124,7 +125,10 @@ func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, re
 }
 
 func uniqueString(prefix string) string {
-	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
+
+	return fmt.Sprintf("%s%d", prefix, rand.Int())
+}
 }
 
 func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
@@ -621,13 +625,9 @@ func TestApplicationCRD(t *testing.T) {
 	}
 
 	queenClientInfo.Host = e3dbIdentityHost
-
 	identityServiceClient := New(queenClientInfo)
-
-	realmName := fmt.Sprintf("TestApplicationCRD%d", time.Now().Unix())
-
+	realmName := uniqueString("TestApplicationCRD")
 	sovereignName := "Yassqueen"
-
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
@@ -711,7 +711,6 @@ func TestApplicationCRD(t *testing.T) {
 
 func TestProviderCRD(t *testing.T) {
 	accountTag := uuid.New().String()
-
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
 
 	if err != nil {
@@ -719,13 +718,9 @@ func TestProviderCRD(t *testing.T) {
 	}
 
 	queenClientInfo.Host = e3dbIdentityHost
-
 	identityServiceClient := New(queenClientInfo)
-
-	realmName := fmt.Sprintf("TestProviderCRD%d", time.Now().Unix())
-
+	realmName := uniqueString("TestProviderCRD")
 	sovereignName := "Yassqueen"
-
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
@@ -827,7 +822,6 @@ func TestProviderCRD(t *testing.T) {
 
 func TestProviderMapperCRD(t *testing.T) {
 	accountTag := uuid.New().String()
-
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
 
 	if err != nil {
@@ -835,13 +829,9 @@ func TestProviderMapperCRD(t *testing.T) {
 	}
 
 	queenClientInfo.Host = e3dbIdentityHost
-
 	identityServiceClient := New(queenClientInfo)
-
-	realmName := fmt.Sprintf("TestProviderMapperCRD%d", time.Now().Unix())
-
+	realmName := uniqueString("TestProviderMapperCRD")
 	sovereignName := "Yassqueen"
-
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
@@ -1010,7 +1000,7 @@ func TestListIdentitiesPaginates(t *testing.T) {
 
 	// New Realm
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestListIdentities")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -1111,7 +1101,7 @@ func TestListIdentitiesRespectsOffest(t *testing.T) {
 
 	// New Realm
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestListIdentities")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -1190,7 +1180,7 @@ func TestIdentityDetails(t *testing.T) {
 
 	// New Realm
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestListIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestListIdentities")
 	sovereignName := "yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -1956,7 +1946,7 @@ func TestRealmRoleCRD(t *testing.T) {
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
 
-	realmName := fmt.Sprintf("TestRealmRoleCRD%d", time.Now().Unix())
+	realmName := uniqueString("TestRealmRoleCRD")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2042,7 +2032,7 @@ func TestFetchApplicationSecret(t *testing.T) {
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
 
-	realmName := fmt.Sprintf("TestFetchApplicationSecret%d", time.Now().Unix())
+	realmName := uniqueString("TestFetchApplicationSecret")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2096,7 +2086,7 @@ func TestFetchApplicationSAMLSDescription(t *testing.T) {
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
 
-	realmName := fmt.Sprintf("TestFetchApplicationSAMLSDescription%d", time.Now().Unix())
+	realmName := uniqueString("TestFetchApplicationSAMLSDescription")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2161,7 +2151,7 @@ func TestApplicationMapperCRD(t *testing.T) {
 	queenClientInfo.Host = e3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
 	// Create realm
-	realmName := fmt.Sprintf("TestApplicationMapperCRD%d", time.Now().Unix())
+	realmName := uniqueString("TestApplicationMapperCRD")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2266,7 +2256,7 @@ func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2345,7 +2335,7 @@ func TestSearchingIdentitiesWithEmailValidRealmInvalidIdentitiesReturnsSuccess(t
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2374,7 +2364,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidEmails(t *testing.T) {
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2457,7 +2447,7 @@ func TestSearchingIdentitiesWithUsernameValidRealmReturnsSuccess(t *testing.T) {
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2537,7 +2527,7 @@ func TestSearchingIdentitiesWithUsernameValidRealmInvalidIdentitiesReturnsSucces
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2565,7 +2555,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidUsernames(t *testing.T
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2649,7 +2639,7 @@ func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	realmName := uniqueString("PrivatRealmInfo")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2720,7 +2710,7 @@ func TestSearchingIdentitiesOnlyReturnsIdentifiersForValidClientIDs(t *testing.T
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2804,7 +2794,7 @@ func TestSearchingIdentitiesWithClientIDsValidRealmReturnsSuccess(t *testing.T) 
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("TestSearchIdentities%d", time.Now().Unix())
+	realmName := uniqueString("TestSearchIdentities")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2884,7 +2874,7 @@ func TestUpdateRealmSetting(t *testing.T) {
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	realmName := uniqueString("PrivatRealmInfo")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -2949,7 +2939,7 @@ func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("PrivatRealmInfo%d", time.Now().Unix())
+	realmName := uniqueString("PrivatRealmInfo")
 	sovereignName := "QueenCoolName"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -3013,8 +3003,7 @@ func TestRealmRoleCRUD(t *testing.T) {
 
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-
-	realmName := fmt.Sprintf("TestRealmRoleCRUD%d", time.Now().Unix())
+	realmName := uniqueString("TestRealmRoleCRUD")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
@@ -3131,7 +3120,7 @@ func TestUpdateRole(t *testing.T) {
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
 
-	realmName := fmt.Sprintf("TestRealmRoleCRUD%d", time.Now().Unix())
+	realmName := uniqueString("TestRealmRoleCRUD")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
