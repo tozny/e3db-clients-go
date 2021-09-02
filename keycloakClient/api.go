@@ -10,12 +10,14 @@ import (
 
 // TokenInfo represents a full oAuth2 JWT token response with expiration and refresh.
 type TokenInfo struct {
-	TokenType      string
-	AccessToken    string
-	Expires        time.Time
-	RefreshToken   string
-	RefreshExpires time.Time
-	refresher      *time.Timer
+	TokenType        string
+	AccessToken      string
+	Expires          time.Time
+	RefreshToken     string
+	RefreshExpires   time.Time
+	autorefreshes    bool
+	onRefreshFailure func(error)
+	refresher        *time.Timer
 }
 
 // Client is the keycloak client which contains a map of current tokens.

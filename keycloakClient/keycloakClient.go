@@ -94,6 +94,21 @@ func New(config Config) (*Client, error) {
 	return &client, nil
 }
 
+// tokenAutoRefresher returns a token refresher func that will automatically refresh the token
+// before the given expiration time
+func (c *Client) tokenAutoRefresher(expires time.Time, realm string, username string, password string, onFailure func(error)) *time.Timer {
+	// Refresh before the auth token expires
+	nextRefresh := expires.Sub(time.Now().Add(time.Duration(c.refreshAuthTokenBeforeExpiration) * time.Second))
+	refresher := time.AfterFunc(nextRefresh, func(realm, username, password string, onFailure func(error), c *Client) func() {
+		// send back a function which will re-call this method after the timeout
+		// capturing the arguments in a closure.
+		return func() {
+			c.AutoRefreshToken(realm, username, password, onFailure)
+		}
+	}(realm, username, password, onFailure, c))
+	return refresher
+}
+
 // AutoRefreshToken starts a process where an access token is kept perpetually
 // warm in the cache, refreshing itself five seconds before it expires.
 func (c *Client) AutoRefreshToken(realm string, username string, password string, onFailure func(error)) {
@@ -104,16 +119,10 @@ func (c *Client) AutoRefreshToken(realm string, username string, password string
 		onFailure(err)
 		return
 	}
-	// Refresh before the auth token expires
-	nextRefresh := info.Expires.Sub(time.Now().Add(time.Duration(c.refreshAuthTokenBeforeExpiration) * time.Second))
+	info.autorefreshes = true
+	info.onRefreshFailure = onFailure
 	// Pass in arguments to allow original args to get garbage collected.
-	info.refresher = time.AfterFunc(nextRefresh, func(realm, username, password string, onFailure func(error), c *Client) func() {
-		// send back a function which will re-call this method after the timeout
-		// capturing the arguments in a closure.
-		return func() {
-			c.AutoRefreshToken(realm, username, password, onFailure)
-		}
-	}(realm, username, password, onFailure, c))
+	info.refresher = c.tokenAutoRefresher(info.Expires, username, username, password, onFailure)
 }
 
 // toTokenJson translated the expiration info in a tokenJSON to a full token with time.Time
@@ -167,6 +176,10 @@ func (c *Client) GetTokenInfo(realm string, username string, password string, fo
 		if exists && tokenInfo.refresher != nil {
 			tokenInfo.refresher.Stop()
 		}
+		if exists && tokenInfo.autorefreshes {
+			newTokenInfo.refresher = c.tokenAutoRefresher(newTokenInfo.Expires, realm, username, password, tokenInfo.onRefreshFailure)
+		}
+
 		c.tokens[key] = newTokenInfo
 		tokenInfo = newTokenInfo
 	}
