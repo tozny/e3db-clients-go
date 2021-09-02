@@ -145,10 +145,12 @@ func (c *Client) GetTokenInfo(realm string, username string, password string, fo
 	var newTokenInfo *TokenInfo
 	var err error
 	key := realm + username
-	KeycloakTokenInfoLock.Lock()
+
 	// Get exclusive access to the token
+	KeycloakTokenInfoLock.Lock()
+	defer KeycloakTokenInfoLock.Unlock()
+
 	tokenInfo, exists := c.tokens[key]
-	KeycloakTokenInfoLock.Unlock()
 	if !exists || time.Now().After(tokenInfo.RefreshExpires) {
 		// If the token doesn't exist or can no longer be refreshed, get a new token
 		newTokenInfo, err = c.FetchToken(realm, username, password)
