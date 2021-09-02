@@ -66,6 +66,11 @@ type RealmInfo struct {
 	Domain                string    `json:"domain"`
 }
 
+//InternalDeleteRealmsRequest wraps the values needed for the internal delete realms endpoint
+type InternalDeleteRealmsRequest struct {
+	AccountID string `json:"account_id"`
+}
+
 // PrivateRealmInfo represents the private information about a TozID realm
 type PrivateRealmInfo struct {
 	Name                  string    `json:"name"`
