@@ -22,6 +22,7 @@ var (
 	bootstrapPublicSigningKey  = os.Getenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
 	bootstrapPrivateSigningKey = os.Getenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
 	testContext                = context.TODO()
+	retryTimeout               = 3 * time.Second
 )
 
 //TestAccountDeleteReturnsSuccess calls account delete
@@ -192,4 +193,222 @@ func TestAccountDeleteSuccessCanRecreateAccountWithSameEmailReturns200(t *testin
 		t.Fatalf("Error %s making  account With same Email checked %+v times ", err, retries)
 	}
 
+}
+
+// TestAccountDeleteSuccessCanRecreateAccountAndRealmsWithSameEmailReturns200 calls account delete and creates an account with the same email
+func TestAccountDeleteSuccessCanRecreateAccountAndRealmsWithSameEmailReturns200(t *testing.T) {
+	// Create Account
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	randomUUID := uuid.New().String()
+	accountEmail := fmt.Sprintf("testemail-%s@test.com", randomUUID)
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccountWithEmail(t, &registrationClient, randomUUID, accountEmail, cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	// Account Client V1 and V2
+	queenAccountClientV2 := accountClient.NewV2(queenClientInfo)
+	queenAccountClient := accountClient.New(queenClientInfo)
+	accountUUID := uuid.MustParse(createAccountResponse.Profile.AccountID)
+	// Create Identity Client
+	identityServiceClient := identityClient.New(queenClientInfo)
+	realmName := fmt.Sprintf("TestAccountandRealm%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create a Realm
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	accountToken := createAccountResponse.AccountServiceToken
+	// Registration Token
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	identityName := "Katie"
+	identityEmail := "katie@tozny.com"
+	identityFirstName := "Katie"
+	identityLastName := "Rock"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	registerParams := identityClient.RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: identityClient.Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: cyclopsServiceHost,
+	}
+	anonClient := identityClient.New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	// Delete Account Request
+	request := accountClient.DeleteAccountRequestData{
+		AccountID: accountUUID,
+	}
+	err = queenAccountClientV2.DeleteAccount(testContext, request)
+	if err != nil {
+		t.Fatalf("Error deleting account %+v", err)
+	}
+	// Recreate Account with same Email
+	for {
+		var errors error
+		registrationClientTest := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+		queenClientInfo, _, errors = e3dbTest.CreateE3DBAccountWithEmail(t, &registrationClientTest, randomUUID, accountEmail, cyclopsServiceHost)
+		if errors == nil {
+			break
+		}
+		time.Sleep(retryTimeout)
+	}
+	identityServiceClient = identityClient.New(queenClientInfo)
+	params = identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create a Realm again
+	_, err = identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("Realm Ceation Failed %+v", err)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+}
+
+func TestAccountDeleteSuccessCanRecreateAccountAndRealmsAndIdentityWithSameEmailReturns200(t *testing.T) {
+	// Create Account
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	randomUUID := uuid.New().String()
+	accountEmail := fmt.Sprintf("testemail-%s@test.com", randomUUID)
+	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccountWithEmail(t, &registrationClient, randomUUID, accountEmail, cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	// Account Client V1 and V2
+	queenAccountClientV2 := accountClient.NewV2(queenClientInfo)
+	queenAccountClient := accountClient.New(queenClientInfo)
+	accountUUID := uuid.MustParse(createAccountResponse.Profile.AccountID)
+	// Create Identity Client
+	identityServiceClient := identityClient.New(queenClientInfo)
+	realmName := fmt.Sprintf("TestAccountandRealm%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create a Realm
+	realm, err := identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("%s realm creation %+v failed using %+v\n", err, params, identityServiceClient)
+	}
+	accountToken := createAccountResponse.AccountServiceToken
+	// Registration Token
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	identityName := "Katie"
+	identityEmail := "katie@tozny.com"
+	identityFirstName := "Katie"
+	identityLastName := "Rock"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	registerParams := identityClient.RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: identityClient.Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: cyclopsServiceHost,
+	}
+	anonClient := identityClient.New(anonConfig)
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
+	// Delete Account Request
+	request := accountClient.DeleteAccountRequestData{
+		AccountID: accountUUID,
+	}
+	err = queenAccountClientV2.DeleteAccount(testContext, request)
+	if err != nil {
+		t.Fatalf("Error deleting account %+v", err)
+	}
+	// Recreate Account with same Email
+	for {
+		var errors error
+		registrationClientTest := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+		queenClientInfo, createAccountResponse, errors = e3dbTest.CreateE3DBAccountWithEmail(t, &registrationClientTest, randomUUID, accountEmail, cyclopsServiceHost)
+		if errors == nil {
+			break
+		}
+		time.Sleep(retryTimeout)
+	}
+	identityServiceClient = identityClient.New(queenClientInfo)
+	params = identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	// Create a Realm again
+
+	realm, err = identityServiceClient.CreateRealm(testContext, params)
+	if err != nil {
+		t.Fatalf("Create realm failed %+v", err)
+	}
+	defer identityServiceClient.DeleteRealm(testContext, realmName)
+
+	// Registration Token
+	queenAccountClient = accountClient.New(queenClientInfo)
+	registrationToken, err = test.CreateRegistrationToken(&queenAccountClient, createAccountResponse.AccountServiceToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	// Register same identity
+	registerParams = identityClient.RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: identityClient.Identity{
+			Name:        identityName,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+			Email:       identityEmail,
+		},
+	}
+	_, err = anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
+	}
 }

@@ -702,6 +702,15 @@ func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmNa
 	return err
 }
 
+func (c *E3dbIdentityClient) InternalDeleteRealms(ctx context.Context, params InternalDeleteRealmsRequest) error {
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
 func (c *E3dbIdentityClient) InternalDeleteIdentitiesByProvider(ctx context.Context, params InternalDeleteIdentitiesByProviderRequest) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.RealmName + "/id-provider/" + params.ProviderID.String()
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
