@@ -79,7 +79,7 @@ func New(config Config) (*Client, error) {
 		tokenProviderURL:                 urlToken,
 		apiURL:                           urlApi,
 		httpClient:                       &httpClient,
-		tokens:                           map[string]*TokenInfo{},
+		tokens:                           map[tokenMapKey]*TokenInfo{},
 		refreshAuthTokenBeforeExpiration: config.RefreshAuthTokenBeforeExpiration,
 		config:                           config,
 	}
@@ -144,7 +144,10 @@ func (t *tokenJSON) toTokenInfo(iat time.Time) *TokenInfo {
 func (c *Client) GetTokenInfo(realm string, username string, password string, force bool) (*TokenInfo, error) {
 	var newTokenInfo *TokenInfo
 	var err error
-	key := realm + username
+	key := tokenMapKey{
+		realm:    realm,
+		username: username,
+	}
 
 	// Get exclusive access to the token
 	KeycloakTokenInfoLock.Lock()

@@ -20,12 +20,18 @@ type TokenInfo struct {
 	refresher        *time.Timer
 }
 
+// tokenMapKey is the key of the `tokens` map on Client
+type tokenMapKey struct {
+	realm    string
+	username string
+}
+
 // Client is the keycloak client which contains a map of current tokens.
 type Client struct {
 	tokenProviderURL                 *url.URL
 	apiURL                           *url.URL
 	httpClient                       *http.Client
-	tokens                           map[string]*TokenInfo
+	tokens                           map[tokenMapKey]*TokenInfo
 	refreshAuthTokenBeforeExpiration int32
 	config                           Config
 }
