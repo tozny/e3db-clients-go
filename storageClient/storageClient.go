@@ -596,3 +596,26 @@ func New(config e3dbClients.ClientConfig) StorageClient {
 		requester:      request.ApplyInterceptors(&http.Client{}, config.Interceptors...),
 	}
 }
+
+// Returns all access policies (User ID, Writer ID, Reader ID, Record Type) for a given writer ID
+func (c *StorageClient) InternalListAllowedReadsByWriterID(ctx context.Context, params InternalListAllowedReadsByWriterIDRequest) (*InternalListAllowedReadsResponse, error) {
+	var result *InternalListAllowedReadsResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/allowed_readers"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) InternalRecordsByWriterID(ctx context.Context, params InternalRecordsByWriterIDRequest) (*InternalRecordsByWriterIDResponse, error) {
+	var result *InternalRecordsByWriterIDResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/records"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}

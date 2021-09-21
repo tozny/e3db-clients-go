@@ -141,3 +141,15 @@ type InternalRollQueenClientRequest struct {
 	RegistrationToken string             `json:"token"`
 	Client            ClientRegisterInfo `json:"client"`
 }
+
+// A request body for the Client List endpoint
+type InternalClientListRequest struct {
+	NextToken int64 `json:"next_token"`
+	Limit     int   `json:"limit"`
+}
+
+// A response body for the Client List endpoint
+type InternalClientListResponse struct {
+	ClientIDs []string `json:"client_ids"`
+	NextToken int64    `json:"next_token"`
+}

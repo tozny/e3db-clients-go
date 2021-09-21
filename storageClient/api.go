@@ -337,6 +337,37 @@ type InternalSearchBySharingTupleResponse struct {
 	NextToken int64    `json:"next_token"`
 }
 
+// The request body for the list allowed reads endpoint for a given writer ID
+type InternalListAllowedReadsByWriterIDRequest struct {
+	WriterID  string `json:"writer_id"`
+	NextToken int64  `json:"next_token"`
+	Limit     int    `json:"limit"`
+}
+
+// The response body for the list allowed reads endpoint contains a list of access policies
+type InternalListAllowedReadsResponse struct {
+	Authorizations []AccessPolicy `json:"allowed_reads"`
+	NextToken      int64          `json:"next_token"`
+}
+
+type AccessPolicy struct {
+	UserID     string `json:"user_id"`
+	WriterID   string `json:"writer_id"`
+	ReaderID   string `json:"reader_id"`
+	RecordType string `json:"record_type"`
+}
+
+type InternalRecordsByWriterIDRequest struct {
+	WriterID  string `json:"writer_id"`
+	NextToken int64  `json:"next_token"`
+	Limit     int    `json:"limit"`
+}
+
+type InternalRecordsByWriterIDResponse struct {
+	Records   []Meta `json:"records"`
+	NextToken int64  `json:"next_token"`
+}
+
 // SearchAuthorizationsProxiedRequest request to search proxied authorizations (outgoing).
 type SearchAuthorizationsProxiedRequest struct {
 	NextToken    int64  `json:"next_token"`
