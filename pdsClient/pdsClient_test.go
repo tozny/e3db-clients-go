@@ -255,7 +255,7 @@ func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
 
 func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -307,7 +307,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 
 func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, _, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, _, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -349,7 +349,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 
 func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -601,7 +601,7 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 
 func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -653,7 +653,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 
 func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -721,7 +721,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 
 func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}
@@ -824,6 +824,8 @@ func TestFindModifiedRecords(t *testing.T) {
 			Before: endTime,
 		},
 	}
+
+	// TODO: add retry logic, new ES recoreds not available immediatly
 	modifiedResponse, err := bootInternalPDSClient.InternalSearch(ctx, modifiedRecordRequest)
 	if err != nil {
 		t.Fatalf("Error getting modified records %s\n", err)
@@ -837,7 +839,6 @@ func TestFindModifiedRecords(t *testing.T) {
 	if found != true {
 		t.Error("Could not find modified we wrote record")
 	}
-
 }
 
 func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T) {
@@ -1153,7 +1154,7 @@ func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 
 func TestInternalSearchAllowedReads(t *testing.T) {
 	// Create a client to share records with
-	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
+	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
 		t.Fatalf("Error creating client to share records with: %s", err)
 	}

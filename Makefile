@@ -57,15 +57,21 @@ test-identity:
 
 # Run Internal Identity Integration Tests
 test-intenal-identity:
-	go test  -v  identityClient/identityClient_internal_test.go identityClient/identityClient.go identityClient/api.go 
+	go test  -v  identityClient/identityClient_internal_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run all Storage Integration tests
 test-storage:
 	go test -count=1 -v storageClient/storageClient_test.go
+
 # Run all Account-V2 Integration tests
 test-account-v2:
 	go test -count=1 -v accountClient/accountClientV2_test.go
 
+# Run all Storage-V1 (PDS) Integration tests
+test-pds:
+	go test -count=1 -v pdsClient/pdsClient_test.go
+
+
 # Run all KeycloakClient Integration tests
 test-keycloak:
-	go test -count=1 -v KeycloakClient/keycloakClient_test.go KeycloakClient/KeycloakClient.go KeycloakClient/api.go 
+	go test -count=1 -v KeycloakClient/keycloakClient_test.go KeycloakClient/KeycloakClient.go KeycloakClient/api.go
