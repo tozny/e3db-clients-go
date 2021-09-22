@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	e3dbClients "github.com/tozny/e3db-clients-go"
@@ -12,7 +13,11 @@ import (
 )
 
 const (
-	SearchIndexerServiceBasePath = "v2/index" //HTTP PATH prefix for calls to the Search Indexer service
+	InternalSearchServicesBasePath = "v2"
+)
+
+var (
+	SearchIndexerServiceBasePath = fmt.Sprintf("%s/index", InternalSearchServicesBasePath) //HTTP PATH prefix for calls to the Search Indexer service
 )
 
 //E3dbSearchIndexerClient implements an http client for communication with an e3db Search Indexer service.
@@ -22,6 +27,16 @@ type E3dbSearchIndexerClient struct {
 	Host      string
 	*authClient.E3dbAuthClient
 	requester request.Requester
+}
+
+// InternalServiceCheck calls the internal service check endpoint for the indexer and returns error (if any)
+func (c *E3dbSearchIndexerClient) InternalServiceCheck(ctx context.Context) error {
+	path := c.Host + "/" + InternalSearchServicesBasePath + "/servicecheck"
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 }
 
 // IndexRecord attempts to index the provided record by calling the indexer index endpoint.
