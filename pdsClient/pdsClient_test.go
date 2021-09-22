@@ -98,7 +98,7 @@ func TestEncryptRecordReturnsRecordWithEncryptedData(t *testing.T) {
 		t.Fatalf("error %s encrypting record %+v", err, recordToWrite)
 	}
 	if encryptedRecord.Data[dataKeyToEncrypt] == data[dataKeyToEncrypt] {
-		t.Errorf("Expected encrypted record %+v data field %s to not equal the unencrypted record's %v data field", encryptedRecord, dataKeyToEncrypt, recordToWrite)
+		t.Fatalf("Expected encrypted record %+v data field %s to not equal the unencrypted record's %v data field", encryptedRecord, dataKeyToEncrypt, recordToWrite)
 	}
 }
 
@@ -123,7 +123,7 @@ func TestEncryptDecryptRecordReturnsRecordWithCorrectDecryptedData(t *testing.T)
 		t.Fatalf("error %s decrypting record %+v", err, encryptedRecord)
 	}
 	if decryptedRecord.Data[dataKeyToEncrypt] != recordToWrite.Data[dataKeyToEncrypt] {
-		t.Errorf("expected the encrypted and decrypted record %+v data field %s to equal the plain text value for %+v", decryptedRecord, dataKeyToEncrypt, recordToWrite)
+		t.Fatalf("expected the encrypted and decrypted record %+v data field %s to equal the plain text value for %+v", decryptedRecord, dataKeyToEncrypt, recordToWrite)
 	}
 }
 
@@ -154,7 +154,7 @@ func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	}
 	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	for _, id := range createdRecordIDs {
 		var match bool
@@ -165,7 +165,7 @@ func TestBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 			}
 		}
 		if !match {
-			t.Errorf("Failed to find created record with id %s in response %v\n", id, batchRecords)
+			t.Fatalf("Failed to find created record with id %s in response %v\n", id, batchRecords)
 		}
 	}
 }
@@ -197,7 +197,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 	}
 	batchRecords, err := validPDSUser.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	for _, id := range createdRecordIDs {
 		var match bool
@@ -208,7 +208,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 			}
 		}
 		if !match {
-			t.Errorf("Failed to find created record with id %s in response %v\n", id, batchRecords)
+			t.Fatalf("Failed to find created record with id %s in response %v\n", id, batchRecords)
 		}
 	}
 	// Delete the first record
@@ -216,12 +216,12 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 	deleteParams := pdsClient.DeleteRecordRequest{RecordID: recordIDToDelete}
 	err = validPDSUser.DeleteRecord(ctx, deleteParams)
 	if err != nil {
-		t.Errorf("err %s making DeleteRecord call %+v\n", err, deleteParams)
+		t.Fatalf("err %s making DeleteRecord call %+v\n", err, deleteParams)
 	}
 	// Verify it isn't batch get able anymore
 	batchRecords, err = validPDSUser.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	var listed bool
 	for _, batchRecord := range batchRecords.Records {
@@ -231,7 +231,7 @@ func TestBatchGetRecordsDoesNotReturnsDeletedRecords(t *testing.T) {
 		}
 	}
 	if listed {
-		t.Errorf("Expected deleted record %s in to not be returned in batch get response %v\n", recordIDToDelete, batchRecords)
+		t.Fatalf("Expected deleted record %s in to not be returned in batch get response %v\n", recordIDToDelete, batchRecords)
 	}
 }
 
@@ -249,7 +249,7 @@ func TestBatchGetRecordsReturnsErrorIfTooManyRecordsRequested(t *testing.T) {
 	}
 	_, err := validPDSUser.BatchGetRecords(ctx, params)
 	if err == nil {
-		t.Errorf("expected err making BatchGetRecords call for records %d\n", batchRecordRequestCount)
+		t.Fatalf("expected err making BatchGetRecords call for records %d\n", batchRecordRequestCount)
 	}
 }
 
@@ -257,7 +257,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
@@ -273,7 +273,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
 	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
@@ -283,7 +283,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
 	params := pdsClient.BatchGetRecordsRequest{
@@ -291,7 +291,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 	}
 	batchRecords, err := sharee.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	var found bool
 	for _, record := range batchRecords.Records {
@@ -301,7 +301,7 @@ func TestBatchGetRecordsReturnsSharedRecords(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find shared records in batch get records results %+v\n", batchRecords)
+		t.Fatalf("Failed to find shared records in batch get records results %+v\n", batchRecords)
 	}
 }
 
@@ -309,7 +309,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, _, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
@@ -325,7 +325,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 	// Verify sharee can not fetch unshared record
 	params := pdsClient.BatchGetRecordsRequest{
@@ -333,7 +333,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 	}
 	batchRecords, err := sharee.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	var found bool
 	for _, record := range batchRecords.Records {
@@ -343,7 +343,7 @@ func TestBatchGetRecordsDoesNotReturnUnsharedRecords(t *testing.T) {
 		}
 	}
 	if found {
-		t.Errorf("Found unshared record in batch get records results %+v\n", batchRecords)
+		t.Fatalf("Found unshared record in batch get records results %+v\n", batchRecords)
 	}
 }
 
@@ -351,7 +351,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
@@ -367,7 +367,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
 	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
@@ -377,7 +377,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
 	params := pdsClient.BatchGetRecordsRequest{
@@ -385,7 +385,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 	}
 	batchRecords, err := sharee.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	var found bool
 	for _, record := range batchRecords.Records {
@@ -395,7 +395,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find shared records in batch get records results %+v\n", batchRecords)
+		t.Fatalf("Failed to find shared records in batch get records results %+v\n", batchRecords)
 	}
 	// unShare records of type created with sharee client
 	err = validPDSUser.UnshareRecords(ctx, pdsClient.ShareRecordsRequest{
@@ -405,11 +405,11 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	batchRecords, err = sharee.BatchGetRecords(ctx, params)
 	if err != nil {
-		t.Errorf("err %s making BatchGetRecords call %+v\n", err, params)
+		t.Fatalf("err %s making BatchGetRecords call %+v\n", err, params)
 	}
 	found = false
 	for _, record := range batchRecords.Records {
@@ -419,7 +419,7 @@ func TestBatchGetRecordsDoesNotReturnsSharedThenUnsharedRecords(t *testing.T) {
 		}
 	}
 	if found {
-		t.Errorf("Found unshared records in batch get records results %+v\n", batchRecords)
+		t.Fatalf("Found unshared records in batch get records results %+v\n", batchRecords)
 	}
 }
 
@@ -450,11 +450,11 @@ func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 	}
 	usersToken, err := validPDSUser.GetToken(ctx)
 	if err != nil {
-		t.Errorf("err %s making GetToken call for user %+v\n", err, validPDSUser)
+		t.Fatalf("err %s making GetToken call for user %+v\n", err, validPDSUser)
 	}
 	proxyBatchRecords, err := bootPDSClient.ProxyBatchGetRecords(ctx, usersToken.AccessToken, params)
 	if err != nil {
-		t.Errorf("err %s making ProxyBatchGetRecords call %+v\n on with user token %+v\n", err, usersToken, params)
+		t.Fatalf("err %s making ProxyBatchGetRecords call %+v\n on with user token %+v\n", err, usersToken, params)
 	}
 	for _, id := range createdRecordIDs {
 		var match bool
@@ -465,7 +465,7 @@ func TestProxyBatchGetRecordsReturnsBatchofUserRecords(t *testing.T) {
 			}
 		}
 		if !match {
-			t.Errorf("Failed to find created record with id %s in response %v\n", id, proxyBatchRecords)
+			t.Fatalf("Failed to find created record with id %s in response %v\n", id, proxyBatchRecords)
 		}
 	}
 }
@@ -517,7 +517,7 @@ func TestListRecordsSucceedsWithValidClientCredentials(t *testing.T) {
 			}
 		}
 		if !match {
-			t.Errorf("Failed to find created record with id %s in response %v\n", id, listedRecords)
+			t.Fatalf("Failed to find created record with id %s in response %v\n", id, listedRecords)
 		}
 	}
 }
@@ -582,7 +582,7 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 	}
 	_, err := validPDSUser.PutAccessKey(ctx, putEAKParams)
 	if err != nil {
-		t.Errorf("Error trying to put access key for %+v %s", validPDSUser, err)
+		t.Fatalf("Error trying to put access key for %+v %s", validPDSUser, err)
 	}
 	getEAKParams := pdsClient.GetAccessKeyRequest{
 		WriterID:   validPDSUserID,
@@ -592,10 +592,10 @@ func TestGetAccessKeyReturnsPuttedAccessKey(t *testing.T) {
 	}
 	getResponse, err := validPDSUser.GetAccessKey(ctx, getEAKParams)
 	if err != nil {
-		t.Errorf("Error trying to put access key for %+v %s", validPDSUser, err)
+		t.Fatalf("Error trying to put access key for %+v %s", validPDSUser, err)
 	}
 	if getResponse.AuthorizerID != validPDSUserID {
-		t.Errorf("Expected ket to have been authorized by %s, but got %+v", validPDSUserID, getResponse)
+		t.Fatalf("Expected ket to have been authorized by %s, but got %+v", validPDSUserID, getResponse)
 	}
 }
 
@@ -603,7 +603,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
@@ -619,7 +619,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
 	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
@@ -629,7 +629,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
 	listResponse, err := sharee.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -637,7 +637,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		IncludeAllWriters: true,
 	})
 	if err != nil {
-		t.Errorf("Error %s listing records for client %+v\n", err, sharee)
+		t.Fatalf("Error %s listing records for client %+v\n", err, sharee)
 	}
 	var found bool
 	for _, record := range listResponse.Results {
@@ -647,7 +647,7 @@ func TestSharedRecordsCanBeFetchedBySharee(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find shared records in list records results %+v\n", listResponse)
+		t.Fatalf("Failed to find shared records in list records results %+v\n", listResponse)
 	}
 }
 
@@ -655,7 +655,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Create records to share with this client
 	ctx := context.TODO()
@@ -676,7 +676,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, encryptedRecord)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 	// Share records of type created with sharee client
 	err = validPDSUser.ShareRecords(ctx, pdsClient.ShareRecordsRequest{
@@ -686,7 +686,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Verify sharee can fetch records of type shared
 	listResponse, err := sharee.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -695,7 +695,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 		IncludeData:       true,
 	})
 	if err != nil {
-		t.Errorf("Error %s listing records for client %+v\n", err, sharee)
+		t.Fatalf("Error %s listing records for client %+v\n", err, sharee)
 	}
 	var found bool
 	var encryptedSharedRecord pdsClient.Record
@@ -715,7 +715,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 		t.Fatalf("error %s decrypting record %+v", err, encryptedSharedRecord)
 	}
 	if decryptedRecord.Data[dataKeyToEncrypt] != data[dataKeyToEncrypt] {
-		t.Errorf("expected shared encrypted record decrypted data to be %+v, got %+v", data, decryptedRecord)
+		t.Fatalf("expected shared encrypted record decrypted data to be %+v, got %+v", data, decryptedRecord)
 	}
 }
 
@@ -723,7 +723,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Share records of type created with sharee client
 	ctx := context.TODO()
@@ -734,7 +734,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 		RecordType: defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	// Create records to share with this client
 	data := map[string]string{"data": "unencrypted"}
@@ -749,7 +749,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	}
 	_, err = validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to share %s\n", err)
+		t.Fatalf("Error writing record to share %s\n", err)
 	}
 
 	allowedReadsRequest := pdsClient.InternalAllowedReadersForPolicyRequest{
@@ -758,7 +758,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	}
 	resp, err := bootInternalPDSClient.InternalAllowedReadsForAccessPolicy(ctx, allowedReadsRequest)
 	if err != nil {
-		t.Errorf("Error trying to call PDS for allowed readers %s\n", err)
+		t.Fatalf("Error trying to call PDS for allowed readers %s\n", err)
 	}
 	var foundSharee bool
 	for _, readerID := range resp.ReaderIDs {
@@ -768,7 +768,7 @@ func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
 		}
 	}
 	if !foundSharee {
-		t.Errorf("Could not find sharee id in list of allowed readers for record\n")
+		t.Fatalf("Could not find sharee id in list of allowed readers for record\n")
 	}
 }
 
@@ -787,14 +787,14 @@ func TestDeleteRecord(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to delete %s\n", err)
+		t.Fatalf("Error writing record to delete %s\n", err)
 	}
 	deleteRequest := pdsClient.DeleteRecordRequest{
 		RecordID: createdRecord.Metadata.RecordID,
 	}
 	err = validPDSUser.DeleteRecord(ctx, deleteRequest)
 	if err != nil {
-		t.Errorf("Error deleting written record %s\n", err)
+		t.Fatalf("Error deleting written record %s\n", err)
 	}
 }
 func TestFindModifiedRecords(t *testing.T) {
@@ -813,7 +813,7 @@ func TestFindModifiedRecords(t *testing.T) {
 	}
 	createdRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error writing record to get modified %s\n", err)
+		t.Fatalf("Error writing record to get modified %s\n", err)
 	}
 	endTime := time.Now()
 
@@ -844,7 +844,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	// Create authorizing account and client
 	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizing client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizingClient := pdsClient.New(clientConfig)
@@ -865,12 +865,12 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	}
 	createdRecord, err := authorizingClient.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
+		t.Fatalf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
 	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizerClient := pdsClient.New(clientConfig)
@@ -878,7 +878,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	// Create account and client for authorizer to share records with
 	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	shareeClient := pdsClient.New(clientConfig)
@@ -892,7 +892,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 	}
 	err = authorizingClient.AddAuthorizedSharer(ctx, authorizeRequest)
 	if err != nil {
-		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
+		t.Fatalf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
 	}
 	// Authorizer share record type they have been authorized to share
 	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
@@ -903,7 +903,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		RecordType:   defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 	// Verify sharee can retrieve shared record
 	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -911,7 +911,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		IncludeAllWriters: true,
 		IncludeData:       true})
 	if err != nil {
-		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+		t.Fatalf("Error %s listing records for %+v", err, shareeClient)
 	}
 	var found bool
 	for _, listedRecord := range listRecordsResponse.Results {
@@ -921,7 +921,7 @@ func TestAddAuthorizedAllowsAuthorizerToShareAuthorizedRecordTypes(t *testing.T)
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+		t.Fatalf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
 	}
 }
 
@@ -929,7 +929,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 	// Create authorizing account and client
 	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizing client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizingClient := pdsClient.New(clientConfig)
@@ -950,12 +950,12 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 	}
 	createdRecord, err := authorizingClient.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
+		t.Fatalf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
 	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizerClient := pdsClient.New(clientConfig)
@@ -963,7 +963,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 	// Create account and client for authorizer to share records with
 	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	shareeClient := pdsClient.New(clientConfig)
@@ -977,7 +977,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 	}
 	err = authorizingClient.AddAuthorizedSharer(ctx, authorizeRequest)
 	if err != nil {
-		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
+		t.Fatalf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
 	}
 	// Authorizer share record type they have been authorized to share
 	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
@@ -988,7 +988,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 		RecordType:   defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 	// Verify sharee can retrieve shared record
 	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -996,7 +996,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 		IncludeAllWriters: true,
 		IncludeData:       true})
 	if err != nil {
-		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+		t.Fatalf("Error %s listing records for %+v", err, shareeClient)
 	}
 	var found bool
 	for _, listedRecord := range listRecordsResponse.Results {
@@ -1006,13 +1006,13 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+		t.Fatalf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
 	}
 
 	err = authorizingClient.RemoveAuthorizedSharer(ctx, authorizeRequest)
 
 	if err != nil {
-		t.Errorf("Error %s un-authorizing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Error %s un-authorizing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 
 	// Authorizer share record type they have been authorized to share
@@ -1025,7 +1025,7 @@ func TestRemovedAuthorizedDeniesAuthorizerToShareDeauthorizedRecordTypes(t *test
 	})
 
 	if err == nil {
-		t.Errorf("Expected error for unauthrozied sharing records of type %s with client %+v\n", defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Expected error for unauthrozied sharing records of type %s with client %+v\n", defaultPDSUserRecordType, shareeAccountID)
 	}
 }
 
@@ -1033,7 +1033,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 	// Create authorizing account and client
 	clientConfig, authorizingAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizing client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizing client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizingClient := pdsClient.New(clientConfig)
@@ -1054,12 +1054,12 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 	}
 	createdRecord, err := authorizingClient.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error %s writing record to share %+v\n", err, recordToWrite)
+		t.Fatalf("Error %s writing record to share %+v\n", err, recordToWrite)
 	}
 	// Create authorizer account and client
 	clientConfig, authorizerAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	authorizerClient := pdsClient.New(clientConfig)
@@ -1067,7 +1067,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 	// Create account and client for authorizer to share records with
 	clientConfig, shareeAccount, err := test.MakeE3DBAccount(t, &bootAccountClient, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
-		t.Errorf("Unable to create authorizer client using %+v", bootAccountClient)
+		t.Fatalf("Unable to create authorizer client using %+v", bootAccountClient)
 	}
 	clientConfig.Host = toznyCyclopsHost
 	shareeClient := pdsClient.New(clientConfig)
@@ -1081,7 +1081,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 	}
 	err = authorizingClient.AddAuthorizedSharer(ctx, authorizeRequest)
 	if err != nil {
-		t.Errorf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
+		t.Fatalf("Error %s for %+v trying to make authorize request with params %+v", err, authorizingClient, authorizeRequest)
 	}
 	// Authorizer share record type they have been authorized to share
 	err = authorizerClient.AuthorizerShareRecords(ctx, pdsClient.AuthorizerShareRecordsRequest{
@@ -1092,7 +1092,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		RecordType:   defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 	// Verify sharee can retrieve shared record
 	listRecordsResponse, err := shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -1100,7 +1100,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		IncludeAllWriters: true,
 		IncludeData:       true})
 	if err != nil {
-		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+		t.Fatalf("Error %s listing records for %+v", err, shareeClient)
 	}
 	var found bool
 	for _, listedRecord := range listRecordsResponse.Results {
@@ -1110,7 +1110,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		}
 	}
 	if !found {
-		t.Errorf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
+		t.Fatalf("Failed to find record %+v that should be shared, got %+v", createdRecord, listRecordsResponse.Results)
 	}
 	// Authorizer unshare record type with sharee
 	err = authorizerClient.AuthorizerUnshareRecords(ctx, pdsClient.AuthorizerUnshareRecordsRequest{
@@ -1121,7 +1121,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		RecordType:   defaultPDSUserRecordType,
 	})
 	if err != nil {
-		t.Errorf("Error %s unsharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
+		t.Fatalf("Error %s unsharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, shareeAccountID)
 	}
 	// Verify sharee can't retrieve unshared record
 	listRecordsResponse, err = shareeClient.ListRecords(ctx, pdsClient.ListRecordsRequest{
@@ -1129,7 +1129,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		IncludeAllWriters: true,
 		IncludeData:       true})
 	if err != nil {
-		t.Errorf("Error %s listing records for %+v", err, shareeClient)
+		t.Fatalf("Error %s listing records for %+v", err, shareeClient)
 	}
 	found = false
 	for _, listedRecord := range listRecordsResponse.Results {
@@ -1139,7 +1139,7 @@ func TestAuthorizerUnshareRecordsRemovesShareesAccessToPreviouslySharedRecords(t
 		}
 	}
 	if found {
-		t.Errorf("Expected sharee to find no records after unsharing with them, got %+v", listRecordsResponse.Results)
+		t.Fatalf("Expected sharee to find no records after unsharing with them, got %+v", listRecordsResponse.Results)
 	}
 }
 
@@ -1147,7 +1147,7 @@ func TestServiceHealthCheckReturnsSuccessIfPDSIsRunning(t *testing.T) {
 	ctx := context.TODO()
 	err := validPDSUser.HealthCheck(ctx)
 	if err != nil {
-		t.Errorf("Expected pds health check to return no error, got %s", err)
+		t.Fatalf("Expected pds health check to return no error, got %s", err)
 	}
 }
 
@@ -1155,7 +1155,7 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, e3dbClientHost, validPDSRegistrationToken, fmt.Sprintf("test+pdsClient+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
-		t.Errorf("Error creating client to share records with: %s", err)
+		t.Fatalf("Error creating client to share records with: %s", err)
 	}
 	// Share records of type created with sharee client
 	ctx := context.TODO()
@@ -1169,11 +1169,11 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 	err = validPDSUser.ShareRecords(ctx, share)
 	endTime := time.Now().AddDate(0, 0, 1).UTC()
 	if err != nil {
-		t.Errorf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
+		t.Fatalf("Error %s sharing records of type %s with client %+v\n", err, defaultPDSUserRecordType, sharee)
 	}
 	record, err := test.WriteRandomRecordForUser(validPDSUser, defaultPDSUserRecordType, validPDSUserID, nil, nil)
 	if err != nil {
-		t.Errorf("Unable to write record for PDS User %s", err)
+		t.Fatalf("Unable to write record for PDS User %s", err)
 	}
 	// Verify the new allowed_read is visible to the internal client
 	searchAllowedReadsRequest := pdsClient.InternalSearchAllowedReadsRequest{
@@ -1194,7 +1194,7 @@ func TestInternalSearchAllowedReads(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record %+v", share, searchResponse, record)
+		t.Fatalf("Could not find newly added allowed read %+v\n in list of recently added allowed reads %+v\n we wrote record %+v", share, searchResponse, record)
 	}
 }
 
@@ -1203,7 +1203,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 	recordType := "TestInternalSearchUsingRecordType"
 	_, err := test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
 	if err != nil {
-		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
+		t.Fatalf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
 	}
 	data := map[string]string{"data": "unencrypted"}
 	recordToWrite := pdsClient.WriteRecordRequest{
@@ -1218,7 +1218,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 	ctx := context.Background()
 	wroteRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
+		t.Fatalf("Error %s writing record %+v\n", err, recordToWrite)
 	}
 	// Verify we can do an internal search based off the record type
 	searchRequest := pdsClient.InternalSearchRequest{
@@ -1226,7 +1226,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 	}
 	searchResponse, err := bootInternalPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
-		t.Errorf("Error %s searching records\n", err)
+		t.Fatalf("Error %s searching records\n", err)
 	}
 	var found bool
 	for _, record := range searchResponse.Records {
@@ -1236,7 +1236,7 @@ func TestInternalSearchUsingRecordType(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
+		t.Fatalf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
 	}
 }
 
@@ -1245,7 +1245,7 @@ func TestInternalSearchByWriterId(t *testing.T) {
 	recordType := "TestInternalSearchUsingUUID"
 	_, err := test.MakeClientWriterForRecordType(validPDSUser, validPDSUserID, recordType)
 	if err != nil {
-		t.Errorf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
+		t.Fatalf("error %s making client %+v a writer for record type %s", err, validPDSUser, recordType)
 	}
 	data := map[string]string{"data": "unencrypted"}
 	recordToWrite := pdsClient.WriteRecordRequest{
@@ -1260,7 +1260,7 @@ func TestInternalSearchByWriterId(t *testing.T) {
 	ctx := context.Background()
 	wroteRecord, err := validPDSUser.WriteRecord(ctx, recordToWrite)
 	if err != nil {
-		t.Errorf("Error %s writing record %+v\n", err, recordToWrite)
+		t.Fatalf("Error %s writing record %+v\n", err, recordToWrite)
 	}
 	// Verify we can do an internal search based off the record type
 	searchRequest := pdsClient.InternalSearchRequest{
@@ -1268,7 +1268,7 @@ func TestInternalSearchByWriterId(t *testing.T) {
 	}
 	searchResponse, err := bootInternalPDSClient.InternalSearch(ctx, searchRequest)
 	if err != nil {
-		t.Errorf("Error %s searching records\n", err)
+		t.Fatalf("Error %s searching records\n", err)
 	}
 	var found bool
 	for _, record := range searchResponse.Records {
@@ -1278,6 +1278,6 @@ func TestInternalSearchByWriterId(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
+		t.Fatalf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
 	}
 }
