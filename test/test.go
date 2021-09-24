@@ -230,6 +230,55 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 	return registrationResponse, userClientConfig, err
 }
 
+// RegisterClient is an updated helper method to generate a client with the account service,
+// returns a registration response and a config for the created client without the Host field populated.
+func RegisterClientWithAccountService(ctx context.Context, clientServiceHost string, accountServiceHost string, registrationToken string, clientName string) (*clientServiceClient.ClientRegisterResponse, e3dbClients.ClientConfig, error) {
+	// init empty config to make registration requests
+	var registrationResponse *clientServiceClient.ClientRegisterResponse
+	userClientConfig := e3dbClients.ClientConfig{
+		Host: accountServiceHost,
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		return registrationResponse, userClientConfig, err
+	}
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		return registrationResponse, userClientConfig, fmt.Errorf("error: %s generating signing key pair", err)
+	}
+	signingKey := signingKeys.Public.Material
+	unAuthedClientServiceClient := clientServiceClient.New(userClientConfig)
+	// Register user
+	userRegister := clientServiceClient.ClientRegisterRequest{
+		RegistrationToken: registrationToken,
+		Client: clientServiceClient.ClientRegisterInfo{
+			Name:        clientName,
+			Type:        "general",
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
+		},
+	}
+	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
+	if err != nil {
+		return registrationResponse, userClientConfig, err
+	}
+	userClientConfig.Host = clientServiceHost
+	userClientConfig.AuthNHost = clientServiceHost
+	userClientConfig.ClientID = registrationResponse.Client.ClientID.String()
+	userClientConfig.APIKey = registrationResponse.APIKeyID
+	userClientConfig.APISecret = registrationResponse.APISecret
+	userClientConfig.SigningKeys = signingKeys
+	userClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
+		Private: e3dbClients.Key{
+			Material: encryptionKeyPair.Private.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+		Public: e3dbClients.Key{
+			Material: encryptionKeyPair.Public.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+	}
+	return registrationResponse, userClientConfig, err
+}
+
 func CreatePDSClient(ctx context.Context, pdsHost string, clientHost string, registrationToken string, clientName string, recordType string) (pdsClient.E3dbPDSClient, string, e3dbClients.ClientConfig, error) {
 	var userClientID string
 	var userPDSClient pdsClient.E3dbPDSClient
