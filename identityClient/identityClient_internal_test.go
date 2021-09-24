@@ -276,6 +276,102 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 	}
 }
 
+func TestInternalCreateIdentityLoginAudit(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInternalIdenttiyStatusEndpoints")
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	auditParamsUsername := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		Username:    identity.Identity.Name,
+		Status:      "fail",
+		RequestType: "test with username",
+	}
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUsername)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUsername)
+	}
+	if auditResponse.ClientID != identity.Identity.ToznyID {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+	}
+	auditParamsClientID := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		ClientID:    identity.Identity.ToznyID,
+		Status:      "fail",
+		RequestType: "test with client ID",
+	}
+	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsClientID)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsClientID)
+	}
+	if auditResponseWithUserID.Username != identity.Identity.Name {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Expected Username to be %s, got %s\n", identity.Identity.Name, auditResponseWithUserID.Username)
+	}
+	auditParamsUserID := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		UserID:      auditResponseWithUserID.UserID,
+		Status:      "success",
+		RequestType: "test with user ID",
+	}
+	auditResponse, err = identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUserID)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUserID)
+	}
+	if auditResponse.ClientID != identity.Identity.ToznyID {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+	}
+}
+
 func TestInternalLDAPCacheCRUD(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
