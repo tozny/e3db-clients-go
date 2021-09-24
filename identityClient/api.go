@@ -226,6 +226,26 @@ type InternalIdentityLoginResponse struct {
 	UserID    string `json:"user_id"`    // The ID of the Identity's Keycloak user.
 }
 
+// InternalIdentityStatusResponse wraps an internal Identity
+// status context for realm identities.
+type InternalIdentityStatusResponse struct {
+	Locked bool `json:"locked"` // Whether the Identity's account is currently locked for logging into a realm.
+}
+
+// InternalIdentityStatusUserIdRequest wraps the parameters
+// needed to determine the status of an Identity from its Identity User ID.
+type InternalIdentityStatusUserIdRequest struct {
+	RealmDomain string    // The name of the realm the Identity is a member of.
+	UserID      uuid.UUID // The ID of the Identity's user.
+}
+
+// InternalIdentityStatusStorageClientIdRequest wraps the parameters
+// needed to determine the status of an Identtiy from its Storage Client ID
+type InternalIdentityStatusStorageClientIdRequest struct {
+	RealmDomain     string    // The name of the realm the Identity is a member of.
+	StorageClientID uuid.UUID // The ID of the Identity's Tozny Client ID
+}
+
 // RegisterRealmBrokerIdentityRequest wraps parameters needed to create and register
 // an Identity to use for brokering interactions between the realm and its Identities.
 type RegisterRealmBrokerIdentityRequest struct {

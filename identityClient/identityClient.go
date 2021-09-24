@@ -755,6 +755,28 @@ func (c *E3dbIdentityClient) InternalDeleteLDAPCache(ctx context.Context, realmN
 	return err
 }
 
+func (c *E3dbIdentityClient) InternalIdentityStatusByUserId(ctx context.Context, params InternalIdentityStatusUserIdRequest) (*InternalIdentityStatusResponse, error) {
+	var identityStatus *InternalIdentityStatusResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/" + params.RealmDomain + "/identity_status_by_user_id/" + params.UserID.String()
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identityStatus, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identityStatus)
+	return identityStatus, err
+}
+
+func (c *E3dbIdentityClient) InternalIdentityStatusByStorageClientId(ctx context.Context, params InternalIdentityStatusStorageClientIdRequest) (*InternalIdentityStatusResponse, error) {
+	var identityStatus *InternalIdentityStatusResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/" + params.RealmDomain + "/identity_status_by_storage_client_id/" + params.StorageClientID.String()
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identityStatus, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identityStatus)
+	return identityStatus, err
+}
+
 // RealmInfo fetches the public realm information based on realm name.
 func (c *E3dbIdentityClient) RealmInfo(ctx context.Context, realmName string) (*RealmInfo, error) {
 	var info *RealmInfo
