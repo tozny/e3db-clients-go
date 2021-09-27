@@ -20,7 +20,9 @@ const (
 	providerResourceName          = "provider"
 	providerMapperResourceName    = "mapper"
 	applicationResourceName       = "application"
+	auditResourceName             = "audits"
 	identityResourceName          = "identity"
+	loginResourceName             = "login"
 	roleResourceName              = "role"
 	groupResourceName             = "group"
 	defaultGroupResourceName      = "default-groups"
@@ -662,6 +664,19 @@ func (c *E3dbIdentityClient) IdentityLogin(ctx context.Context, realmName string
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identity)
 	return identity, err
+}
+
+// InternalCreateIdentityLoginAudit creates an audit of the login attempt returning all the information about the login
+// attempt and error (if any)
+func (c *E3dbIdentityClient) InternalCreateIdentityLoginAudit(ctx context.Context, params InternalIdentityLoginAudit) (*InternalIdentityLoginAudit, error) {
+	var loginAudit *InternalIdentityLoginAudit
+	path := c.Host + internalIdentityServiceBasePath + fmt.Sprintf("/%s/%s", auditResourceName, loginResourceName)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return loginAudit, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &loginAudit)
+	return loginAudit, err
 }
 
 // InternalIdentityLogin requests internal authentication context

@@ -246,6 +246,19 @@ type InternalIdentityStatusStorageClientIdRequest struct {
 	StorageClientID uuid.UUID // The ID of the Identity's Tozny Client ID
 }
 
+// InternalIdentityLoginAudit wraps the parameters that are need to write a new
+// login audit
+type InternalIdentityLoginAudit struct {
+	RealmDomain string    `json:"realm_domain"`
+	Status      string    `json:"status"`
+	RequestType string    `json:"request_type"`
+	ClientID    uuid.UUID `json:"storage_client_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	Username    string    `json:"username"`
+	IPAddress   string    `json:"ip_address"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // RegisterRealmBrokerIdentityRequest wraps parameters needed to create and register
 // an Identity to use for brokering interactions between the realm and its Identities.
 type RegisterRealmBrokerIdentityRequest struct {
