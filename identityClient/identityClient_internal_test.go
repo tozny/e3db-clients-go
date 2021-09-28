@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ var (
 	internalE3dbClientID                      = os.Getenv("E3DB_CLIENT_ID")
 	InternalInternalBootstrapPublicSigningKey = os.Getenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
 	InternalBootstrapPrivateSigningKey        = os.Getenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
+	InternalIdentityLoginRetries              = os.Getenv("IDENTITY_LOGIN_RETRIES")
 	InternalValidAccountClientConfig          = e3dbClients.ClientConfig{
 		APIKey:    internalE3dbAPIKey,
 		APISecret: internalE3dbAPISecret,
@@ -55,6 +57,323 @@ var (
 
 func internalUniqueString(prefix string) string {
 	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
+}
+
+// Tests that the Identity's account remains unlocked if there are fewer audits than the
+// retry limit and no active locks.
+func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInternalIdentityStatusIdentityAccountIsUnlocked")
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	auditFailedParamsUsername := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		Username:    identity.Identity.Name,
+		Status:      "fail",
+		RequestType: "test with username",
+	}
+
+	retryLimit, err := strconv.Atoi(InternalIdentityLoginRetries)
+	if err != nil {
+		t.Errorf("TestInternalIdentityStatusIdentityAccountIsUnlocked: Error %s while converting string %s to int", err, InternalIdentityLoginRetries)
+	}
+	// Add half of the audit's threshold in order to keep account unlocked
+	for i := 0; i <= retryLimit/2; i++ {
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditFailedParamsUsername)
+		if err != nil {
+			t.Fatalf("InternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditFailedParamsUsername)
+		}
+		if auditResponse.ClientID != identity.Identity.ToznyID {
+			t.Fatalf("TestInternalIdentityStatusIdentityAccountIsUnlocked: Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+		}
+	}
+
+	// Confirm that the account has not been locked
+	reqParamsStorageClientID := InternalIdentityStatusStorageClientIdRequest{
+		RealmDomain:     realm.Domain,
+		StorageClientID: identity.Identity.ToznyID,
+	}
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	if err != nil {
+		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
+	}
+	if status.Locked == true {
+		t.Errorf("TestInternalIdentityStatusIdentityAccountIsUnlocked: Expected lock to be false. Received %+v\n", status.Locked)
+	}
+
+}
+
+// Tests that the Identity's account remains unlocked if there is a successful audit that causes the
+// most recent failed audits to be less than the retry limit.
+func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked")
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	auditFailedParamsUsername := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		Username:    identity.Identity.Name,
+		Status:      "fail",
+		RequestType: "test with username",
+	}
+	// Lock the Identity's account by POSTing more failed audits than the threshold
+	retryLimit, err := strconv.Atoi(InternalIdentityLoginRetries)
+	if err != nil {
+		t.Errorf("TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked: Error %s while converting string %s to int", err, InternalIdentityLoginRetries)
+	}
+	for i := 0; i <= retryLimit; i++ {
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditFailedParamsUsername)
+		if err != nil {
+			t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditFailedParamsUsername)
+		}
+		if auditResponse.ClientID != identity.Identity.ToznyID {
+			t.Fatalf("TestInternalCreateIdentityLoginAudit Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+		}
+	}
+	auditSuccessParamsUsername := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		Username:    identity.Identity.Name,
+		Status:      "success",
+		RequestType: "test with username",
+	}
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditSuccessParamsUsername)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditSuccessParamsUsername)
+	}
+	if auditResponse.ClientID != identity.Identity.ToznyID {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+	}
+
+	// Confirm that the account has not been locked
+	reqParamsStorageClientID := InternalIdentityStatusStorageClientIdRequest{
+		RealmDomain:     realm.Domain,
+		StorageClientID: identity.Identity.ToznyID,
+	}
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	if err != nil {
+		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
+	}
+	if status.Locked == true {
+		t.Errorf("Expected lock to be false. Received %+v\n", status.Locked)
+	}
+}
+
+// Tests that the Identity's account becomes locked if there are more audits than the retry limit.
+func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount")
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = e3dbAccountHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: e3dbIdentityHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	auditParamsUsername := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		Username:    identity.Identity.Name,
+		Status:      "fail",
+		RequestType: "test with username",
+	}
+	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUsername)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUsername)
+	}
+	if auditResponseWithUserID.ClientID != identity.Identity.ToznyID {
+		t.Fatalf("TestInternalCreateIdentityLoginAudit Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponseWithUserID.ClientID)
+	}
+
+	auditParamsUserID := InternalIdentityLoginAudit{
+		RealmDomain: realm.Domain,
+		UserID:      auditResponseWithUserID.UserID,
+		Status:      "fail",
+		RequestType: "test with user ID",
+	}
+
+	// Lock the Identity's account by POSTing more failed audits than the threshold
+	retryLimit, err := strconv.Atoi(InternalIdentityLoginRetries)
+	if err != nil {
+		t.Errorf("TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount: Error %s while converting string %s to int", err, InternalIdentityLoginRetries)
+	}
+	for i := 0; i <= retryLimit; i++ {
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUserID)
+		if err != nil {
+			t.Errorf("InternalCreateIdentityLoginAudit Error: %+v\n", err)
+		}
+		if auditResponse.ClientID != identity.Identity.ToznyID {
+			t.Fatalf("InternalCreateIdentityLoginAudit: Expected ClientID to be %s, got %s\n", identity.Identity.ToznyID, auditResponse.ClientID)
+		}
+	}
+
+	// Confirm that the account has been locked
+	reqParamsStorageClientID := InternalIdentityStatusStorageClientIdRequest{
+		RealmDomain:     realm.Domain,
+		StorageClientID: identity.Identity.ToznyID,
+	}
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	if err != nil {
+		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
+	}
+	if status.Locked == false {
+		t.Errorf("Expected lock to be true. Received %+v\n", status.Locked)
+	}
+
+	reqParamsUserID := InternalIdentityStatusUserIdRequest{
+		RealmDomain: realm.Domain,
+		UserID:      auditParamsUserID.UserID,
+	}
+	status, err = identityServiceClient.InternalIdentityStatusByUserId(testContext, reqParamsUserID)
+	if err != nil {
+		t.Errorf("InternalIdentityStatusByUserID Error: %+v\n", err)
+	}
+	if status.Locked == false {
+		t.Errorf("Expected lock to be true. Received %+v\n", status.Locked)
+	}
 }
 
 func TestInternalIdentityStatusByUserID(t *testing.T) {
