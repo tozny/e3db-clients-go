@@ -708,11 +708,15 @@ func (c *E3dbIdentityClient) InternalUpdateIdentityActiveByKeycloakUserID(ctx co
 }
 
 func (c *E3dbIdentityClient) InternalDeleteIdentity(ctx context.Context, realmName string, keycloakUserID string, username string) error {
-	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + realmName + "/" + keycloakUserID + "?username=" + username
+
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/user/" + realmName + "/" + keycloakUserID
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
+	urlParams := req.URL.Query()
+	urlParams.Set("username", username)
+	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
