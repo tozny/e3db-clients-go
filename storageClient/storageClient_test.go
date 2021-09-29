@@ -19,9 +19,11 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/file"
+	"github.com/tozny/e3db-clients-go/identityClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
+	"github.com/tozny/utils-go"
 )
 
 var (
@@ -124,6 +126,48 @@ func generateNote(recipientSigningKey string, clientConfig e3dbClients.ClientCon
 		Signature:           "signed",
 		MaxViews:            5,
 	}, err
+}
+
+func generateNoteWithData(recipientSigningKey string, data map[string]string, idString string, clientConfig e3dbClients.ClientConfig) (*storageClientV2.Note, error) {
+	ak := e3dbClients.RandomSymmetricKey()
+	eak, err := e3dbClients.EncryptAccessKey(ak, clientConfig.EncryptionKeys)
+	if err != nil {
+		return nil, err
+	}
+	encryptedData := e3dbClients.EncryptData(data, ak)
+
+	return &storageClientV2.Note{
+		Mode:                "Sodium",
+		IDString:            idString,
+		RecipientSigningKey: recipientSigningKey,
+		WriterSigningKey:    clientConfig.SigningKeys.Public.Material,
+		WriterEncryptionKey: clientConfig.EncryptionKeys.Public.Material,
+		EncryptedAccessKey:  eak,
+		Type:                "Integration Test",
+		Data:                *encryptedData,
+		Plain:               map[string]string{"extra1": "not encrypted", "extra2": "more plain data"},
+		Signature:           "signed",
+		MaxViews:            5,
+	}, err
+}
+
+func CreateRealmWithParams(t *testing.T, identityServiceClient identityClient.E3dbIdentityClient, params identityClient.CreateRealmRequest) *identityClient.Realm {
+	var realm *identityClient.Realm
+	var err error
+	retries := 2
+	ready := func() bool {
+		realm, err = identityServiceClient.CreateRealm(testCtx, params)
+		if err != nil {
+			t.Logf("FAILED to create realm. Will try %d times in total.", retries+1)
+			return false
+		}
+		return true
+	}
+	success := utils.Await(ready, retries)
+	if !success {
+		t.Fatalf("%s realm creation failed after %d retries; %+v %+v\n", err, retries, params, identityServiceClient)
+	}
+	return realm
 }
 
 // Currently write file is split between storage v1 and storage v2 endpoints
@@ -2004,6 +2048,102 @@ func TestListGroupMembersReturnsSuccess(t *testing.T) {
 		if foundMember == false {
 			t.Fatalf("Failed to List Group Member: ClientID:  %+v", member.ClientID)
 		}
+	}
+}
+
+func TestReplaceNoteByIDString(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := storageClientV2.New(queenClientConfig)
+	IdentityClient := identityClient.New(queenClientConfig)
+	realmName := fmt.Sprintf("TestReplaceNoteByIDString%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := CreateRealmWithParams(t, IdentityClient, params)
+	defer IdentityClient.DeleteRealm(testCtx, realm.Name)
+	noteIDString := uuid.New().String()
+	originalData := map[string]string{"password": "bad_password"}
+
+	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	firstNote, err := StorageClient.WriteNote(testCtx, *noteToWrite)
+	if err != nil {
+		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+	}
+
+	newData := map[string]string{"password": "goodest_password"}
+	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note %s\n", err)
+	}
+	// Add EACP for the note
+	newNoteToUpsert.EACPS = &storageClientV2.EACP{
+		TozIDEACP: &storageClientV2.TozIDEACP{
+			RealmName: realm.Name,
+		},
+	}
+	// write same note again
+	secondNote, err := StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
+	if err != nil {
+		t.Fatalf("unable to upsert note %+v, to storage servive %s\n", noteToWrite, err)
+	}
+
+	if firstNote.IDString != secondNote.IDString {
+		t.Errorf("Note IDStrings are not identical %s != %s\n", firstNote.IDString, secondNote.IDString)
+	}
+
+	if firstNote.NoteID == secondNote.NoteID {
+		t.Errorf("NoteID was not modified when creating a new note %s == %s\n", firstNote.NoteID, secondNote.NoteID)
+	}
+
+	if secondNote.Data["password"] != newNoteToUpsert.Data["password"] {
+		t.Errorf("Note data was not replaced expected: %s, note: %s\n", newNoteToUpsert.Data["password"], secondNote.Data["password"])
+	}
+}
+
+func TestReplaceNoteByStringIdempotent(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := storageClientV2.New(queenClientConfig)
+	IdentityClient := identityClient.New(queenClientConfig)
+	realmName := fmt.Sprintf("TestReplaceNoteByIDString%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := CreateRealmWithParams(t, IdentityClient, params)
+	defer IdentityClient.DeleteRealm(testCtx, realm.Name)
+	noteIDString := uuid.New().String()
+	originalData := map[string]string{"password": "bad_password"}
+
+	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+	// Add EACP for the note
+	noteToWrite.EACPS = &storageClientV2.EACP{
+		TozIDEACP: &storageClientV2.TozIDEACP{
+			RealmName: realm.Name,
+		},
+	}
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	_, err = StorageClient.UpsertNoteByIDString(testCtx, *noteToWrite)
+	if err != nil {
+		t.Fatalf("unable to replace note %+v, to storage servive %s\n", noteToWrite, err)
 	}
 }
 
