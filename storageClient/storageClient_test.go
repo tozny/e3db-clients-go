@@ -2103,43 +2103,55 @@ func TestAccountIsLockedByFailingToGetNoteWithIncorrectTozIDEACP(t *testing.T) {
 
 	// Account should become locked. Attempt to get read the note.
 	_, err = StorageClient.ReadNote(testCtx, noteWithNoteID.NoteID, nil)
-	if err == nil {
-		t.Fatalf("Expected read note to fail due to locked account for %+v\n", noteToWrite)
+	var tozError *e3dbClients.RequestError
+	if errors.As(err, &tozError) {
+		if tozError.StatusCode != http.StatusExpectationFailed {
+			t.Fatalf("Expected 417 %+v read note to fail due to locked account for %+v\n", err, noteToWrite)
+		}
+	} else {
+
+		t.Fatalf("Expected 417 %+v read note to fail due to locked account for %+v\n", err, noteToWrite)
 	}
 }
 
-func TestReplaceNoteByIDWithoutEACPFails(t *testing.T) {
-	// Make request through cyclops to test tozny header is parsed properly
-	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
-	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
-	if err != nil {
-		t.Fatalf("Could not register account %s\n", err)
-	}
-	StorageClient := storageClient.New(queenClientConfig)
+// func TestReplaceNoteByIDWithoutEACPFails(t *testing.T) {
+// 	// Make request through cyclops to test tozny header is parsed properly
+// 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+// 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+// 	if err != nil {
+// 		t.Fatalf("Could not register account %s\n", err)
+// 	}
+// 	StorageClient := storageClient.New(queenClientConfig)
 
-	noteIDString := uuid.New().String()
-	originalData := map[string]string{"password": "bad_password"}
+// 	noteIDString := uuid.New().String()
+// 	originalData := map[string]string{"password": "bad_password"}
 
-	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
-	if err != nil {
-		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
-	}
-	_, err = StorageClient.WriteNote(testCtx, *noteToWrite)
-	if err != nil {
-		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
-	}
+// 	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+// 	if err != nil {
+// 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+// 	}
+// 	_, err = StorageClient.WriteNote(testCtx, *noteToWrite)
+// 	if err != nil {
+// 		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+// 	}
 
-	newData := map[string]string{"password": "goodest_password"}
-	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
-	if err != nil {
-		t.Fatalf("unable to generate note %s\n", err)
-	}
-	// write same note again
-	_, err = StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
-	if err == nil {
-		t.Fatalf("Expected upsert note to fail without EACP for note: %+v\n", noteToWrite)
-	}
-}
+// 	newData := map[string]string{"password": "goodest_password"}
+// 	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
+// 	if err != nil {
+// 		t.Fatalf("unable to generate note %s\n", err)
+// 	}
+// 	// write same note again
+// 	_, err = StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
+// 	var tozError *e3dbClients.RequestError
+// 	if errors.As(err, &tozError) {
+// 		if tozError.StatusCode != http.StatusExpectationFailed {
+// 			t.Fatalf("Expected 417 error %s upsert note to fail without EACP for note %+v ", err, noteToWrite)
+// 		}
+// 	} else {
+
+// 		t.Fatalf("Expected 417 error %s upsert note to fail without EACP for note %+v", err, noteToWrite)
+// 	}
+// }
 
 func TestReplaceNoteByIDString(t *testing.T) {
 	// Make request through cyclops to test tozny header is parsed properly
