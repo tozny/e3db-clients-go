@@ -2,8 +2,10 @@ package identityClient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -3160,5 +3162,82 @@ func TestUpdateGroup(t *testing.T) {
 	}
 	if _, ok := actual.Attributes["key2"]; !ok {
 		t.Errorf("expected result group attributes to include '%s', was '%s'", "key2", actual.Attributes)
+	}
+}
+
+func TestInitiateIdentityLoginSucceedsWhenUnlocked(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInitiateIdentityLoginSucceedsWhenUnlocked")
+
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: toznyCyclopsHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	initiateLoginParams := IdentityLoginRequest{
+		Username:   identity.Identity.Name,
+		RealmName:  realm.Name,
+		AppName:    "account",
+		LoginStyle: "api",
+	}
+	_, err = identityServiceClient.InitiateIdentityLogin(testContext, initiateLoginParams)
+	// Expect a 401 error when the Challenge is requested from storage service because this internal request
+	// does not have the cyclops based authentication headers that the endpoint expects.
+	// This failure happens AFTER checking the account is unlocked.
+	var tozError *e3dbClients.RequestError
+	if errors.As(err, &tozError) {
+		if tozError.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("Expected 401 error %s requesting a challenge from storage service", err)
+		}
+	} else {
+
+		t.Fatalf("Expected 401 error %s requesting a challenge from storage service", err)
 	}
 }
