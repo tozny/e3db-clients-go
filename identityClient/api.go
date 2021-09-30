@@ -649,6 +649,7 @@ type ListIdentitiesResponse struct {
 // IdentityDetails wraps the detailed information about an identity, including roles and groups
 type IdentityDetails struct {
 	ID         string              `json:"subject_id"`
+	ToznyID    uuid.UUID           `json:"tozny_id"`
 	Name       string              `json:"username"`
 	Email      string              `json:"email"`
 	FirstName  string              `json:"first_name"`
