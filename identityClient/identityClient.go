@@ -796,6 +796,17 @@ func (c *E3dbIdentityClient) InternalIdentityStatusByStorageClientId(ctx context
 	return identityStatus, err
 }
 
+func (c *E3dbIdentityClient) InternalIdentityStatusByOnlyStorageClientId(ctx context.Context, params InternalIdentityStatusStorageClientIdRequest) (*InternalIdentityStatusResponse, error) {
+	var identityStatus *InternalIdentityStatusResponse
+	path := c.Host + internalIdentityServiceBasePath + "/identity_status_by_storage_client_id/" + params.StorageClientID.String()
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identityStatus, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identityStatus)
+	return identityStatus, err
+}
+
 // RealmInfo fetches the public realm information based on realm name.
 func (c *E3dbIdentityClient) RealmInfo(ctx context.Context, realmName string) (*RealmInfo, error) {
 	var info *RealmInfo
