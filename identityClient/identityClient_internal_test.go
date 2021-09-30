@@ -258,6 +258,79 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 	}
 }
 
+func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds")
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "Freud"
+	identityEmail := "freud@example.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: toznyCyclopsHost,
+	}
+	anonClient := New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	// Login audit where Client ID is provided but no realm domain
+	auditParamsClientID := InternalIdentityLoginAudit{
+		ClientID:    identity.Identity.ToznyID,
+		Status:      "fail",
+		RequestType: "test without realm domain",
+	}
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsClientID)
+	if err != nil {
+		t.Fatalf("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds Error: %+v with request params: %+v\n", err, auditParamsClientID)
+	}
+	if auditResponse.Username != identity.Identity.Name {
+		t.Fatalf("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds Expected Username to be %s, got %s\n", identity.Identity.Name, auditResponse.Username)
+	}
+	if auditResponse.RealmDomain != realm.Domain {
+		t.Fatalf("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds expected realm domain to be %s, go %s\n", realm.Domain, auditResponse.RealmDomain)
+	}
+}
+
 // Tests that the Identity's account becomes locked if there are more audits than the retry limit.
 func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(t *testing.T) {
 	accountTag := uuid.New().String()
