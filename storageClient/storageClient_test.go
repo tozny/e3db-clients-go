@@ -21,19 +21,21 @@ import (
 	"github.com/tozny/e3db-clients-go/file"
 	"github.com/tozny/e3db-clients-go/identityClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
+	"github.com/tozny/e3db-clients-go/storageClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
 	"github.com/tozny/utils-go"
 )
 
 var (
-	cyclopsServiceHost = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
-	testCtx            = context.Background()
-	ClientServiceHost  = os.Getenv("CLIENT_SERVICE_HOST")
-	plaintextFileName  = "plaintext"
-	encryptedFileName  = "encrypted"
-	decryptedFileName  = "decrypted"
-	downloadedFileName = "downloaded"
+	cyclopsServiceHost   = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	testCtx              = context.Background()
+	ClientServiceHost    = os.Getenv("CLIENT_SERVICE_HOST")
+	plaintextFileName    = "plaintext"
+	encryptedFileName    = "encrypted"
+	decryptedFileName    = "decrypted"
+	downloadedFileName   = "downloaded"
+	identityLoginRetries = 10
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -2048,6 +2050,94 @@ func TestListGroupMembersReturnsSuccess(t *testing.T) {
 		if foundMember == false {
 			t.Fatalf("Failed to List Group Member: ClientID:  %+v", member.ClientID)
 		}
+	}
+}
+
+func TestAccountIsLockedByFailingToGetNoteWithIncorrectTozIDEACP(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := storageClient.New(queenClientConfig)
+	IdentityClient := identityClient.New(queenClientConfig)
+	realmName := fmt.Sprintf("TestAccountIsLockedByFailingToGetNoteWithIncorrectTozIDEACP%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := CreateRealmWithParams(t, IdentityClient, params)
+	defer IdentityClient.DeleteRealm(testCtx, realm.Name)
+
+	noteIDString := uuid.New().String()
+	originalData := map[string]string{"password": "bad_password"}
+	// Write note the first time
+	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+
+	// Add EACP for the note
+	noteToWrite.EACPS = &storageClient.EACP{
+		TozIDEACP: &storageClient.TozIDEACP{
+			RealmName: realm.Name,
+		},
+	}
+
+	noteWithNoteID, err := StorageClient.WriteNote(testCtx, *noteToWrite)
+	if err != nil {
+		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+	}
+
+	// Attempt to get the same note with a different TozIDEACP
+	eacpParam := make(map[string]string)
+	eacpParam["tozid_eacp"] = "this is the wrong tozid_eacp"
+	for i := 0; i <= identityLoginRetries; i++ {
+		_, err = StorageClient.ReadNote(testCtx, noteWithNoteID.NoteID, nil)
+		if err == nil {
+			t.Fatalf("Expected read note to fail due to incorrect TozIDEACP for note %+v\n", noteToWrite)
+		}
+	}
+
+	// Account should become locked. Attempt to get read the note.
+	_, err = StorageClient.ReadNote(testCtx, noteWithNoteID.NoteID, nil)
+	if err == nil {
+		t.Fatalf("Expected read note to fail due to locked account for %+v\n", noteToWrite)
+	}
+}
+
+func TestReplaceNoteByIDWithoutEACPFails(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := storageClient.New(queenClientConfig)
+
+	noteIDString := uuid.New().String()
+	originalData := map[string]string{"password": "bad_password"}
+
+	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	_, err = StorageClient.WriteNote(testCtx, *noteToWrite)
+	if err != nil {
+		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+	}
+
+	newData := map[string]string{"password": "goodest_password"}
+	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note %s\n", err)
+	}
+	// write same note again
+	_, err = StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
+	if err == nil {
+		t.Fatalf("Expected upsert note to fail without EACP for note: %+v\n", noteToWrite)
 	}
 }
 
