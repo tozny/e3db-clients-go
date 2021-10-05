@@ -1,3 +1,5 @@
+# Disclaimer: This is an internal library and should not be relied upon for production uses by non-Toznynians
+
 # e3db-clients-go
 
 Contains golang implementations of http clients for use by golang applications that need to interface with e3db services.
