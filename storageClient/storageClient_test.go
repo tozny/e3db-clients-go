@@ -2114,46 +2114,52 @@ func TestAccountIsLockedByFailingToGetNoteWithIncorrectTozIDEACP(t *testing.T) {
 	}
 }
 
-// func TestReplaceNoteByIDWithoutEACPFails(t *testing.T) {
-// 	// Make request through cyclops to test tozny header is parsed properly
-// 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
-// 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
-// 	if err != nil {
-// 		t.Fatalf("Could not register account %s\n", err)
-// 	}
-// 	StorageClient := storageClient.New(queenClientConfig)
+func TestReplaceNoteNoTozIDEACPSucceeds(t *testing.T) {
+	// Make request through cyclops to test tozny header is parsed properly
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	StorageClient := storageClient.New(queenClientConfig)
 
-// 	noteIDString := uuid.New().String()
-// 	originalData := map[string]string{"password": "bad_password"}
+	noteIDString := uuid.New().String()
+	originalData := map[string]string{"note_data": "notedata1"}
 
-// 	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
-// 	if err != nil {
-// 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
-// 	}
-// 	_, err = StorageClient.WriteNote(testCtx, *noteToWrite)
-// 	if err != nil {
-// 		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
-// 	}
+	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	firstNote, err := StorageClient.WriteNote(testCtx, *noteToWrite)
+	if err != nil {
+		t.Fatalf("unable to write note %+v, to storage servive %s\n", noteToWrite, err)
+	}
 
-// 	newData := map[string]string{"password": "goodest_password"}
-// 	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
-// 	if err != nil {
-// 		t.Fatalf("unable to generate note %s\n", err)
-// 	}
-// 	// write same note again
-// 	_, err = StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
-// 	var tozError *e3dbClients.RequestError
-// 	if errors.As(err, &tozError) {
-// 		if tozError.StatusCode != http.StatusExpectationFailed {
-// 			t.Fatalf("Expected 417 error %s upsert note to fail without EACP for note %+v ", err, noteToWrite)
-// 		}
-// 	} else {
+	newData := map[string]string{"note_data": "notedata2"}
+	newNoteToUpsert, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, newData, noteIDString, queenClientConfig)
+	if err != nil {
+		t.Fatalf("unable to generate note %s\n", err)
+	}
+	// write same note again
+	secondNote, err := StorageClient.UpsertNoteByIDString(testCtx, *newNoteToUpsert)
+	if err != nil {
+		t.Fatalf("unable to upsert note %+v, to storage servive %s\n", noteToWrite, err)
+	}
 
-// 		t.Fatalf("Expected 417 error %s upsert note to fail without EACP for note %+v", err, noteToWrite)
-// 	}
-// }
+	if firstNote.IDString != secondNote.IDString {
+		t.Errorf("Note IDStrings are not identical %s != %s\n", firstNote.IDString, secondNote.IDString)
+	}
 
-func TestReplaceNoteByIDString(t *testing.T) {
+	if firstNote.NoteID == secondNote.NoteID {
+		t.Errorf("NoteID was not modified when creating a new note %s == %s\n", firstNote.NoteID, secondNote.NoteID)
+	}
+
+	if secondNote.Data["note_data"] != newNoteToUpsert.Data["note_data"] {
+		t.Errorf("Note data was not replaced expected: %s, note: %s\n", newNoteToUpsert.Data["note_data"], secondNote.Data["note_data"])
+	}
+}
+
+func TestReplaceNoteByIDStringWithEACP(t *testing.T) {
 	// Make request through cyclops to test tozny header is parsed properly
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
@@ -2172,11 +2178,17 @@ func TestReplaceNoteByIDString(t *testing.T) {
 	defer IdentityClient.DeleteRealm(testCtx, realm.Name)
 	noteIDString := uuid.New().String()
 	originalData := map[string]string{"password": "bad_password"}
-
+	// imitate a password note by using TozIDEACP
 	noteToWrite, err := generateNoteWithData(queenClientConfig.SigningKeys.Public.Material, originalData, noteIDString, queenClientConfig)
 
 	if err != nil {
 		t.Fatalf("unable to generate note with config %+v\n", queenClientConfig)
+	}
+	// Add EACP for the original note
+	noteToWrite.EACPS = &storageClientV2.EACP{
+		TozIDEACP: &storageClientV2.TozIDEACP{
+			RealmName: realm.Name,
+		},
 	}
 	firstNote, err := StorageClient.WriteNote(testCtx, *noteToWrite)
 	if err != nil {
