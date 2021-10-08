@@ -31,10 +31,13 @@ const (
 	realmLoginPathPostfix         = "/protocol/openid-connect/token"
 	realmLoginAuthPathPostfix     = "/protocol/openid-connect/auth"
 	applicationMapperResourceName = "mapper"
+	pamResourceName               = "pam"
 )
 
 var (
 	internalIdentityServiceBasePath = fmt.Sprintf("/internal%s", identityServiceBasePath)
+	pamAccessPathPrefix             = fmt.Sprintf("/%s/access_requests", pamResourceName)
+
 	// encoder for http form values
 	httpFormSchemaEncoder = schema.NewEncoder()
 )
@@ -1053,4 +1056,16 @@ func (c *E3dbIdentityClient) RealmSettingsUpdate(ctx context.Context, realmName 
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
+}
+
+// CreateAccessRequest creates a new AccessRequest in an 'open' state
+func (c *E3dbIdentityClient) CreateAccessRequest(ctx context.Context, params CreateAccessRequestRequest) (*AccessRequestResponse, error) {
+	var accessRequest *AccessRequestResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/open"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return accessRequest, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequest)
+	return accessRequest, err
 }

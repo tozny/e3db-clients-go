@@ -90,7 +90,7 @@ func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, stri
 	return identityServiceClient, registrationToken
 }
 
-func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) *RegisterIdentityResponse {
+func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) (*RegisterIdentityResponse, E3dbIdentityClient) {
 	identityTag := uuid.New().String()
 	identityName := "Freud" + identityTag
 	identityEmail := "freud+" + identityTag + "@example.com"
@@ -124,7 +124,15 @@ func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, re
 	if err != nil {
 		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
 	}
-	return identity
+
+	registeredIdentityClientConfig := e3dbClients.ClientConfig{
+		Host:        e3dbIdentityHost,
+		SigningKeys: signingKeys,
+		ClientID:    identity.Identity.ToznyID.String(),
+	}
+	registeredIdentityClient := New(registeredIdentityClientConfig)
+
+	return identity, registeredIdentityClient
 }
 
 func uniqueString(prefix string) string {
@@ -1205,7 +1213,7 @@ func TestDeleteIdentityRemoves(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	err := client.DeleteIdentity(testContext, RealmIdentityRequest{
@@ -1236,7 +1244,7 @@ func TestGroupMembershipWorksWhenEmpty(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groups := groupMembership(t, client, realm.Name, identityID)
@@ -1252,7 +1260,7 @@ func TestGroupMembershipReturnsGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groupName := uniqueString("realm group")
@@ -1284,7 +1292,7 @@ func TestLeaveGroupsRemovesGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groupName := uniqueString("realm group")
@@ -1311,7 +1319,7 @@ func TestJoinGroupsAddsGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	group1Name := uniqueString("realm group 1")
@@ -1358,7 +1366,7 @@ func TestUpdateGroupMemvbershipReplacesGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	group1Name := uniqueString("realm group 1")
@@ -3239,5 +3247,50 @@ func TestInitiateIdentityLoginSucceedsWhenUnlocked(t *testing.T) {
 	} else {
 
 		t.Fatalf("Expected 401 error %s requesting a challenge from storage service", err)
+	}
+}
+
+func TestCreateAccessRequest(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!"
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+
+	// ACT
+	response, err := identityClient.CreateAccessRequest(testContext, request)
+
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+
+	if response.ID <= 0 {
+		t.Fatalf("ID should greater than zero new AccessRequest: %+v", response)
+	}
+
+	if response.Reason != reason {
+		t.Fatalf("Reason should be [%s] but was [%s]", reason, response.Reason)
+	}
+
+	if response.AccessDurationSeconds != ttl {
+		t.Fatalf("AccessDurationSeconds should be [%d] but was [%d]", ttl, response.AccessDurationSeconds)
+	}
+
+	if response.State != AccessRequestOpenState {
+		t.Fatalf("State should be [%s] but was [%s]", AccessRequestOpenState, response.State)
 	}
 }

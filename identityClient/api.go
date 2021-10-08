@@ -37,6 +37,7 @@ const (
 	UnspecifiedSAMLAttributeNameFormat                      = "Unspecified"
 	URIReferenceSAMLAttributeNameFormat                     = "URI Reference"
 	DefaultUMAProtectionApplicationRole                     = "uma_protection"
+	AccessRequestOpenState                                  = "open"
 )
 
 var (
@@ -892,4 +893,29 @@ type RealmSettingsUpdateRequest struct {
 	SecretsEnabled      *bool     `json:"secrets_enabled,omitempty"`
 	MFAAvailable        *[]string `json:"mfa_available,omitempty"`
 	EmailLookupsEnabled *bool     `json:"email_lookups_enabled,omitempty"`
+}
+
+// CreateAccessRequestRequest wraps parameters for creating a new open Access Request
+type CreateAccessRequestRequest struct {
+	Groups                []AccessRequestGroup `json:"groups"`
+	Reason                string               `json:"reason"`
+	RealmName             string               `json:"realm_name"`
+	AccessDurationSeconds int                  `json:"ttl"`
+}
+
+// AccessRequestGroup specifies which Group an AccessRequest belongs to
+type AccessRequestGroup struct {
+	ID string `json:"group_id"`
+}
+
+// AccessRequestResponse represents an access request to temporarily join new groups
+type AccessRequestResponse struct {
+	AutoExpiresAt         time.Time            `json:"auto_expires_at"`
+	CreatedAt             time.Time            `json:"created_at"`
+	Groups                []AccessRequestGroup `json:"groups"`
+	ID                    int64                `json:"id"`
+	Reason                string               `json:"reason"`
+	RequestorID           string               `json:"requestor_id"`
+	State                 string               `json:"state"`
+	AccessDurationSeconds int                  `json:"ttl"`
 }
