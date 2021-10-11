@@ -1152,3 +1152,11 @@ type RegisterFederatedIdentityRequest struct {
 	PublicSigningKey    map[string]string `json:"signing_key"`
 	FederationSource    string            `json:"federation_source"`
 }
+
+// FederatedIdentityKeyCheckRequest wraps the parameters needed for checking that the
+// derived public key is correct for a federated identity
+type FederatedIdentityKeyCheckRequest struct {
+	RealmName                       string    `json:"realm_name"`
+	ClientID                        uuid.UUID `json:"client_id"`
+	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
+}
