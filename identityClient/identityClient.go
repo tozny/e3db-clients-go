@@ -1283,3 +1283,15 @@ func (c *E3dbIdentityClient) RegisterTozIDFederatedIdentity(ctx context.Context,
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
 	return resp, err
 }
+
+// FederatedIdentityKeyCheck checks the derived public key for a federated identity against the primary instance,
+// returning error (if any)
+func (c *E3dbIdentityClient) FederatedIdentityKeyCheck(ctx context.Context, params FederatedIdentityKeyCheckRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/" + identityResourceName + "/keys/check"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}

@@ -444,6 +444,21 @@ func (c *StorageClient) Prime(ctx context.Context, noteID string, body PrimeRequ
 	return primedResponse, err
 }
 
+// PrimeByNoteName primes the note with the provided noteName
+func (c *StorageClient) PrimeByNoteName(ctx context.Context, noteName string, body PrimeRequestBody) (PrimeResponseBody, error) {
+	path := c.Host + storageServiceBasePath + "/notes/prime"
+	req, err := e3dbClients.CreateRequest("PATCH", path, body)
+	var primedResponse PrimeResponseBody
+	if err != nil {
+		return primedResponse, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("id_string", noteName)
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &primedResponse)
+	return primedResponse, err
+}
+
 func (c *StorageClient) BulkDeleteByClient(ctx context.Context, clientID uuid.UUID, limit int) (BulkDeleteResponse, error) {
 	path := c.Host + "/internal" + storageServiceBasePath + "/notes/bulk/" + clientID.String()
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)

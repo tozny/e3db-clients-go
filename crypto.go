@@ -604,6 +604,19 @@ func DeriveIdentityCredentialsNoteName(username string, realmName string) (strin
 	return noteName, err
 }
 
+// DeriveBrokerOTPCredentialNoteName derives a broker otp note name for the given parameters
+func DeriveBrokerOTPCredentialNoteName(username string, realmName string) (string, error) {
+	nameSeed := fmt.Sprintf("broker_otp:%s@realm:%s", username, realmName)
+	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	if err != nil {
+		return "", err
+	}
+	hashedMessageAccumlator.Write([]byte(nameSeed))
+	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
+	noteName := Base64Encode(hashedMessageBytes)
+	return noteName, err
+}
+
 // DeriveIdentityCredentials derives a set of encryption keys, signing keys and a note name for the given parameters using pbkdf2
 func DeriveIdentityCredentials(username string, password string, realmName string, nameSalt string) (string, EncryptionKeys, SigningKeys, error) {
 	nameSeed := fmt.Sprintf("%s@realm:%s", username, realmName)
