@@ -1185,18 +1185,13 @@ func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, p
 		return err
 	}
 	// Set Credential Token
-	for key, val := range params.Credentials {
-		var isAuthHeader bool
-		for _, authHeader := range AuthenticationHeaders {
-			if key == authHeader {
-				isAuthHeader = true
-				break
-			}
-		}
-		if isAuthHeader {
-			req.Header.Add(key, val)
+	for _, authHeader := range AuthenticationHeaders {
+		val, exists := params.Credentials[authHeader]
+		if exists {
+			req.Header.Add(authHeader, val)
 		}
 	}
+
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
@@ -1210,4 +1205,24 @@ func (c *E3dbIdentityClient) AccessRequestGroups(ctx context.Context, params Acc
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &groupsResponse)
 	return groupsResponse, err
+}
+
+// SyncFederatedIdentities gets information for all or a subset of federated Identities in a realm
+func (c *E3dbIdentityClient) SyncFederatedIdentities(ctx context.Context, params SyncFederatedIdentitiesRequest) (*SyncFederatedIdentitiesResponse, error) {
+	var federatedIdentities *SyncFederatedIdentitiesResponse
+	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/sync"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return federatedIdentities, err
+	}
+	// Set Credential Token
+	for _, authHeader := range AuthenticationHeaders {
+		val, exists := params.Credentials[authHeader]
+		if exists {
+			request.Header.Add(authHeader, val)
+		}
+	}
+
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &federatedIdentities)
+	return federatedIdentities, err
 }
