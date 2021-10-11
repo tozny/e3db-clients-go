@@ -919,3 +919,38 @@ type AccessRequestResponse struct {
 	State                 string               `json:"state"`
 	AccessDurationSeconds int                  `json:"ttl"`
 }
+
+// AccessRequestSearchFilters wraps values to use for filtering
+// what access requests the server should return
+type AccessRequestSearchFilters struct {
+	AccessControlledGroupIDs []string `json:"access_controlled_group_ids"`
+	RequestorIDs             []string `json:"requestor_ids"`
+}
+
+// AccessRequestSearchRequest wraps values to use when performing
+// a search for access requests associated with or authorizable by the searcher
+type AccessRequestSearchRequest struct {
+	AccessRequestSearchFilters AccessRequestSearchFilters `json:"access_request_search_filters"`
+	NextToken                  int64                      `json:"next_token"`
+	Limit                      int                        `json:"limit"`
+}
+
+// AccessRequest wraps details for an exisitng access request
+type AccessRequest = AccessRequestResponse
+
+// AccessRequestSearchResponse wraps access requests and pagination values returned
+// from an access request search request
+type AccessRequestSearchResponse struct {
+	AccessReqeusts []AccessRequest `json:"access_requests"`
+	NextToken      int64           `json:"next_token"`
+}
+
+// DescribeAccessRequestRequest wraps parameters needed for
+// getting details about a single access request
+type DescribeAccessRequestRequest struct {
+	AccessRequestID int64
+}
+
+// DeleteAccessRequestRequest wraps parameters needed for deleting
+//  a single access request
+type DeleteAccessRequestRequest = DescribeAccessRequestRequest

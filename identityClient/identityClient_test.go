@@ -3294,3 +3294,146 @@ func TestCreateAccessRequest(t *testing.T) {
 		t.Fatalf("State should be [%s] but was [%s]", AccessRequestOpenState, response.State)
 	}
 }
+
+func TestReadCreatedAccessRequest(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	createdAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	describeAccessRequsetParams := DescribeAccessRequestRequest{
+		AccessRequestID: createdAccessRequest.ID,
+	}
+
+	// ACT
+	describedAccessRequest, err := identityClient.DescribeAccessRequest(testContext, describeAccessRequsetParams)
+
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error %s attempting to describe created access request %+v using params %+v access request", err, createdAccessRequest, describeAccessRequsetParams)
+	}
+
+	if describedAccessRequest.Reason != reason {
+		t.Fatalf("Expected described created access request reaoson to equal %s, got %+v", reason, describedAccessRequest)
+	}
+}
+
+func TestReadDeletedAccessRequestReturns404(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	createdAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	deleteAccessRequsetParams := DeleteAccessRequestRequest{
+		AccessRequestID: createdAccessRequest.ID,
+	}
+	err = identityClient.DeleteAccessRequest(testContext, deleteAccessRequsetParams)
+	if err != nil {
+		t.Fatalf("Error %s deleting access request [%+v]", err, deleteAccessRequsetParams)
+	}
+	// ACT
+	describeAccessRequsetParams := deleteAccessRequsetParams
+	_, err = identityClient.DescribeAccessRequest(testContext, describeAccessRequsetParams)
+
+	// ASSERT
+	if err == nil {
+		t.Fatalf("Expected error reading deleted access request %+v", describeAccessRequsetParams)
+	}
+	tozError, ok := err.(*e3dbClients.RequestError)
+	if !ok {
+		t.Fatalf("Expected tozny request error but got %+v", err)
+
+	}
+	if tozError.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expected 404 error reading deleted access request but got %+v", tozError)
+	}
+}
+
+func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	firstCreatedAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	secondCreatedAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+
+	// ACT
+	accessRequestSearchParams := AccessRequestSearchRequest{
+		AccessRequestSearchFilters: AccessRequestSearchFilters{
+			RequestorIDs: []string{identityClient.ClientID},
+		},
+	}
+	searchResponse, err := identityClient.SearchAccessRequests(testContext, accessRequestSearchParams)
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error %s attempting to search for created access request using params %+v", err, accessRequestSearchParams)
+	}
+	expectedAccessRequestIDs := []int64{firstCreatedAccessRequest.ID, secondCreatedAccessRequest.ID}
+	for _, expectedAccessRequestID := range expectedAccessRequestIDs {
+		var found bool
+		for _, accessRequest := range searchResponse.AccessReqeusts {
+			if accessRequest.ID == expectedAccessRequestID {
+				found = true
+				break
+			}
+
+		}
+		if !found {
+			t.Fatalf("Expected to find created access request %d in search response %+v", expectedAccessRequestID, searchResponse.AccessReqeusts)
+		}
+	}
+}
