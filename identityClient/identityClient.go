@@ -31,10 +31,14 @@ const (
 	realmLoginPathPostfix         = "/protocol/openid-connect/token"
 	realmLoginAuthPathPostfix     = "/protocol/openid-connect/auth"
 	applicationMapperResourceName = "mapper"
+	pamResourceName               = "pam"
+	pamRESTResourcePath           = "resource"
 )
 
 var (
 	internalIdentityServiceBasePath = fmt.Sprintf("/internal%s", identityServiceBasePath)
+	pamAccessPathPrefix             = fmt.Sprintf("/%s/access_requests", pamResourceName)
+
 	// encoder for http form values
 	httpFormSchemaEncoder = schema.NewEncoder()
 )
@@ -1052,5 +1056,53 @@ func (c *E3dbIdentityClient) RealmSettingsUpdate(ctx context.Context, realmName 
 		return err
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// CreateAccessRequest creates a new AccessRequest in an 'open' state
+func (c *E3dbIdentityClient) CreateAccessRequest(ctx context.Context, params CreateAccessRequestRequest) (*AccessRequestResponse, error) {
+	var accessRequest *AccessRequestResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/open"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return accessRequest, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequest)
+	return accessRequest, err
+}
+
+// SearchAccessRequests searches for all or speciifc (e.g. based off requestor) access requests assciotaed with or authorizable by the searcher
+// returning paginated lists of matching access requests and error (if any)
+func (c *E3dbIdentityClient) SearchAccessRequests(ctx context.Context, params AccessRequestSearchRequest) (*AccessRequestSearchResponse, error) {
+	var searchResponse *AccessRequestSearchResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/search"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return searchResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &searchResponse)
+	return searchResponse, err
+}
+
+// DescribeAccessRequest gets the current state of a single access request, returning the access request and error (if any)
+func (c *E3dbIdentityClient) DescribeAccessRequest(ctx context.Context, params DescribeAccessRequestRequest) (*AccessRequestResponse, error) {
+	var accessRequest *AccessRequestResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/" + pamRESTResourcePath + "/" + fmt.Sprint(params.AccessRequestID)
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return accessRequest, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequest)
+	return accessRequest, err
+}
+
+// DeleteAccessRequest deletes a single access request, returning error (if any)
+func (c *E3dbIdentityClient) DeleteAccessRequest(ctx context.Context, params DeleteAccessRequestRequest) error {
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/" + pamRESTResourcePath + "/" + fmt.Sprint(params.AccessRequestID)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 	return err
 }

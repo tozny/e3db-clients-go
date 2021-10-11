@@ -37,6 +37,7 @@ const (
 	UnspecifiedSAMLAttributeNameFormat                      = "Unspecified"
 	URIReferenceSAMLAttributeNameFormat                     = "URI Reference"
 	DefaultUMAProtectionApplicationRole                     = "uma_protection"
+	AccessRequestOpenState                                  = "open"
 )
 
 var (
@@ -893,3 +894,63 @@ type RealmSettingsUpdateRequest struct {
 	MFAAvailable        *[]string `json:"mfa_available,omitempty"`
 	EmailLookupsEnabled *bool     `json:"email_lookups_enabled,omitempty"`
 }
+
+// CreateAccessRequestRequest wraps parameters for creating a new open Access Request
+type CreateAccessRequestRequest struct {
+	Groups                []AccessRequestGroup `json:"groups"`
+	Reason                string               `json:"reason"`
+	RealmName             string               `json:"realm_name"`
+	AccessDurationSeconds int                  `json:"ttl"`
+}
+
+// AccessRequestGroup specifies which Group an AccessRequest belongs to
+type AccessRequestGroup struct {
+	ID string `json:"group_id"`
+}
+
+// AccessRequestResponse represents an access request to temporarily join new groups
+type AccessRequestResponse struct {
+	AutoExpiresAt         time.Time            `json:"auto_expires_at"`
+	CreatedAt             time.Time            `json:"created_at"`
+	Groups                []AccessRequestGroup `json:"groups"`
+	ID                    int64                `json:"id"`
+	Reason                string               `json:"reason"`
+	RequestorID           string               `json:"requestor_id"`
+	State                 string               `json:"state"`
+	AccessDurationSeconds int                  `json:"ttl"`
+}
+
+// AccessRequestSearchFilters wraps values to use for filtering
+// what access requests the server should return
+type AccessRequestSearchFilters struct {
+	AccessControlledGroupIDs []string `json:"access_controlled_group_ids"`
+	RequestorIDs             []string `json:"requestor_ids"`
+}
+
+// AccessRequestSearchRequest wraps values to use when performing
+// a search for access requests associated with or authorizable by the searcher
+type AccessRequestSearchRequest struct {
+	AccessRequestSearchFilters AccessRequestSearchFilters `json:"access_request_search_filters"`
+	NextToken                  int64                      `json:"next_token"`
+	Limit                      int                        `json:"limit"`
+}
+
+// AccessRequest wraps details for an exisitng access request
+type AccessRequest = AccessRequestResponse
+
+// AccessRequestSearchResponse wraps access requests and pagination values returned
+// from an access request search request
+type AccessRequestSearchResponse struct {
+	AccessReqeusts []AccessRequest `json:"access_requests"`
+	NextToken      int64           `json:"next_token"`
+}
+
+// DescribeAccessRequestRequest wraps parameters needed for
+// getting details about a single access request
+type DescribeAccessRequestRequest struct {
+	AccessRequestID int64
+}
+
+// DeleteAccessRequestRequest wraps parameters needed for deleting
+//  a single access request
+type DeleteAccessRequestRequest = DescribeAccessRequestRequest

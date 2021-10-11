@@ -90,7 +90,7 @@ func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, stri
 	return identityServiceClient, registrationToken
 }
 
-func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) *RegisterIdentityResponse {
+func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) (*RegisterIdentityResponse, E3dbIdentityClient) {
 	identityTag := uuid.New().String()
 	identityName := "Freud" + identityTag
 	identityEmail := "freud+" + identityTag + "@example.com"
@@ -124,7 +124,15 @@ func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, re
 	if err != nil {
 		t.Fatalf("error %s registering identity using %+v %+v", err, anonClient, registerParams)
 	}
-	return identity
+
+	registeredIdentityClientConfig := e3dbClients.ClientConfig{
+		Host:        e3dbIdentityHost,
+		SigningKeys: signingKeys,
+		ClientID:    identity.Identity.ToznyID.String(),
+	}
+	registeredIdentityClient := New(registeredIdentityClientConfig)
+
+	return identity, registeredIdentityClient
 }
 
 func uniqueString(prefix string) string {
@@ -1205,7 +1213,7 @@ func TestDeleteIdentityRemoves(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	err := client.DeleteIdentity(testContext, RealmIdentityRequest{
@@ -1236,7 +1244,7 @@ func TestGroupMembershipWorksWhenEmpty(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groups := groupMembership(t, client, realm.Name, identityID)
@@ -1252,7 +1260,7 @@ func TestGroupMembershipReturnsGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groupName := uniqueString("realm group")
@@ -1284,7 +1292,7 @@ func TestLeaveGroupsRemovesGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	groupName := uniqueString("realm group")
@@ -1311,7 +1319,7 @@ func TestJoinGroupsAddsGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	group1Name := uniqueString("realm group 1")
@@ -1358,7 +1366,7 @@ func TestUpdateGroupMemvbershipReplacesGroups(t *testing.T) {
 	realm := createRealm(t, client)
 	defer client.DeleteRealm(testContext, realm.Name)
 
-	identity := registerIdentity(t, client, realm.Name, registrationToken)
+	identity, _ := registerIdentity(t, client, realm.Name, registrationToken)
 	identityID := identity.Identity.ToznyID.String()
 
 	group1Name := uniqueString("realm group 1")
@@ -3239,5 +3247,193 @@ func TestInitiateIdentityLoginSucceedsWhenUnlocked(t *testing.T) {
 	} else {
 
 		t.Fatalf("Expected 401 error %s requesting a challenge from storage service", err)
+	}
+}
+
+func TestCreateAccessRequest(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!"
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+
+	// ACT
+	response, err := identityClient.CreateAccessRequest(testContext, request)
+
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+
+	if response.ID <= 0 {
+		t.Fatalf("ID should greater than zero new AccessRequest: %+v", response)
+	}
+
+	if response.Reason != reason {
+		t.Fatalf("Reason should be [%s] but was [%s]", reason, response.Reason)
+	}
+
+	if response.AccessDurationSeconds != ttl {
+		t.Fatalf("AccessDurationSeconds should be [%d] but was [%d]", ttl, response.AccessDurationSeconds)
+	}
+
+	if response.State != AccessRequestOpenState {
+		t.Fatalf("State should be [%s] but was [%s]", AccessRequestOpenState, response.State)
+	}
+}
+
+func TestReadCreatedAccessRequest(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	createdAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	describeAccessRequsetParams := DescribeAccessRequestRequest{
+		AccessRequestID: createdAccessRequest.ID,
+	}
+
+	// ACT
+	describedAccessRequest, err := identityClient.DescribeAccessRequest(testContext, describeAccessRequsetParams)
+
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error %s attempting to describe created access request %+v using params %+v access request", err, createdAccessRequest, describeAccessRequsetParams)
+	}
+
+	if describedAccessRequest.Reason != reason {
+		t.Fatalf("Expected described created access request reaoson to equal %s, got %+v", reason, describedAccessRequest)
+	}
+}
+
+func TestReadDeletedAccessRequestReturns404(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	createdAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	deleteAccessRequsetParams := DeleteAccessRequestRequest{
+		AccessRequestID: createdAccessRequest.ID,
+	}
+	err = identityClient.DeleteAccessRequest(testContext, deleteAccessRequsetParams)
+	if err != nil {
+		t.Fatalf("Error %s deleting access request [%+v]", err, deleteAccessRequsetParams)
+	}
+	// ACT
+	describeAccessRequsetParams := deleteAccessRequsetParams
+	_, err = identityClient.DescribeAccessRequest(testContext, describeAccessRequsetParams)
+
+	// ASSERT
+	if err == nil {
+		t.Fatalf("Expected error reading deleted access request %+v", describeAccessRequsetParams)
+	}
+	tozError, ok := err.(*e3dbClients.RequestError)
+	if !ok {
+		t.Fatalf("Expected tozny request error but got %+v", err)
+
+	}
+	if tozError.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expected 404 error reading deleted access request but got %+v", tozError)
+	}
+}
+
+func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
+	// INITIAL SETUP
+	client, registrationToken := createIdentityServiceClientAndToken(t)
+	realm := createRealm(t, client)
+	realmName := realm.Name
+	defer client.DeleteRealm(testContext, realm.Name)
+	_, identityClient := registerIdentity(t, client, realm.Name, registrationToken)
+
+	// ARRANGE
+	groupName := uuid.New().String()
+	group := createRealmGroup(t, client, realmName, groupName)
+	reason := "SAY! I LIKE GREEN EGGS AND HAM!" + uuid.New().String()
+	ttl := 1000
+	request := CreateAccessRequestRequest{
+		Groups:                []AccessRequestGroup{{ID: group.ID}},
+		Reason:                reason,
+		RealmName:             realmName,
+		AccessDurationSeconds: ttl,
+	}
+	firstCreatedAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+	secondCreatedAccessRequest, err := identityClient.CreateAccessRequest(testContext, request)
+	if err != nil {
+		t.Fatalf("Error creating access request [%+v] (realm: %+v)", err, realmName)
+	}
+
+	// ACT
+	accessRequestSearchParams := AccessRequestSearchRequest{
+		AccessRequestSearchFilters: AccessRequestSearchFilters{
+			RequestorIDs: []string{identityClient.ClientID},
+		},
+	}
+	searchResponse, err := identityClient.SearchAccessRequests(testContext, accessRequestSearchParams)
+	// ASSERT
+	if err != nil {
+		t.Fatalf("Error %s attempting to search for created access request using params %+v", err, accessRequestSearchParams)
+	}
+	expectedAccessRequestIDs := []int64{firstCreatedAccessRequest.ID, secondCreatedAccessRequest.ID}
+	for _, expectedAccessRequestID := range expectedAccessRequestIDs {
+		var found bool
+		for _, accessRequest := range searchResponse.AccessReqeusts {
+			if accessRequest.ID == expectedAccessRequestID {
+				found = true
+				break
+			}
+
+		}
+		if !found {
+			t.Fatalf("Expected to find created access request %d in search response %+v", expectedAccessRequestID, searchResponse.AccessReqeusts)
+		}
 	}
 }
