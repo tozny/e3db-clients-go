@@ -918,6 +918,7 @@ type AccessRequestResponse struct {
 	RequestorID           string               `json:"requestor_id"`
 	State                 string               `json:"state"`
 	AccessDurationSeconds int                  `json:"ttl"`
+	RealmName             string               `json:"realm_name"`
 }
 
 // AccessRequestSearchFilters wraps values to use for filtering
