@@ -74,12 +74,13 @@ type InternalDeleteRealmsRequest struct {
 
 // PrivateRealmInfo represents the private information about a TozID realm
 type PrivateRealmInfo struct {
-	Name                  string    `json:"name"`
-	BrokerIdentityToznyID uuid.UUID `json:"broker_id,omitempty"`
-	Domain                string    `json:"domain"`
-	SecretsEnabled        bool      `json:"secrets_enabled"`
-	MFAAvailable          []string  `json:"mfa_available"`
-	EmailLookupsEnabled   bool      `json:"email_lookups_enabled"`
+	Name                   string    `json:"name"`
+	BrokerIdentityToznyID  uuid.UUID `json:"broker_id,omitempty"`
+	Domain                 string    `json:"domain"`
+	SecretsEnabled         bool      `json:"secrets_enabled"`
+	MFAAvailable           []string  `json:"mfa_available"`
+	EmailLookupsEnabled    bool      `json:"email_lookups_enabled"`
+	TozIDFederationEnabled bool      `json:"tozid_federation_enabled"`
 }
 
 // Sovereign represents the top level user of a realm
@@ -890,9 +891,10 @@ type SearchIdentitiesInformation struct {
 
 // RealmSettingsUpdateRequest wraps the setting available for realm admins to update
 type RealmSettingsUpdateRequest struct {
-	SecretsEnabled      *bool     `json:"secrets_enabled,omitempty"`
-	MFAAvailable        *[]string `json:"mfa_available,omitempty"`
-	EmailLookupsEnabled *bool     `json:"email_lookups_enabled,omitempty"`
+	SecretsEnabled         *bool     `json:"secrets_enabled,omitempty"`
+	MFAAvailable           *[]string `json:"mfa_available,omitempty"`
+	EmailLookupsEnabled    *bool     `json:"email_lookups_enabled,omitempty"`
+	TozIDFederationEnabled *bool     `json:"tozid_federation_enabled,omitempty"`
 }
 
 // CreateAccessRequestRequest wraps parameters for creating a new open Access Request

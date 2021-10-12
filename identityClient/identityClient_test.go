@@ -2647,7 +2647,10 @@ func TestGetPrivateRealmInfoReturnsSuccessForAuthorizedRealmIdentity(t *testing.
 		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 	if realmInfo.SecretsEnabled != false {
-		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.SecretsEnabled)
+	}
+	if realmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.TozIDFederationEnabled)
 	}
 }
 
@@ -2836,15 +2839,20 @@ func TestUpdateRealmSetting(t *testing.T) {
 		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 	if realmInfo.SecretsEnabled != false {
-		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected false , Received %+v", realmInfo.SecretsEnabled)
+	}
+	if realmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.TozIDFederationEnabled)
 	}
 	// Update Realm Setting
 	// Not updating EmailLookUps which should be true!
 	// Golang for empty bools default is false , so this should assure that doesnt happen
 	secretsEnabled := true
+	tozIDfederationEnabled := true
 	settingRequest := RealmSettingsUpdateRequest{
-		MFAAvailable:   &([]string{"None"}),
-		SecretsEnabled: &(secretsEnabled),
+		MFAAvailable:           &([]string{"None"}),
+		SecretsEnabled:         &(secretsEnabled),
+		TozIDFederationEnabled: &(tozIDfederationEnabled),
 	}
 
 	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, settingRequest)
@@ -2869,6 +2877,10 @@ func TestUpdateRealmSetting(t *testing.T) {
 	if realmInfo.EmailLookupsEnabled != true {
 		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
 	}
+	if realmInfo.TozIDFederationEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v", realmInfo.TozIDFederationEnabled)
+	}
+
 }
 
 func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
@@ -2898,13 +2910,16 @@ func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 	if realmInfo.SecretsEnabled != false {
-		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.SecretsEnabled)
 	}
 	if realmInfo.EmailLookupsEnabled != true {
 		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
 	}
 	if realmInfo.MFAAvailable[0] != "GoogleAuthenticator" {
 		t.Fatalf("Error Expected Google Authenticator, Received %+v", realmInfo)
+	}
+	if realmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.TozIDFederationEnabled)
 	}
 	// Update Realm Setting with no new settings
 	// resulting in no changes
@@ -2922,13 +2937,16 @@ func TestUpdateRealmSettingwithNoUpdatedValues(t *testing.T) {
 		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
 	}
 	if realmInfo.SecretsEnabled != false {
-		t.Fatalf("Error Expected %+v, Received %+v", realmName, realmInfo.Name)
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.SecretsEnabled)
 	}
 	if realmInfo.EmailLookupsEnabled != true {
 		t.Fatalf("Error Expected true, Received %+v %+v", realmInfo.EmailLookupsEnabled, realmInfo)
 	}
 	if realmInfo.MFAAvailable[0] != "GoogleAuthenticator" {
 		t.Fatalf("Error Expected Google Authenticator, Received %+v", realmInfo)
+	}
+	if realmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", realmInfo.TozIDFederationEnabled)
 	}
 }
 func TestRealmRoleCRUD(t *testing.T) {
