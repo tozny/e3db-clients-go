@@ -38,6 +38,7 @@ const (
 	URIReferenceSAMLAttributeNameFormat                     = "URI Reference"
 	DefaultUMAProtectionApplicationRole                     = "uma_protection"
 	AccessRequestOpenState                                  = "open"
+	AccessRequestApprovedState                              = "approved"
 )
 
 var (
@@ -923,6 +924,23 @@ type AccessRequestResponse struct {
 	RealmName             string               `json:"realm_name"`
 }
 
+// ApproveAccessRequestsRequest specifies a list of AccessRequests to approve
+type ApproveAccessRequestsRequest struct {
+	Approvals []AccessRequestDecision `json:"approvals"`
+	RealmName string                  `json:"realm_name"`
+}
+
+// AccessRequestDecision specifies an optional comment and access request to approve or deny
+type AccessRequestDecision struct {
+	AccessRequestID int64  `json:"access_request_id"`
+	Comment         string `json:"comment"`
+}
+
+// AccessRequestsResponse wraps one or more AccessRequest returned from the server
+type AccessRequestsResponse struct {
+	AccessRequests []AccessRequest `json:"access_requests"`
+}
+
 // AccessRequestSearchFilters wraps values to use for filtering
 // what access requests the server should return
 type AccessRequestSearchFilters struct {
@@ -983,6 +1001,13 @@ type UpsertAccessPolicyRequest struct {
 // UpsertAccessPolicyResponse represents the Access Policies attached to a particular group
 type UpsertAccessPolicyResponse struct {
 	GroupAccessPolicies GroupAccessPolicies `json:"group"`
+}
+
+// ListAccessPoliciesRequest wraps parameters used to list all access policies associated
+// with a given resource (e.g. a TozID group)
+type ListAccessPoliciesRequest struct {
+	RealmName string
+	GroupIDs  []string
 }
 
 // ListAccessPoliciesResponse represents all policies attached to a collection of groups

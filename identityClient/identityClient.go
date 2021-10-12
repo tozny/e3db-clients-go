@@ -1123,7 +1123,7 @@ func (c *E3dbIdentityClient) InitiateFederationConnection(ctx context.Context, p
 
 // InternalListAccessPolicies list all access policies for the specified params,
 // returning a list of policies and error (if any).
-func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, realmName string) (*ListAccessPoliciesResponse, error) {
+func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, params ListAccessPoliciesRequest) (*ListAccessPoliciesResponse, error) {
 	var listAccessPoliciesResponse *ListAccessPoliciesResponse
 	path := c.Host + internalIdentityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
 
@@ -1132,7 +1132,10 @@ func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, rea
 		return listAccessPoliciesResponse, err
 	}
 	urlParams := req.URL.Query()
-	urlParams.Set("realm_name", realmName)
+	urlParams.Set("realm_name", params.RealmName)
+	for _, groupID := range params.GroupIDs {
+		urlParams.Add("group_ids", groupID)
+	}
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &listAccessPoliciesResponse)
 	return listAccessPoliciesResponse, err
@@ -1149,4 +1152,16 @@ func (c *E3dbIdentityClient) InternalUpsertAccessPolicies(ctx context.Context, p
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &upsertAccessPolicyResponse)
 	return upsertAccessPolicyResponse, err
+}
+
+// ApproveAccessRequests approves one or more existing AccessRequests
+func (c *E3dbIdentityClient) ApproveAccessRequests(ctx context.Context, params ApproveAccessRequestsRequest) (*AccessRequestsResponse, error) {
+	var accessRequests *AccessRequestsResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/approve"
+	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return accessRequests, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequests)
+	return accessRequests, err
 }
