@@ -3455,3 +3455,48 @@ func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
 		}
 	}
 }
+func TestInitiateFederationConnectionForAuthorizedRealmReturnsSuccess(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("FederationConnect%d", time.Now().Unix())
+	sovereignName := "QueenCoolName"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	// Update Realm Setting
+	tozIDFederationEnabled := true
+	settingRequest := RealmSettingsUpdateRequest{
+		TozIDFederationEnabled: &(tozIDFederationEnabled),
+	}
+
+	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm settings for Realm %+v", err, realmName)
+	}
+
+	requestParam := InitializeFederationConnectionRequest{
+		RealmName:        realm.Name,
+		FederationSource: "tozid",
+	}
+	response, err := identityServiceClient.InitiateFederationConnection(testContext, requestParam)
+	if err != nil {
+		t.Fatalf("Error [%+v] Initiating Federation Connection for Realm %+v", err, requestParam)
+	}
+	if response.RealmName != realmName {
+		t.Fatalf("Error Expected %+v, Recieved %+v", realmName, response.RealmName)
+	}
+	if response.ConnectionID == uuid.Nil {
+		t.Fatalf("Error Expected a valid UUID, Recieved %+v", response.ConnectionID)
+	}
+	if response.APICredential == "" {
+		t.Fatalf("Error Expected a credential, Recieved %+v", response.APICredential)
+	}
+}

@@ -957,3 +957,16 @@ type DescribeAccessRequestRequest struct {
 // DeleteAccessRequestRequest wraps parameters needed for deleting
 //  a single access request
 type DeleteAccessRequestRequest = DescribeAccessRequestRequest
+
+// InitializeFederationConnectionRequest wraps parameters needed for a realm to begin a federation connection
+type InitializeFederationConnectionRequest struct {
+	RealmName        string `json:"realm_name"`
+	FederationSource string `json:"federation_source"`
+}
+
+// InitializeFederationConnectionResponse wraps parameters returned with the authentication and connection id of the connection that was initiated
+type InitializeFederationConnectionResponse struct {
+	RealmName     string    `json:"realm_name"`
+	ConnectionID  uuid.UUID `json:"connection_id"`
+	APICredential string    `json:"api_credential"`
+}

@@ -33,6 +33,7 @@ const (
 	applicationMapperResourceName = "mapper"
 	pamResourceName               = "pam"
 	pamRESTResourcePath           = "resource"
+	federationResourceName        = "federation"
 )
 
 var (
@@ -1105,4 +1106,16 @@ func (c *E3dbIdentityClient) DeleteAccessRequest(ctx context.Context, params Del
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 	return err
+}
+
+// InitiateFederationConnection authorizes the begining of a federated connection.
+func (c *E3dbIdentityClient) InitiateFederationConnection(ctx context.Context, params InitializeFederationConnectionRequest) (*InitializeFederationConnectionResponse, error) {
+	var response *InitializeFederationConnectionResponse
+	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/connection"
+	req, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
 }
