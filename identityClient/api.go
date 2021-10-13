@@ -39,6 +39,7 @@ const (
 	DefaultUMAProtectionApplicationRole                     = "uma_protection"
 	AccessRequestOpenState                                  = "open"
 	AccessRequestApprovedState                              = "approved"
+	TozIDFederationAuthHeader                               = "X-TOZID-REALM-FEDERATION-TOKEN"
 )
 
 var (
@@ -47,6 +48,9 @@ var (
 		SAMLKeycloakDescriptionFormat,
 		SAMLServiceProviderDescriptionFormat,
 		SAMLKeycloakSubsystemDescriptionFormat}
+
+	// Available Headers
+	AuthenticationHeaders = []string{TozIDFederationAuthHeader}
 )
 
 // Realm represents the top level identity management resource for grouping and managing
@@ -1034,4 +1038,28 @@ type InitializeFederationConnectionResponse struct {
 	RealmName     string    `json:"realm_name"`
 	ConnectionID  uuid.UUID `json:"connection_id"`
 	APICredential string    `json:"api_credential"`
+}
+
+// ConnectFederationRequest wraps the request to connect with a federator realm
+type ConnectFederationRequest struct {
+	RealmName            string    `json:"realm_name"`
+	PrimaryRealmName     string    `json:"primary_realm_name"`
+	Active               bool      `json:"active"`
+	Sync                 bool      `json:"sync"`
+	SyncFrequency        int       `json:"sync_frequency"`
+	APICredential        string    `json:"api_credential"`
+	PrimaryRealmEndpoint string    `json:"primary_realm_endpoint"`
+	FederationSource     string    `json:"federation_source"`
+	ConnectionID         uuid.UUID `json:"connection_id"`
+}
+
+// ConnectFederationSaveRequest wraps the request to activate the realm federation
+type ConnectFederationSaveRequest struct {
+	RealmName            string    `json:"realm_name"`
+	ShadowRealmName      string    `json:"shadow_realm_name"`
+	Active               bool      `json:"active"`
+	Sync                 bool      `json:"sync"`
+	ConnectionID         uuid.UUID `json:"connection_id"`
+	PrimaryRealmEndpoint string
+	Credentials          map[string]string
 }

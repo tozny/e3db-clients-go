@@ -1165,3 +1165,37 @@ func (c *E3dbIdentityClient) ApproveAccessRequests(ctx context.Context, params A
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequests)
 	return accessRequests, err
 }
+
+// ConfigureFederationConnection handles a realm connecting to a federator
+func (c *E3dbIdentityClient) ConfigureFederationConnection(ctx context.Context, params ConnectFederationRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/connection/" + params.ConnectionID.String()
+	req, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// CompleteFederationConnection handles the activation of a federation request
+func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, params ConnectFederationSaveRequest) error {
+	// Change Host to Primary Realm Endpoint
+	path := params.PrimaryRealmEndpoint + identityServiceBasePath + "/" + federationResourceName + "/activate/" + params.ConnectionID.String()
+	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
+	if err != nil {
+		return err
+	}
+	// Set Credential Token
+	for key, val := range params.Credentials {
+		var isAuthHeader bool
+		for _, authHeader := range AuthenticationHeaders {
+			if key == authHeader {
+				isAuthHeader = true
+				break
+			}
+		}
+		if isAuthHeader {
+			req.Header.Add(key, val)
+		}
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
