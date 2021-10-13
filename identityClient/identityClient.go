@@ -1123,7 +1123,7 @@ func (c *E3dbIdentityClient) InitiateFederationConnection(ctx context.Context, p
 
 // InternalListAccessPolicies list all access policies for the specified params,
 // returning a list of policies and error (if any).
-func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, params ListAccessPoliciesRequest) (*ListAccessPoliciesResponse, error) {
+func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, realmName string) (*ListAccessPoliciesResponse, error) {
 	var listAccessPoliciesResponse *ListAccessPoliciesResponse
 	path := c.Host + internalIdentityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
 
@@ -1132,10 +1132,7 @@ func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, par
 		return listAccessPoliciesResponse, err
 	}
 	urlParams := req.URL.Query()
-	urlParams.Set("realm_name", params.RealmName)
-	for _, groupID := range params.GroupIDs {
-		urlParams.Add("group_ids", groupID)
-	}
+	urlParams.Set("realm_name", realmName)
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &listAccessPoliciesResponse)
 	return listAccessPoliciesResponse, err

@@ -985,13 +985,6 @@ type UpsertAccessPolicyResponse struct {
 	GroupAccessPolicies GroupAccessPolicies `json:"group"`
 }
 
-// ListAccessPoliciesRequest wraps parameters used to list all access policies associated
-// with a given resource (e.g. a TozID group)
-type ListAccessPoliciesRequest struct {
-	RealmName string
-	GroupIDs  []string
-}
-
 // ListAccessPoliciesResponse represents all policies attached to a collection of groups
 // and a realm's PAM settings
 type ListAccessPoliciesResponse struct {
