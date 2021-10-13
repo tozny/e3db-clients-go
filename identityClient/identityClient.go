@@ -33,6 +33,7 @@ const (
 	applicationMapperResourceName = "mapper"
 	pamResourceName               = "pam"
 	pamRESTResourcePath           = "resource"
+	pamPolicyResourceName         = "policies"
 	federationResourceName        = "federation"
 )
 
@@ -1118,4 +1119,37 @@ func (c *E3dbIdentityClient) InitiateFederationConnection(ctx context.Context, p
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
 	return response, err
+}
+
+// InternalListAccessPolicies list all access policies for the specified params,
+// returning a list of policies and error (if any).
+func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, params ListAccessPoliciesRequest) (*ListAccessPoliciesResponse, error) {
+	var listAccessPoliciesResponse *ListAccessPoliciesResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
+
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return listAccessPoliciesResponse, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realm_name", params.RealmName)
+	for _, groupID := range params.GroupIDs {
+		urlParams.Add("group_ids", groupID)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &listAccessPoliciesResponse)
+	return listAccessPoliciesResponse, err
+}
+
+// InternalUpsertAccessPolicies allows for upserting access policies for a set of resources (e.g. groups)
+// returning the updated access policies and error (if any).
+func (c *E3dbIdentityClient) InternalUpsertAccessPolicies(ctx context.Context, params UpsertAccessPolicyRequest) (*UpsertAccessPolicyResponse, error) {
+	var upsertAccessPolicyResponse *UpsertAccessPolicyResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return upsertAccessPolicyResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &upsertAccessPolicyResponse)
+	return upsertAccessPolicyResponse, err
 }
