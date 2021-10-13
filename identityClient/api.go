@@ -958,6 +958,53 @@ type DescribeAccessRequestRequest struct {
 //  a single access request
 type DeleteAccessRequestRequest = DescribeAccessRequestRequest
 
+// AccessPolicy defines a set of rules required to access a particular resource.
+type AccessPolicy struct {
+	ID                           int64  `json:"id"`
+	ApprovalRoles                []Role `json:"approval_roles"`
+	RequiredApprovals            int    `json:"required_approvals"`
+	MaximumAccessDurationSeconds int    `json:"max_access_duration_seconds"`
+}
+
+// GroupAccessPolicies represents a list of access policies attached to a group.
+// Currently only one access policy per group is supported.
+type GroupAccessPolicies struct {
+	GroupID        string         `json:"id"`
+	AccessPolicies []AccessPolicy `json:"access_policies"`
+}
+
+// UpsertAccessPolicyRequest wraps paramters for creating or updating the Access Policies
+// attached to a group.
+type UpsertAccessPolicyRequest struct {
+	RealmName           string              `json:"realm_name"`
+	GroupAccessPolicies GroupAccessPolicies `json:"group"`
+}
+
+// UpsertAccessPolicyResponse represents the Access Policies attached to a particular group
+type UpsertAccessPolicyResponse struct {
+	GroupAccessPolicies GroupAccessPolicies `json:"group"`
+}
+
+// ListAccessPoliciesRequest wraps parameters used to list all access policies associated
+// with a given resource (e.g. a TozID group)
+type ListAccessPoliciesRequest struct {
+	RealmName string
+	GroupIDs  []string
+}
+
+// ListAccessPoliciesResponse represents all policies attached to a collection of groups
+// and a realm's PAM settings
+type ListAccessPoliciesResponse struct {
+	GroupAccessPolicies []GroupAccessPolicies `json:"groups"`
+	PAMRealmSettings    PAMRealmSettings      `json:"settings"`
+}
+
+type PAMRealmSettings struct {
+	MPCEnabledForRealm           bool `json:"mpc_enabled_for_realm"`
+	DefaultAccessDurationSeconds int  `json:"default_access_duration_seconds"`
+	DefaultRequiredApprovals     int  `json:"default_required_approvals"`
+}
+
 // InitializeFederationConnectionRequest wraps parameters needed for a realm to begin a federation connection
 type InitializeFederationConnectionRequest struct {
 	RealmName        string `json:"realm_name"`
