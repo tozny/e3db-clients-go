@@ -1153,3 +1153,15 @@ func (c *E3dbIdentityClient) InternalUpsertAccessPolicies(ctx context.Context, p
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &upsertAccessPolicyResponse)
 	return upsertAccessPolicyResponse, err
 }
+
+// ApproveAccessRequests approves one or more existing AccessRequests
+func (c *E3dbIdentityClient) ApproveAccessRequests(ctx context.Context, params ApproveAccessRequestsRequest) (*AccessRequestsResponse, error) {
+	var accessRequests *AccessRequestsResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/approve"
+	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return accessRequests, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequests)
+	return accessRequests, err
+}
