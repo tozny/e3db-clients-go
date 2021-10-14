@@ -1146,7 +1146,7 @@ func (c *E3dbIdentityClient) InternalListAccessPolicies(ctx context.Context, par
 func (c *E3dbIdentityClient) InternalUpsertAccessPolicies(ctx context.Context, params UpsertAccessPolicyRequest) (*UpsertAccessPolicyResponse, error) {
 	var upsertAccessPolicyResponse *UpsertAccessPolicyResponse
 	path := c.Host + internalIdentityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
-	req, err := e3dbClients.CreateRequest("POST", path, params)
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
 	if err != nil {
 		return upsertAccessPolicyResponse, err
 	}
