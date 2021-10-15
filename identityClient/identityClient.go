@@ -1199,3 +1199,15 @@ func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, p
 	}
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
+
+// AccessRequestGroup fetches groups for MPC Enabled Realms
+func (c *E3dbIdentityClient) AccessRequestGroups(ctx context.Context, params AccessRequestGroupsRequest) (*AccessRequestGroupsResponse, error) {
+	var groupsResponse *AccessRequestGroupsResponse
+	path := c.Host + identityServiceBasePath + "/" + pamResourceName + "/groups"
+	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return groupsResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &groupsResponse)
+	return groupsResponse, err
+}

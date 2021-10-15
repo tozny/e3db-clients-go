@@ -1071,3 +1071,13 @@ type ConnectFederationSaveRequest struct {
 	PrimaryRealmEndpoint string
 	Credentials          map[string]string
 }
+
+// AccessRequestGroupsRequest wraps parameters needed for fetching the MPC Enabled Realm groups
+type AccessRequestGroupsRequest struct {
+	RealmName string `json:"realm_name"`
+}
+
+// AccessRequestGroupsResponse wraps the response for MPC Enabled Realm Groups
+type AccessRequestGroupsResponse struct {
+	Groups []AccessRequestGroupResponse `json:"groups"`
+}
