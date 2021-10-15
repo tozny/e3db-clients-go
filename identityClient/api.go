@@ -950,6 +950,7 @@ type AccessRequestsResponse struct {
 type AccessRequestSearchFilters struct {
 	AccessControlledGroupIDs []string `json:"access_controlled_group_ids"`
 	RequestorIDs             []string `json:"requestor_ids"`
+	ApprovableByMe           bool     `json:"approvable_by_me"`
 }
 
 // AccessRequestSearchRequest wraps values to use when performing

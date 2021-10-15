@@ -16,6 +16,7 @@ all: clean build up test down
 .PHONY: build test lint clean up down restart testone
 
 lint :
+	go fmt ./...
 	go vet ./...
 	go mod tidy
 
