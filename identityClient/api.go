@@ -86,6 +86,7 @@ type PrivateRealmInfo struct {
 	MFAAvailable           []string  `json:"mfa_available"`
 	EmailLookupsEnabled    bool      `json:"email_lookups_enabled"`
 	TozIDFederationEnabled bool      `json:"tozid_federation_enabled"`
+	MPCEnabled             bool      `json:"mpc_enabled"`
 }
 
 // Sovereign represents the top level user of a realm
@@ -900,6 +901,7 @@ type RealmSettingsUpdateRequest struct {
 	MFAAvailable           *[]string `json:"mfa_available,omitempty"`
 	EmailLookupsEnabled    *bool     `json:"email_lookups_enabled,omitempty"`
 	TozIDFederationEnabled *bool     `json:"tozid_federation_enabled,omitempty"`
+	MPCEnabled             *bool     `json:"mpc_enabled,omitempty"`
 }
 
 // CreateAccessRequestRequest wraps parameters for creating a new open Access Request
