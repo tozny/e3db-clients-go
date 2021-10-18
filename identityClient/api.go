@@ -925,15 +925,21 @@ type AccessRequestGroupResponse struct {
 
 // AccessRequestResponse represents an access request to temporarily join new groups
 type AccessRequestResponse struct {
-	AutoExpiresAt         time.Time                    `json:"auto_expires_at"`
-	CreatedAt             time.Time                    `json:"created_at"`
-	Groups                []AccessRequestGroupResponse `json:"groups"`
-	ID                    int64                        `json:"id"`
-	Reason                string                       `json:"reason"`
-	RequestorID           string                       `json:"requestor_id"`
-	State                 string                       `json:"state"`
-	AccessDurationSeconds int                          `json:"ttl"`
-	RealmName             string                       `json:"realm_name"`
+	AutoExpiresAt         time.Time                     `json:"auto_expires_at"`
+	CreatedAt             time.Time                     `json:"created_at"`
+	Groups                []AccessRequestGroupResponse  `json:"groups"`
+	ID                    int64                         `json:"id"`
+	Reason                string                        `json:"reason"`
+	RequestorID           string                        `json:"requestor_id"`
+	State                 string                        `json:"state"`
+	AccessDurationSeconds int                           `json:"ttl"`
+	RealmName             string                        `json:"realm_name"`
+	RequestorDetails      AccessRequestRequestorDetails `json:"requestor_details"`
+}
+
+// AccessRequestRequestorDetails wraps additional details about the access request requestor
+type AccessRequestRequestorDetails struct {
+	Username string `json:"username"`
 }
 
 // ApproveAccessRequestsRequest specifies a list of AccessRequests to approve
