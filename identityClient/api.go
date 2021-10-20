@@ -639,6 +639,7 @@ type BasicIdentity struct {
 	LastName  string `json:"last_name"`
 	Active    bool   `json:"active"`
 	Federated bool   `json:"federated"`
+	Email     string `json:"email"`
 }
 
 // ListIdentitiesRequest wraps the data to request a list of identities in a realm
