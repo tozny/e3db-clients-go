@@ -1189,6 +1189,10 @@ func TestListIdentitiesPaginates(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unable to fetch identity list from realm %q - first %d max %d: %+v", realmName, first, perPage, err)
 		}
+		if identities.Identities[0].Email == "" {
+			t.Fatalf("Error: Expected Identities to have email, Got %+v", identities)
+		}
+
 		if len(identities.Identities) != perPage {
 			t.Fatalf("identity count incorrect with first %d in realm %q mismatch, expected 1, got %d", first, realmName, len(identities.Identities))
 		}
