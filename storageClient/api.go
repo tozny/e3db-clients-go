@@ -30,6 +30,11 @@ type Note struct {
 	Expires             bool              `json:"expires,omitempty"`
 }
 
+// InternalNoteInfoResponse wraps a response from the internal NotesInfo endpoint
+type InternalNoteInfoResponse struct {
+	PublicRecipientSigningKey string `json:"public_recipient_signing_key"`
+}
+
 // CreateGroupRequest wraps parameters needed to request creation of a group
 type CreateGroupRequest struct {
 	Name              string `json:"group_name"`
