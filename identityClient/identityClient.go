@@ -1154,6 +1154,39 @@ func (c *E3dbIdentityClient) InternalUpsertAccessPolicies(ctx context.Context, p
 	return upsertAccessPolicyResponse, err
 }
 
+// ListAccessPolicies list all access policies for the specified params,
+// returning a list of policies and error (if any).
+func (c *E3dbIdentityClient) ListAccessPolicies(ctx context.Context, params ListAccessPoliciesRequest) (*ListAccessPoliciesResponse, error) {
+	var listAccessPoliciesResponse *ListAccessPoliciesResponse
+	path := c.Host + identityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
+
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return listAccessPoliciesResponse, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realm_name", params.RealmName)
+	for _, groupID := range params.GroupIDs {
+		urlParams.Add("group_ids", groupID)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &listAccessPoliciesResponse)
+	return listAccessPoliciesResponse, err
+}
+
+// UpsertAccessPolicies allows for upserting access policies for a set of resources (e.g. groups)
+// returning the updated access policies and error (if any).
+func (c *E3dbIdentityClient) UpsertAccessPolicies(ctx context.Context, params UpsertAccessPolicyRequest) (*UpsertAccessPolicyResponse, error) {
+	var upsertAccessPolicyResponse *UpsertAccessPolicyResponse
+	path := c.Host + identityServiceBasePath + "/" + pamResourceName + fmt.Sprintf("/%s", pamPolicyResourceName)
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return upsertAccessPolicyResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &upsertAccessPolicyResponse)
+	return upsertAccessPolicyResponse, err
+}
+
 // ApproveAccessRequests approves one or more existing AccessRequests
 func (c *E3dbIdentityClient) ApproveAccessRequests(ctx context.Context, params ApproveAccessRequestsRequest) (*AccessRequestsResponse, error) {
 	var accessRequests *AccessRequestsResponse
