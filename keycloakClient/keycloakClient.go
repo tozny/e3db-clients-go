@@ -1115,6 +1115,18 @@ func (c *Client) GetRealmLevelRoleMappings(accessToken string, realmName, userID
 	return resp, err
 }
 
+// AddRealmRolesToUserRoleMapping adds realm role mappings to a user, returning error (if any)
+func (c *Client) AddRealmRolesToUserRoleMapping(accessToken string, realmName, userID string, roles []RoleRepresentation) error {
+	_, err := c.post(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
+	return err
+}
+
+// RemoveRealmRolesFromUserRoleMapping removes realm role mappings from a user, returning error (if any)
+func (c *Client) RemoveRealmRolesFromUserRoleMapping(accessToken string, realmName, userID string, roles []RoleRepresentation) error {
+	err := c.delete(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
+	return err
+}
+
 // GetClientRoleMappings gets client-level role mappings for the user, and the app.
 func (c *Client) GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]RoleRepresentation, error) {
 	var resp = []RoleRepresentation{}
@@ -1125,6 +1137,13 @@ func (c *Client) GetClientRoleMappings(accessToken string, realmName, userID, cl
 // AddClientRoleMapping add client-level roles to the user role mapping.
 func (c *Client) AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []RoleRepresentation) error {
 	_, err := c.post(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, clientResourceName, clientID))
+	return err
+}
+
+// RemoveClientRolesFromUserRoleMapping removes client-level roles from a user role mapping
+// returning error (if any).
+func (c *Client) RemoveClientRolesFromUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []RoleRepresentation) error {
+	err := c.delete(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, clientResourceName, clientID))
 	return err
 }
 
