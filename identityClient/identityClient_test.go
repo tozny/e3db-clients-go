@@ -3590,7 +3590,7 @@ func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
 	expectedAccessRequestIDs := []int64{firstCreatedAccessRequest.ID, secondCreatedAccessRequest.ID}
 	for _, expectedAccessRequestID := range expectedAccessRequestIDs {
 		var found bool
-		for _, accessRequest := range searchResponse.AccessReqeusts {
+		for _, accessRequest := range searchResponse.AccessRequests {
 			if accessRequest.ID == expectedAccessRequestID {
 				found = true
 				break
@@ -3598,7 +3598,7 @@ func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
 
 		}
 		if !found {
-			t.Fatalf("Expected to find created access request %d in search response %+v", expectedAccessRequestID, searchResponse.AccessReqeusts)
+			t.Fatalf("Expected to find created access request %d in search response %+v", expectedAccessRequestID, searchResponse.AccessRequests)
 		}
 	}
 }
