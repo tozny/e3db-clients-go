@@ -981,7 +981,7 @@ type AccessRequest = AccessRequestResponse
 // AccessRequestSearchResponse wraps access requests and pagination values returned
 // from an access request search request
 type AccessRequestSearchResponse struct {
-	AccessReqeusts []AccessRequest `json:"access_requests"`
+	AccessRequests []AccessRequest `json:"access_requests"`
 	NextToken      int64           `json:"next_token"`
 }
 
