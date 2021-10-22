@@ -1115,7 +1115,7 @@ type DetailedFederatedIdentity struct {
 	Group                 []Group             `json:"group"`
 	GroupRoleMappings     []RoleMapping       `json:"group_role_mapping"`
 	Attributes            map[string][]string `json:"attributes"`
-	CredentialKeyMaterial string              `json:"string"`
+	CredentialKeyMaterial string              `json:"string"` // The public recipient key material of the Identity
 }
 
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync

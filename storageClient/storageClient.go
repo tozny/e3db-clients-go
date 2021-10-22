@@ -619,3 +619,21 @@ func (c *StorageClient) InternalRecordsByWriterID(ctx context.Context, params In
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+func (c *StorageClient) InternalGetNoteInfo(ctx context.Context, noteName string) (*InternalNoteInfoResponse, error) {
+	var result *InternalNoteInfoResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes/info"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+
+	urlParams := req.URL.Query()
+	if noteName != "" {
+		urlParams.Set("id_string", noteName)
+	}
+
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}

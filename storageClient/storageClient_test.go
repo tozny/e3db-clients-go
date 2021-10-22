@@ -3334,6 +3334,7 @@ func TestShareRecordWithGroupReturnsSuccess(t *testing.T) {
 		t.Errorf("Didnt return the correct record (%+v) (%+v)", responseVal, listReturn)
 	}
 }
+
 func EncryptAccessKeyForGroup(groupMember storageClientV2.StorageClient, accessKey e3dbClients.SymmetricKey) (string, error) {
 	encryptionKeys := e3dbClients.EncryptionKeys{
 		Public: e3dbClients.Key{
@@ -3828,5 +3829,4 @@ func TestShareFileWithGroupReturnsSuccess(t *testing.T) {
 	if decryptedRecord.Metadata.Version == "" {
 		t.Errorf("Didnt return the version (%+v) (%+v)", responseVal, listReturn)
 	}
-
 }
