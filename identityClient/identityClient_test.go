@@ -3678,9 +3678,17 @@ func TestUpsertAccessRequestPolicy(t *testing.T) {
 			},
 		},
 	}
+	mpcEnabled := true
+	settingRequest := RealmSettingsUpdateRequest{
+		MPCEnabled: &(mpcEnabled),
+	}
 
+	err = client.RealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm settings for Realm %+v", err, realmName)
+	}
 	// ACT
-	response, err := bootstrapClient.InternalUpsertAccessPolicies(testContext, upsertAccessPoliciesParam)
+	response, err := client.UpsertAccessPolicies(testContext, upsertAccessPoliciesParam)
 
 	// ASSERT
 	if err != nil {
@@ -3706,6 +3714,15 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list default realm roles %s", err)
 	}
+	mpcEnabled := true
+	settingRequest := RealmSettingsUpdateRequest{
+		MPCEnabled: &(mpcEnabled),
+	}
+
+	err = client.RealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm settings for Realm %+v", err, realmName)
+	}
 	upsertAccessPoliciesParam := UpsertAccessPolicyRequest{
 		RealmName: realmName,
 		GroupAccessPolicies: GroupAccessPolicies{
@@ -3721,7 +3738,7 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 			},
 		},
 	}
-	response, err := bootstrapClient.InternalUpsertAccessPolicies(testContext, upsertAccessPoliciesParam)
+	response, err := client.UpsertAccessPolicies(testContext, upsertAccessPoliciesParam)
 	if err != nil {
 		t.Fatalf("Error %s upserting access request policies %+v", err, upsertAccessPoliciesParam)
 	}
@@ -3735,7 +3752,7 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 	}
 
 	// ACT
-	listResponse, err := bootstrapClient.InternalListAccessPolicies(testContext, listAccessPoliciesRequest)
+	listResponse, err := client.ListAccessPolicies(testContext, listAccessPoliciesRequest)
 	// ASSERT
 	if err != nil {
 		t.Fatalf("Error %s listing access request policies for realm %+s", err, realmName)
