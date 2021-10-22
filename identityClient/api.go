@@ -1089,24 +1089,26 @@ type AccessRequestGroupsResponse struct {
 	Groups []AccessRequestGroupResponse `json:"groups"`
 }
 
-// SyncFederatedIdentitiesRequest wraps the request made to sync a federated Realm's Identities
-type SyncFederatedIdentitiesRequest struct {
-	RealmName      string   `json:"realm_name"`
-	Usernames      []string `json:"usernames"`
-	IncludeDetails bool     `json:"include_details"`
-	NextToken      int      `json:"next_token"`
-	Limit          int      `json:"limit"`
-	Credentials    map[string]string
+// GetFederatedIdentitiesForSyncRequest wraps the request made to sync a federated Realm's Identities
+type GetFederatedIdentitiesForSyncRequest struct {
+	RealmName            string   `json:"realm_name"`
+	Usernames            []string `json:"usernames"`
+	IncludeDetails       bool     `json:"include_details"`
+	NextToken            int      `json:"next_token"`
+	Limit                int      `json:"limit"`
+	Credentials          map[string]string
+	PrimaryRealmEndpoint string
 }
 
 // DetailedFederatedIdentity wraps the information about a federated Identity
 type DetailedFederatedIdentity struct {
 	SubjectID             string              `json:"subject_id"`
-	ToznyID               string              `json:"tozny_id"`
+	ToznyID               uuid.UUID           `json:"tozny_id"`
 	Username              string              `json:"username"`
 	Email                 string              `json:"email"`
 	FirstName             string              `json:"first_name"`
 	LastName              string              `json:"last_name"`
+	RealmName             string              `json:"realm_name"`
 	Active                bool                `json:"active"`
 	FederationSource      string              `json:"federation_source"` // Enum [tozid,ldap]
 	Roles                 RoleMapping         `json:"roles"`
@@ -1116,8 +1118,8 @@ type DetailedFederatedIdentity struct {
 	CredentialKeyMaterial string              `json:"string"`
 }
 
-// SyncFederatedIdentitiesResponse wraps the Identities returned by a federated Realm's sync
-type SyncFederatedIdentitiesResponse struct {
+// GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
+type GetFederatedIdentitiesForSyncResponse struct {
 	FederatedIdentities []DetailedFederatedIdentity `json:"federated_identities"`
 	NextToken           int                         `json:"next_token"`
 }
