@@ -1207,10 +1207,10 @@ func (c *E3dbIdentityClient) AccessRequestGroups(ctx context.Context, params Acc
 	return groupsResponse, err
 }
 
-// SyncFederatedIdentities gets information for all or a subset of federated Identities in a realm
-func (c *E3dbIdentityClient) SyncFederatedIdentities(ctx context.Context, params SyncFederatedIdentitiesRequest) (*SyncFederatedIdentitiesResponse, error) {
-	var federatedIdentities *SyncFederatedIdentitiesResponse
-	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/sync"
+// GetFederatedIdentitiesForSync gets information for all or a subset of federated Identities in a realm
+func (c *E3dbIdentityClient) GetFederatedIdentitiesForSync(ctx context.Context, params GetFederatedIdentitiesForSyncRequest) (*GetFederatedIdentitiesForSyncResponse, error) {
+	var federatedIdentities *GetFederatedIdentitiesForSyncResponse
+	path := params.PrimaryRealmEndpoint + identityServiceBasePath + "/" + federationResourceName + "/sync"
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return federatedIdentities, err

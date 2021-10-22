@@ -196,7 +196,7 @@ func ConfigureAndCreateAFederatedRealm(t *testing.T) (*Realm, E3dbIdentityClient
 		t.Fatalf("Error Expected a credential, Recieved %+v", response.APICredential)
 	}
 
-	// Build SyncFederatedIdentitiesRequest object
+	// Build GetFederatedIdentitiesForSyncRequest object
 	credentials := make(map[string]string)
 	credentials[TozIDFederationAuthHeader] = response.APICredential
 
@@ -3756,13 +3756,13 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 
 }
 
-func TestSyncFederatedIdentitiesWithDetails(t *testing.T) {
+func TestGetFederatedIdentitiesForSyncWithDetails(t *testing.T) {
 	// Setup
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -3775,15 +3775,16 @@ func TestSyncFederatedIdentitiesWithDetails(t *testing.T) {
 
 	first := 0
 	for i := 0; i < pages; i++ {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: true,
-			Limit:          perPage, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       true,
+			Limit:                perPage, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
@@ -3810,7 +3811,7 @@ func TestSyncASingleFederatedIdentityWithDetails(t *testing.T) {
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register Identity with Realm
@@ -3825,14 +3826,15 @@ func TestSyncASingleFederatedIdentityWithDetails(t *testing.T) {
 	usernames := []string{id.Name}
 
 	// No pagination necessary
-	reqParams := SyncFederatedIdentitiesRequest{
-		RealmName:      realm.Name,
-		IncludeDetails: true,
-		Credentials:    credentials,
-		Usernames:      usernames,
+	reqParams := GetFederatedIdentitiesForSyncRequest{
+		RealmName:            realm.Name,
+		IncludeDetails:       true,
+		Credentials:          credentials,
+		Usernames:            usernames,
+		PrimaryRealmEndpoint: identityServiceClient.Host,
 	}
-	// Call SyncFederatedIdentities handler
-	syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+	// Call GetFederatedIdentitiesForSync handler
+	syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 	if err != nil {
 		t.Fatalf("error %s while syncing federated identities", err)
 	}
@@ -3856,7 +3858,7 @@ func TestSyncSomeFederatedIdentitiesWithDetails(t *testing.T) {
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -3871,17 +3873,18 @@ func TestSyncSomeFederatedIdentitiesWithDetails(t *testing.T) {
 		names = append(names, identity.Name)
 	}
 
-	// Build SyncFederatedIdentitiesRequest object
+	// Build GetFederatedIdentitiesForSyncRequest object
 	var usernames []string = names[0:4]
-	reqParams := SyncFederatedIdentitiesRequest{ // No pagination necessary
-		RealmName:      realm.Name,
-		Usernames:      usernames,
-		IncludeDetails: true,
-		Credentials:    credentials,
+	reqParams := GetFederatedIdentitiesForSyncRequest{ // No pagination necessary
+		RealmName:            realm.Name,
+		Usernames:            usernames,
+		IncludeDetails:       true,
+		Credentials:          credentials,
+		PrimaryRealmEndpoint: identityServiceClient.Host,
 	}
 
-	// Call SyncFederatedIdentities handler
-	syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+	// Call GetFederatedIdentitiesForSync handler
+	syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 	if err != nil {
 		t.Fatalf("error %s while syncing federated identities", err)
 	}
@@ -3904,7 +3907,7 @@ func TestSyncAllFederatedIdentitiesWithNoDetails(t *testing.T) {
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -3917,15 +3920,16 @@ func TestSyncAllFederatedIdentitiesWithNoDetails(t *testing.T) {
 
 	first := 0
 	for i := 0; i < pages; i++ {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: false,
-			Limit:          perPage, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       false,
+			Limit:                perPage, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
@@ -3953,7 +3957,7 @@ func TestSyncSomeFederatedIdentitiesWithNoDetails(t *testing.T) {
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 	// Create and register many Identities with the Realm
 	numberOfIdentities := 10
@@ -3967,17 +3971,18 @@ func TestSyncSomeFederatedIdentitiesWithNoDetails(t *testing.T) {
 		names = append(names, identity.Name)
 	}
 
-	// Build SyncFederatedIdentitiesRequest object
+	// Build GetFederatedIdentitiesForSyncRequest object
 	var usernames []string = names[0:4]
-	reqParams := SyncFederatedIdentitiesRequest{
-		RealmName:      realm.Name,
-		Usernames:      usernames,
-		IncludeDetails: false,
-		Credentials:    credentials,
+	reqParams := GetFederatedIdentitiesForSyncRequest{
+		RealmName:            realm.Name,
+		Usernames:            usernames,
+		IncludeDetails:       false,
+		Credentials:          credentials,
+		PrimaryRealmEndpoint: identityServiceClient.Host,
 	}
 
-	// Call SyncFederatedIdentities handler
-	syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+	// Call GetFederatedIdentitiesForSync handler
+	syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 	if err != nil {
 		t.Fatalf("error %s while syncing federated identities", err)
 	}
@@ -3999,7 +4004,7 @@ func TestSyncASingleFederatedIdentityWithNoDetails(t *testing.T) {
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register Identity with Realm
@@ -4012,15 +4017,16 @@ func TestSyncASingleFederatedIdentityWithNoDetails(t *testing.T) {
 	}
 
 	usernames := []string{id.Name}
-	reqParams := SyncFederatedIdentitiesRequest{
-		RealmName:      realm.Name,
-		Usernames:      usernames,
-		IncludeDetails: false,
-		Credentials:    credentials,
+	reqParams := GetFederatedIdentitiesForSyncRequest{
+		RealmName:            realm.Name,
+		Usernames:            usernames,
+		IncludeDetails:       false,
+		Credentials:          credentials,
+		PrimaryRealmEndpoint: identityServiceClient.Host,
 	}
 
-	// Call SyncFederatedIdentities handler
-	syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+	// Call GetFederatedIdentitiesForSync handler
+	syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 	if err != nil {
 		t.Fatalf("error %s while syncing federated identities", err)
 	}
@@ -4039,13 +4045,13 @@ func TestSyncASingleFederatedIdentityWithNoDetails(t *testing.T) {
 
 }
 
-func TestSyncFederatedIdentitiesMultiplePagesOfIdentities(t *testing.T) {
+func TestGetFederatedIdentitiesForSyncMultiplePagesOfIdentities(t *testing.T) {
 	// Setup
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -4058,15 +4064,16 @@ func TestSyncFederatedIdentitiesMultiplePagesOfIdentities(t *testing.T) {
 
 	first := 0
 	for i := 0; i < pages; i++ {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: true,
-			Limit:          perPage, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       true,
+			Limit:                perPage, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
@@ -4088,16 +4095,16 @@ func TestSyncFederatedIdentitiesMultiplePagesOfIdentities(t *testing.T) {
 	}
 }
 
-func TestSyncFederatedIdentitiesGetsRolesGroupsAndGroupRoleMappings(t *testing.T) {
+func TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings(t *testing.T) {
 	// Setup
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Add Groups, Roles, and Group Role Mappings
-	groupName := uniqueString("TestSyncFederatedIdentitiesGetsRolesGroupsAndGroupRoleMappings Group")
+	groupName := uniqueString("TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings Group")
 	group := createRealmGroup(t, identityServiceClient, realm.Name, groupName)
 
 	// Createe Realm Application
@@ -4164,19 +4171,20 @@ func TestSyncFederatedIdentitiesGetsRolesGroupsAndGroupRoleMappings(t *testing.T
 		updateGroupMembership(t, identityServiceClient, "update", realm.Name, identityResponse.Identity.ToznyID.String(), groupID)
 	}
 
-	// Call SyncFederatedIdentities handler
+	// Call GetFederatedIdentitiesForSync handler
 	var totalIdentities []DetailedFederatedIdentity
 	first := 0
 	for i := 0; i < pages; i++ {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: true,
-			Limit:          perPage, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       true,
+			Limit:                perPage, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
@@ -4213,13 +4221,13 @@ func TestSyncFederatedIdentitiesGetsRolesGroupsAndGroupRoleMappings(t *testing.T
 	}
 }
 
-func TestSyncFederatedIdentitiesLimitSetToOneNoRepeatsOrSkips(t *testing.T) {
+func TestGetFederatedIdentitiesForSyncLimitSetToOneNoRepeatsOrSkips(t *testing.T) {
 	// Setup
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -4235,15 +4243,16 @@ func TestSyncFederatedIdentitiesLimitSetToOneNoRepeatsOrSkips(t *testing.T) {
 	first := 0
 	max := 1
 	for first != -1 {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: true,
-			Limit:          max, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       true,
+			Limit:                max, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
@@ -4285,13 +4294,13 @@ func TestSyncFederatedIdentitiesLimitSetToOneNoRepeatsOrSkips(t *testing.T) {
 	}
 }
 
-func TestSyncFederatedIdentitiesLimitSetToTwoNoRepeatsOrSkips(t *testing.T) {
+func TestGetFederatedIdentitiesForSyncLimitSetToTwoNoRepeatsOrSkips(t *testing.T) {
 	// Setup
 	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
-	var syncResponse *SyncFederatedIdentitiesResponse
+	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register many Identities with the Realm
@@ -4307,15 +4316,16 @@ func TestSyncFederatedIdentitiesLimitSetToTwoNoRepeatsOrSkips(t *testing.T) {
 	first := 0
 	max := 2
 	for first != -1 {
-		reqParams := SyncFederatedIdentitiesRequest{
-			RealmName:      realm.Name,
-			IncludeDetails: true,
-			Limit:          max, // For this test we get all Identities in a single request
-			NextToken:      first,
-			Credentials:    credentials,
+		reqParams := GetFederatedIdentitiesForSyncRequest{
+			RealmName:            realm.Name,
+			IncludeDetails:       true,
+			Limit:                max, // For this test we get all Identities in a single request
+			NextToken:            first,
+			Credentials:          credentials,
+			PrimaryRealmEndpoint: identityServiceClient.Host,
 		}
 
-		syncResponse, err = identityServiceClient.SyncFederatedIdentities(testContext, reqParams)
+		syncResponse, err = identityServiceClient.GetFederatedIdentitiesForSync(testContext, reqParams)
 		if err != nil {
 			t.Fatalf("error %s while syncing federated identities", err)
 		}
