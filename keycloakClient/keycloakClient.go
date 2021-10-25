@@ -914,7 +914,7 @@ func (c *Client) GetUsers(accessToken string, reqRealmName, targetRealmName stri
 	if len(paramKV) > 0 {
 		urlParams := req.URL.Query()
 		// Sketchy
-		for i := 0; i < len(paramKV)/2; i += 2 {
+		for i := 0; i < len(paramKV); i += 2 {
 			urlParams.Set(paramKV[i], paramKV[i+1])
 		}
 		req.URL.RawQuery = urlParams.Encode()
