@@ -1113,20 +1113,20 @@ type GetFederatedIdentitiesForSyncRequest struct {
 
 // DetailedFederatedIdentity wraps the information about a federated Identity
 type DetailedFederatedIdentity struct {
-	SubjectID             string              `json:"subject_id"`
-	ToznyID               uuid.UUID           `json:"tozny_id"`
-	Username              string              `json:"username"`
-	Email                 string              `json:"email"`
-	FirstName             string              `json:"first_name"`
-	LastName              string              `json:"last_name"`
-	RealmName             string              `json:"realm_name"`
-	Active                bool                `json:"active"`
-	FederationSource      string              `json:"federation_source"` // Enum [tozid,ldap]
-	Roles                 RoleMapping         `json:"roles"`
-	Group                 []Group             `json:"group"`
-	GroupRoleMappings     []RoleMapping       `json:"group_role_mapping"`
-	Attributes            map[string][]string `json:"attributes"`
-	CredentialKeyMaterial string              `json:"string"` // The public recipient key material of the Identity
+	SubjectID                         string              `json:"subject_id"`
+	ToznyID                           uuid.UUID           `json:"tozny_id"`
+	Username                          string              `json:"username"`
+	Email                             string              `json:"email"`
+	FirstName                         string              `json:"first_name"`
+	LastName                          string              `json:"last_name"`
+	RealmName                         string              `json:"realm_name"`
+	Active                            bool                `json:"active"`
+	FederationSource                  string              `json:"federation_source"` // Enum [tozid,ldap]
+	Roles                             RoleMapping         `json:"roles"`
+	Group                             []Group             `json:"group"`
+	GroupRoleMappings                 []RoleMapping       `json:"group_role_mapping"`
+	Attributes                        map[string][]string `json:"attributes"`
+	TozIDPasswordNotePublicSigningKey string              `json:"tozid_password_note_public_signing_key"`
 }
 
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
