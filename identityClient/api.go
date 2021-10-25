@@ -926,20 +926,23 @@ type AccessRequestGroupResponse struct {
 
 // AccessRequestResponse represents an access request to temporarily join new groups
 type AccessRequestResponse struct {
-	AutoExpiresAt         time.Time                     `json:"auto_expires_at"`
-	CreatedAt             time.Time                     `json:"created_at"`
-	Groups                []AccessRequestGroupResponse  `json:"groups"`
-	ID                    int64                         `json:"id"`
-	Reason                string                        `json:"reason"`
-	RequestorID           string                        `json:"requestor_id"`
-	State                 string                        `json:"state"`
-	AccessDurationSeconds int                           `json:"ttl"`
-	RealmName             string                        `json:"realm_name"`
-	RequestorDetails      AccessRequestRequestorDetails `json:"requestor_details"`
+	AutoExpiresAt          time.Time                    `json:"auto_expires_at"`
+	CreatedAt              time.Time                    `json:"created_at"`
+	Groups                 []AccessRequestGroupResponse `json:"groups"`
+	ID                     int64                        `json:"id"`
+	Reason                 string                       `json:"reason"`
+	RequestorID            string                       `json:"requestor_id"`
+	State                  string                       `json:"state"`
+	AccessDurationSeconds  int                          `json:"ttl"`
+	RealmName              string                       `json:"realm_name"`
+	RequestorDetails       AccessRequestUserDetails     `json:"requestor_details"`
+	RequiredApprovalsCount int                          `json:"required_approval_count"`
+	Actions                []AccessRequestAction        `json:"actions"`
 }
 
-// AccessRequestRequestorDetails wraps additional details about the access request requestor
-type AccessRequestRequestorDetails struct {
+// AccessRequestUserDetails wraps additional details about a user
+type AccessRequestUserDetails struct {
+	ToznyID  string `json:"tozny_id"`
 	Username string `json:"username"`
 }
 
@@ -977,6 +980,14 @@ type AccessRequestSearchRequest struct {
 
 // AccessRequest wraps details for an exisitng access request
 type AccessRequest = AccessRequestResponse
+
+// AccessRequestAction wraps information about an action taken on an access request
+type AccessRequestAction struct {
+	UserDetails AccessRequestUserDetails `json:"user_details"`
+	TakenAt     time.Time                `json:"taken_at"`
+	Action      string                   `json:"action"`
+	Comment     string                   `json:"comment"`
+}
 
 // AccessRequestSearchResponse wraps access requests and pagination values returned
 // from an access request search request

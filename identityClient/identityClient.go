@@ -1073,7 +1073,7 @@ func (c *E3dbIdentityClient) CreateAccessRequest(ctx context.Context, params Cre
 	return accessRequest, err
 }
 
-// SearchAccessRequests searches for all or speciifc (e.g. based off requestor) access requests assciotaed with or authorizable by the searcher
+// SearchAccessRequests searches for all or specific (e.g. based off requestor) access requests associated with or authorizable by the searcher
 // returning paginated lists of matching access requests and error (if any)
 func (c *E3dbIdentityClient) SearchAccessRequests(ctx context.Context, params AccessRequestSearchRequest) (*AccessRequestSearchResponse, error) {
 	var searchResponse *AccessRequestSearchResponse
