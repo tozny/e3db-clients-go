@@ -39,6 +39,7 @@ const (
 	DefaultUMAProtectionApplicationRole                     = "uma_protection"
 	AccessRequestOpenState                                  = "open"
 	AccessRequestApprovedState                              = "approved"
+	AccessRequestDeniedState                                = "denied"
 	TozIDFederationAuthHeader                               = "X-TOZID-REALM-FEDERATION-TOKEN"
 )
 
@@ -949,6 +950,12 @@ type AccessRequestUserDetails struct {
 // ApproveAccessRequestsRequest specifies a list of AccessRequests to approve
 type ApproveAccessRequestsRequest struct {
 	Approvals []AccessRequestDecision `json:"approvals"`
+	RealmName string                  `json:"realm_name"`
+}
+
+// DenyAccessRequestsRequest specifies a list of AccessRequests to deny
+type DenyAccessRequestsRequest struct {
+	Denials   []AccessRequestDecision `json:"denials"`
 	RealmName string                  `json:"realm_name"`
 }
 
