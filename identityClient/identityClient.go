@@ -1199,6 +1199,18 @@ func (c *E3dbIdentityClient) ApproveAccessRequests(ctx context.Context, params A
 	return accessRequests, err
 }
 
+// DenyAccessRequests denies one or more existing AccessRequest
+func (c *E3dbIdentityClient) DenyAccessRequests(ctx context.Context, params DenyAccessRequestsRequest) (*AccessRequestsResponse, error) {
+	var accessRequests *AccessRequestsResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/deny"
+	request, err := e3dbClients.CreateRequest(http.MethodPost, path, params)
+	if err != nil {
+		return accessRequests, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &accessRequests)
+	return accessRequests, err
+}
+
 // ConfigureFederationConnection handles a realm connecting to a federator
 func (c *E3dbIdentityClient) ConfigureFederationConnection(ctx context.Context, params ConnectFederationRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/connection/" + params.ConnectionID.String()
