@@ -1147,6 +1147,12 @@ func (c *Client) RemoveClientRolesFromUserRoleMapping(accessToken string, realmN
 	return err
 }
 
+// UpdateUser updates an Identity from a user representation, returning error (if any)
+func (c *Client) UpdateUser(accessToken string, realmName string, userID string, userRepresenation UserRepresentation) error {
+	err := c.put(accessToken, userRepresenation, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID))
+	return err
+}
+
 // CreateUserFederationProvider creates a user federation provider for a realm for syncing users from an external source,
 // returning the location of the created provider or error (if any).
 func (c *Client) CreateUserFederationProvider(accessToken string, realmName string, userFederationProvider UserFederationProviderRepresentation) (string, error) {
