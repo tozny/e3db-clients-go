@@ -1271,3 +1271,15 @@ func (c *E3dbIdentityClient) GetFederatedIdentitiesForSync(ctx context.Context, 
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &federatedIdentities)
 	return federatedIdentities, err
 }
+
+// RegisterTozIDFederatedIdentity registers a TozID Federated Identity from the Primary Instance
+func (c *E3dbIdentityClient) RegisterTozIDFederatedIdentity(ctx context.Context, loginRequest RegisterFederatedIdentityRequest) (*RegisterIdentityResponse, error) {
+	var resp *RegisterIdentityResponse
+	path := c.Host + identityServiceBasePath + "/" + federationResourceName + "/" + loginRequest.RealmName + "/identity/register"
+	req, err := e3dbClients.CreateRequest("POST", path, loginRequest)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}

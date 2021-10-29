@@ -153,17 +153,19 @@ type IdentityLoginRequest struct {
 
 // InitialLoginResponse is returned by the login endpoint on success
 type InitialLoginResponse struct {
-	Nonce         string `json:"nonce" schema:"nonce"`
-	ClientID      string `json:"client_id" schema:"client_id"`
-	ResponseType  string `json:"response_type" schema:"response_type"`
-	Scope         string `json:"scope" schema:"scope"`
-	RedirectURI   string `json:"redirect_uri" schema:"redirect_uri"`
-	ResponseMode  string `json:"response_mode" schema:"response_mode"`
-	State         string `json:"state" schema:"state"`
-	Username      string `json:"username" schema:"username"`
-	Target        string `json:"target" schema:"target"`
-	AuthSessionID string `json:"auth_session_id" schema:"auth_session_id"`
-	Federated     bool   `json:"federated" schema:"federated"`
+	Nonce                               string `json:"nonce" schema:"nonce"`
+	ClientID                            string `json:"client_id" schema:"client_id"`
+	ResponseType                        string `json:"response_type" schema:"response_type"`
+	Scope                               string `json:"scope" schema:"scope"`
+	RedirectURI                         string `json:"redirect_uri" schema:"redirect_uri"`
+	ResponseMode                        string `json:"response_mode" schema:"response_mode"`
+	State                               string `json:"state" schema:"state"`
+	Username                            string `json:"username" schema:"username"`
+	Target                              string `json:"target" schema:"target"`
+	AuthSessionID                       string `json:"auth_session_id" schema:"auth_session_id"`
+	Federated                           bool   `json:"federated" schema:"federated"`
+	TozIDFederationRegistrationRequired bool   `json:"tozid_federation_registration"`
+	Email                               string `json:"email"`
 }
 
 // IdentitySessionRequestResponse is returned by the IdentitySesssionRequest. It contains data related to what additional
@@ -1140,4 +1142,13 @@ type DetailedFederatedIdentity struct {
 type GetFederatedIdentitiesForSyncResponse struct {
 	FederatedIdentities []DetailedFederatedIdentity `json:"federated_identities"`
 	NextToken           int                         `json:"next_token"`
+}
+
+// RegisterFederatedIdentityRequest wraps parameters needed to create and register a federated identity with a realm.
+type RegisterFederatedIdentityRequest struct {
+	RealmName           string            `json:"realm_name"`
+	Username            string            `json:"username"`
+	PublicEncryptionKey map[string]string `json:"public_key"`
+	PublicSigningKey    map[string]string `json:"signing_key"`
+	FederationSource    string            `json:"federation_source"`
 }
