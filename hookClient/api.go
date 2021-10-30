@@ -11,8 +11,9 @@ type HookTrigger struct {
 // CreateHookRequest wraps the parameters
 // required for a valid CreateHook request.
 type CreateHookRequest struct {
-	WebhookURL string        `json:"webhook_url"`
-	Triggers   []HookTrigger `json:"triggers"`
+	WebhookURL    string        `json:"webhook_url"`
+	WebhookSecret string        `json:"webhook_secret"`
+	Triggers      []HookTrigger `json:"triggers"`
 }
 
 // CreateHookResponse represents a response from calling the CreateHook endpoint.
