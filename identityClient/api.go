@@ -1099,6 +1099,11 @@ type ConnectFederationSaveRequest struct {
 	Credentials          map[string]string
 }
 
+// ConnectFederationSaveResponse wraps the response to an activation for realm federation
+type ConnectFederationSaveResponse struct {
+	ActiveLDAPProvider Provider
+}
+
 // AccessRequestGroupsRequest wraps parameters needed for fetching the MPC Enabled Realm groups
 type AccessRequestGroupsRequest struct {
 	RealmName string `json:"realm_name"`
