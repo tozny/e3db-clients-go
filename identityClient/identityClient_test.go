@@ -19,15 +19,13 @@ import (
 )
 
 var (
-	toznyCyclopsHost           = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
-	e3dbAuthHost               = os.Getenv("E3DB_AUTH_SERVICE_HOST")
-	e3dbAccountHost            = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
-	e3dbAPIKey                 = os.Getenv("E3DB_API_KEY_ID")
-	e3dbAPISecret              = os.Getenv("E3DB_API_KEY_SECRET")
-	e3dbClientID               = os.Getenv("E3DB_CLIENT_ID")
-	bootstrapPublicSigningKey  = os.Getenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
-	bootstrapPrivateSigningKey = os.Getenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
-	ValidAccountClientConfig   = e3dbClients.ClientConfig{
+	toznyCyclopsHost         = os.Getenv("TOZNY_CYCLOPS_SERVICE_HOST")
+	e3dbAuthHost             = os.Getenv("E3DB_AUTH_SERVICE_HOST")
+	e3dbAccountHost          = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
+	e3dbAPIKey               = os.Getenv("E3DB_API_KEY_ID")
+	e3dbAPISecret            = os.Getenv("E3DB_API_KEY_SECRET")
+	e3dbClientID             = os.Getenv("E3DB_CLIENT_ID")
+	ValidAccountClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
 		APISecret: e3dbAPISecret,
 		Host:      e3dbAccountHost,
@@ -37,27 +35,9 @@ var (
 	ValidIdentityClientConfig = e3dbClients.ClientConfig{
 		Host: e3dbIdentityHost,
 	}
-	BootIdentityClientConfig = e3dbClients.ClientConfig{
-		ClientID:  e3dbClientID,
-		APIKey:    e3dbAPIKey,
-		APISecret: e3dbAPISecret,
-		Host:      e3dbIdentityHost,
-		AuthNHost: e3dbAuthHost,
-		SigningKeys: e3dbClients.SigningKeys{
-			Public: e3dbClients.Key{
-				Type:     e3dbClients.DefaultSigningKeyType,
-				Material: bootstrapPublicSigningKey,
-			},
-			Private: e3dbClients.Key{
-				Type:     e3dbClients.DefaultSigningKeyType,
-				Material: bootstrapPrivateSigningKey,
-			},
-		},
-	}
 	anonymousIdentityServiceClient = New(ValidIdentityClientConfig)
 	testContext                    = context.TODO()
 	accountServiceClient           = accountClient.New(ValidAccountClientConfig)
-	bootstrapClient                = New(BootIdentityClientConfig)
 )
 
 func createIdentityAndRegisterWithRealm(t *testing.T, realm *Realm, registrationToken string) *RegisterIdentityResponse {
@@ -3457,7 +3437,7 @@ func TestCreateAccessRequest(t *testing.T) {
 		RealmName:           realmName,
 		GroupAccessPolicies: groupAccessPolicies,
 	}
-	_, err = bootstrapClient.InternalUpsertAccessPolicies(testContext, accessPolicyParams)
+	_, err = client.UpsertAccessPolicies(testContext, accessPolicyParams)
 	if err != nil {
 		t.Fatalf("Error: [%s] while creating new access policy", err)
 	}
@@ -3549,7 +3529,7 @@ func TestReadCreatedAccessRequest(t *testing.T) {
 		RealmName:           realmName,
 		GroupAccessPolicies: groupAccessPolicies,
 	}
-	_, err = bootstrapClient.InternalUpsertAccessPolicies(testContext, accessPolicyParams)
+	_, err = client.UpsertAccessPolicies(testContext, accessPolicyParams)
 	if err != nil {
 		t.Fatalf("Error: [%s] while creating new access policy", err)
 	}
@@ -3624,7 +3604,7 @@ func TestReadDeletedAccessRequestReturns404(t *testing.T) {
 		RealmName:           realmName,
 		GroupAccessPolicies: groupAccessPolicies,
 	}
-	_, err = bootstrapClient.InternalUpsertAccessPolicies(testContext, accessPolicyParams)
+	_, err = client.UpsertAccessPolicies(testContext, accessPolicyParams)
 	if err != nil {
 		t.Fatalf("Error: [%s] while creating new access policy", err)
 	}
@@ -3707,7 +3687,7 @@ func TestSearchForAllSelfCreatedAccessRequests(t *testing.T) {
 		RealmName:           realmName,
 		GroupAccessPolicies: groupAccessPolicies,
 	}
-	_, err = bootstrapClient.InternalUpsertAccessPolicies(testContext, accessPolicyParams)
+	_, err = client.UpsertAccessPolicies(testContext, accessPolicyParams)
 	if err != nil {
 		t.Fatalf("Error: [%s] while creating new access policy", err)
 	}
