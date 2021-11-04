@@ -153,19 +153,22 @@ type IdentityLoginRequest struct {
 
 // InitialLoginResponse is returned by the login endpoint on success
 type InitialLoginResponse struct {
-	Nonce                               string `json:"nonce" schema:"nonce"`
-	ClientID                            string `json:"client_id" schema:"client_id"`
-	ResponseType                        string `json:"response_type" schema:"response_type"`
-	Scope                               string `json:"scope" schema:"scope"`
-	RedirectURI                         string `json:"redirect_uri" schema:"redirect_uri"`
-	ResponseMode                        string `json:"response_mode" schema:"response_mode"`
-	State                               string `json:"state" schema:"state"`
-	Username                            string `json:"username" schema:"username"`
-	Target                              string `json:"target" schema:"target"`
-	AuthSessionID                       string `json:"auth_session_id" schema:"auth_session_id"`
-	Federated                           bool   `json:"federated" schema:"federated"`
-	TozIDFederationRegistrationRequired bool   `json:"tozid_federation_registration"`
-	Email                               string `json:"email"`
+	Nonce                                  string `json:"nonce" schema:"nonce"`
+	ClientID                               string `json:"client_id" schema:"client_id"`
+	ResponseType                           string `json:"response_type" schema:"response_type"`
+	Scope                                  string `json:"scope" schema:"scope"`
+	RedirectURI                            string `json:"redirect_uri" schema:"redirect_uri"`
+	ResponseMode                           string `json:"response_mode" schema:"response_mode"`
+	State                                  string `json:"state" schema:"state"`
+	Username                               string `json:"username" schema:"username"`
+	Target                                 string `json:"target" schema:"target"`
+	AuthSessionID                          string `json:"auth_session_id" schema:"auth_session_id"`
+	Federated                              bool   `json:"federated" schema:"federated"`
+	TozIDFederationRegistrationRequired    bool   `json:"tozid_federation_registration"`
+	Email                                  string `json:"email"`
+	TozIDFederationPasswordUpdatedRequired bool   `json:"tozid_federation_password_update"`
+	PasswordUpdateOTP                      string `json:"tozid_otp"`
+	NoteID                                 string `json:"note_id"`
 }
 
 // IdentitySessionRequestResponse is returned by the IdentitySesssionRequest. It contains data related to what additional
