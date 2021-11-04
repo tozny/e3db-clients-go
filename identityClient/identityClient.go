@@ -1222,12 +1222,13 @@ func (c *E3dbIdentityClient) ConfigureFederationConnection(ctx context.Context, 
 }
 
 // CompleteFederationConnection handles the activation of a federation request
-func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, params ConnectFederationSaveRequest) error {
+func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, params ConnectFederationSaveRequest) (*ConnectFederationSaveResponse, error) {
+	var response *ConnectFederationSaveResponse
 	// Change Host to Primary Realm Endpoint
 	path := params.PrimaryRealmEndpoint + identityServiceBasePath + "/" + federationResourceName + "/activate/" + params.ConnectionID.String()
 	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
 	if err != nil {
-		return err
+		return response, err
 	}
 	// Set Credential Token
 	for _, authHeader := range AuthenticationHeaders {
@@ -1237,7 +1238,8 @@ func (c *E3dbIdentityClient) CompleteFederationConnection(ctx context.Context, p
 		}
 	}
 
-	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
 }
 
 // AccessRequestGroup fetches groups for MPC Enabled Realms
