@@ -1163,6 +1163,7 @@ type DetailedFederatedIdentity struct {
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
 type GetFederatedIdentitiesForSyncResponse struct {
 	FederatedIdentities []DetailedFederatedIdentity `json:"federated_identities"`
+	ActiveLDAPProvider  bool                        `json:"active_ldap_provider"`
 	NextToken           int                         `json:"next_token"`
 }
 
