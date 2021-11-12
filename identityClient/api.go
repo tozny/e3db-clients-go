@@ -926,8 +926,9 @@ type AccessRequestGroup struct {
 
 // AccessRequestGroupResponse specifies which Group an AccessRequest belongs to
 type AccessRequestGroupResponse struct {
-	ID   string `json:"group_id"`
-	Name string `json:"group_name"`
+	ID             string                   `json:"group_id"`
+	Name           string                   `json:"group_name"`
+	AccessPolicies []AccessPolicyAttributes `json:"access_policies"`
 }
 
 // AccessRequestResponse represents an access request to temporarily join new groups
@@ -1024,6 +1025,13 @@ type AccessPolicy struct {
 	ApprovalRoles                []Role `json:"approval_roles"`
 	RequiredApprovals            int    `json:"required_approvals"`
 	MaximumAccessDurationSeconds int    `json:"max_access_duration_seconds"`
+}
+
+// AccessPolicyAttributes the same as AccessPolicy but only includes attributes no assocatied data
+type AccessPolicyAttributes struct {
+	ID                           int64 `json:"id"`
+	RequiredApprovals            int   `json:"required_approvals"`
+	MaximumAccessDurationSeconds int   `json:"max_access_duration_seconds"`
 }
 
 // GroupAccessPolicies represents a list of access policies attached to a group.
