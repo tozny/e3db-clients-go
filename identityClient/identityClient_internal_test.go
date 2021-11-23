@@ -78,7 +78,7 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -172,7 +172,7 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -275,7 +275,7 @@ func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -349,7 +349,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -466,7 +466,7 @@ func TestInternalIdentityStatusByUserID(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -534,7 +534,7 @@ func TestInternalIdentityStatusByStorageClientID(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -685,7 +685,7 @@ func TestInternalIdentityStatusByOnlyStorageClientId(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -752,7 +752,7 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()

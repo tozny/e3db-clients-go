@@ -216,7 +216,7 @@ func createIdentityServiceClientAndToken(t *testing.T) (E3dbIdentityClient, stri
 func registerIdentity(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string, registrationToken string) (*RegisterIdentityResponse, E3dbIdentityClient) {
 	identityTag := uuid.New().String()
 	identityName := "Freud" + identityTag
-	identityEmail := "freud+" + identityTag + "@example.com"
+	identityEmail := "test-emails-group+freud+" + identityTag + "@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -579,7 +579,7 @@ func TestRegisterIdentityWithCreatedRealm(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -1136,7 +1136,7 @@ func TestListIdentitiesPaginates(t *testing.T) {
 	}
 	for i := 0; i < totalIdentities; i++ {
 		identityName := fmt.Sprintf("testListIDs%d", i)
-		identityEmail := fmt.Sprintf("testListID+%d@example.com", i)
+		identityEmail := fmt.Sprintf("test-emails-group+testListID+%d@tozny.com", i)
 		identityFirstName := fmt.Sprintf("Test%d", i)
 		identityLastName := "User"
 		registerParams := RegisterIdentityRequest{
@@ -1238,7 +1238,7 @@ func TestListIdentitiesRespectsOffest(t *testing.T) {
 	}
 	for i := 0; i < createdIdentities; i++ {
 		identityName := fmt.Sprintf("testListIDs%d", i)
-		identityEmail := fmt.Sprintf("testListID+%d@example.com", i)
+		identityEmail := fmt.Sprintf("test-emails-group+testListID+%d@tozny.com", i)
 		identityFirstName := fmt.Sprintf("Test%d", i)
 		identityLastName := "User"
 		registerParams := RegisterIdentityRequest{
@@ -3336,7 +3336,7 @@ func TestInitiateIdentityLoginSucceedsWhenUnlocked(t *testing.T) {
 	realm := createRealmWithParams(t, identityServiceClient, params)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 	identityName := "Freud"
-	identityEmail := "freud@example.com"
+	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()

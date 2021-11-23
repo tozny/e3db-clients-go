@@ -97,7 +97,7 @@ func MakeE3DBAccountWithEmail(t *testing.T, accounter *accountClient.E3dbAccount
 
 // MakeE3DBAccount attempts to create a valid e3db account returning the root client config for the created account and error (if any).
 func MakeE3DBAccount(t *testing.T, accounter *accountClient.E3dbAccountClient, accountTag string, authNHost string) (e3dbClients.ClientConfig, *accountClient.CreateAccountResponse, error) {
-	return MakeE3DBAccountWithEmail(t, accounter, accountTag, fmt.Sprintf("test+%s@example.com", accountTag), authNHost)
+	return MakeE3DBAccountWithEmail(t, accounter, accountTag, fmt.Sprintf("test-emails-group+%s@tozny.com", accountTag), authNHost)
 }
 
 // CreateE3DBAccountWithEmail attempts to create a valid e3db account returning the root client config for the created account and error (if any).
