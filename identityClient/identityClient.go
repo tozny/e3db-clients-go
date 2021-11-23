@@ -32,6 +32,7 @@ const (
 	realmLoginAuthPathPostfix            = "/protocol/openid-connect/auth"
 	applicationMapperResourceName        = "mapper"
 	pamResourceName                      = "pam"
+	pamPluginResourceName                = pamResourceName + "/plugins"
 	pamRESTResourcePath                  = "resource"
 	pamPolicyResourceName                = "policies"
 	federationResourceName               = "federation"
@@ -1334,5 +1335,16 @@ func (c *E3dbIdentityClient) AddAccessControlGroupsPolicy(ctx context.Context, p
 		return err
 	}
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
 
+// CreatePAMJiraPlugin creates an integration with Jira for management of Access Requests from Jira
+func (c *E3dbIdentityClient) CreatePAMJiraPlugin(ctx context.Context, params CreatePAMJiraPluginRequest) (*CreatePAMJiraPluginResponse, error) {
+	var plugin *CreatePAMJiraPluginResponse
+	path := c.Host + identityServiceBasePath + "/" + pamPluginResourceName + "/jira"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return plugin, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &plugin)
+	return plugin, err
 }

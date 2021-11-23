@@ -1217,3 +1217,20 @@ type RemoveAccessControlPolicyGroupRequest struct {
 	ApplicationID string
 	Groups        []AccessControlPolicyGroup `json:"groups"`
 }
+
+// PAMJiraPlugin represents an integration with Jira for making AccessRequests that are Jira-controlled
+type PAMJiraPlugin struct {
+	ID                   int64  `json:"id"`
+	AutomationAuthHeader string `json:"automation_auth_header"`
+	BotUserEmail         string `json:"bot_user_email"`
+}
+
+// CreatePAMJiraPluginRequest wraps the data necessary for creating a new PAMJiraPlugin
+type CreatePAMJiraPluginRequest struct {
+	RealmName     string `json:"realm_name"`
+	BotUserEmail  string `json:"bot_user_email"`
+	BotUserAPIKey string `json:"bot_user_api_key"`
+}
+
+// CreatePAMJiraPluginResponse represents the created jira integration
+type CreatePAMJiraPluginResponse = PAMJiraPlugin
