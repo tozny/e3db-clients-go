@@ -533,3 +533,31 @@ type InitiatePKCELogin struct {
 	CodeChallenge       string `schema:"code_challenge"`
 	CodeChallengeMethod string `schema:"code_challenge_method"`
 }
+
+// CreateResourcePermissionRequest
+type CreateResourcePermissionRequest struct {
+	Attributes         map[string]interface{} `json:"attributes"`
+	DisplayName        string                 `json:"displayName"`
+	Name               string                 `json:"name"`
+	OwnerManagedAccess string                 `json:"ownerManagedAccess"`
+	Uris               []string               `json:"uris"`
+}
+
+// CreatePolicyRequest
+type CreatePolicyRequest struct {
+	AllowOrDeny      string `json:"allowOrDeny"`
+	DecisionStrategy string `json:"decisionStrategy"`
+	Logic            string `json:"logic"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+}
+
+// CreateResourceRequest
+type CreateResourceRequest struct {
+	DecisionStrategy string   `json:"decisionStrategy"`
+	Logic            string   `json:"logic"`
+	Name             string   `json:"name"`
+	Type             string   `json:"type"`
+	Policies         []string `json:"policies"`
+	Resource         []string `json:"resources"`
+}

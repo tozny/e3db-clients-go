@@ -1191,28 +1191,37 @@ type FederatedIdentityKeyCheckRequest struct {
 	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
 }
 
-// AccessControlPolicyRequest
+// AccessControlPolicyRequest wraps the values required to request Access Control Policy for an Application.
 type AccessControlPolicyRequest struct {
 	RealmName     string
 	ApplicationID string
 	Enable        bool `json:"enable"`
 }
 
-// EnrollAccessControlPolicy
-type EnrollAccessControlPolicy struct {
+// AccessControlPolicyResponse wraps the values for the response of enabling/disabling Access Control Policy.
+type AccessControlPolicyResponse struct {
+	RealmName     string   `json:"realm_name"`
+	ApplicationID string   `json:"application_id"`
+	Enabled       bool     `json:"enabled"`
+	Policies      []string `json:"policies"`
+	Resource      []string `json:"resources"`
+}
+
+// AddAccessControlPolicyGroupRequest wraps the values needed to Add a group to an Application's Access Control Policy.
+type AddAccessControlPolicyGroupRequest struct {
 	RealmName     string
 	ApplicationID string
 	Groups        []AccessControlPolicyGroup `json:"groups"`
 }
 
-// AccessControlPolicyGroup
+// AccessControlPolicyGroup the information required to add a group to Access Control Policy for a Application.
 type AccessControlPolicyGroup struct {
 	ID               string `json:"id"`
 	ExtendToChildren bool   `json:"extend_to_children"`
 }
 
-// UnenrollAccessControlPolicy
-type UnenrollAccessControlPolicy struct {
+// RemoveAccessControlPolicyGroupRequest wraps the values needed to remove a group to an Application's Access Control Policy.
+type RemoveAccessControlPolicyGroupRequest struct {
 	RealmName     string
 	ApplicationID string
 	Groups        []AccessControlPolicyGroup `json:"groups"`

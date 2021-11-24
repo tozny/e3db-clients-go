@@ -1300,18 +1300,20 @@ func (c *E3dbIdentityClient) FederatedIdentityKeyCheck(ctx context.Context, para
 	return err
 }
 
-// AccessControlPolicy
-func (c *E3dbIdentityClient) AccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) error {
+// AccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
+func (c *E3dbIdentityClient) AccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) (*AccessControlPolicyResponse, error) {
+	var response *AccessControlPolicyResponse
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName
 	req, err := e3dbClients.CreateRequest("POST", path, nil)
 	if err != nil {
-		return err
+		return response, err
 	}
-	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
 }
 
-// UnenrollAccessControlGroupsPolicy
-func (c *E3dbIdentityClient) UnenrollAccessControlGroupsPolicy(ctx context.Context, params UnenrollAccessControlPolicy) error {
+// RemoveAccessControlGroupsPolicy unenrolls groups to Access Control Policy, returning error (if any).
+func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context, params RemoveAccessControlPolicyGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
@@ -1325,10 +1327,10 @@ func (c *E3dbIdentityClient) UnenrollAccessControlGroupsPolicy(ctx context.Conte
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
-// EnrollAccessControlGroupsPolicy
-func (c *E3dbIdentityClient) EnrollAccessControlGroupsPolicy(ctx context.Context, params EnrollAccessControlPolicy) error {
+// AddAccessControlGroupsPolicy Enrolls groups to Access Control Policy, returning error (if any).
+func (c *E3dbIdentityClient) AddAccessControlGroupsPolicy(ctx context.Context, params AddAccessControlPolicyGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
-	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	req, err := e3dbClients.CreateRequest("POST", path, nil)
 	if err != nil {
 		return err
 	}
