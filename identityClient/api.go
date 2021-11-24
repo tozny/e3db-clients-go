@@ -1190,3 +1190,30 @@ type FederatedIdentityKeyCheckRequest struct {
 	ClientID                        uuid.UUID `json:"client_id"`
 	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
 }
+
+// AccessControlPolicyRequest
+type AccessControlPolicyRequest struct {
+	RealmName     string
+	ApplicationID string
+	Enable        bool `json:"enable"`
+}
+
+// EnrollAccessControlPolicy
+type EnrollAccessControlPolicy struct {
+	RealmName     string
+	ApplicationID string
+	Groups        []AccessControlPolicyGroup `json:"groups"`
+}
+
+// AccessControlPolicyGroup
+type AccessControlPolicyGroup struct {
+	ID               string `json:"id"`
+	ExtendToChildren bool   `json:"extend_to_children"`
+}
+
+// UnenrollAccessControlPolicy
+type UnenrollAccessControlPolicy struct {
+	RealmName     string
+	ApplicationID string
+	Groups        []AccessControlPolicyGroup `json:"groups"`
+}
