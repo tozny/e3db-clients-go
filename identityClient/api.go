@@ -1239,3 +1239,13 @@ type CreatePAMJiraPluginResponse = PAMJiraPlugin
 type DeletePAMJiraPluginRequest struct {
 	PluginID int64
 }
+
+// UpdatePAMJiraPluginRequest wraps data to update a Jira integration's credentials
+type UpdatePAMJiraPluginRequest struct {
+	PluginID      int64
+	BotUserEmail  string `json:"bot_user_email"`
+	BotUserAPIKey string `json:"bot_user_api_key"`
+}
+
+// UpdatePAMJiraPluginResponse is the updated PAM Jira plugin information
+type UpdatePAMJiraPluginResponse = PAMJiraPlugin
