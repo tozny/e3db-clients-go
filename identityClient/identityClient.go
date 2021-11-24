@@ -33,6 +33,7 @@ const (
 	applicationMapperResourceName        = "mapper"
 	pamResourceName                      = "pam"
 	pamPluginResourceName                = pamResourceName + "/plugins"
+	pamJiraPluginResourceName            = pamPluginResourceName + "/jira"
 	pamRESTResourcePath                  = "resource"
 	pamPolicyResourceName                = "policies"
 	federationResourceName               = "federation"
@@ -1340,11 +1341,22 @@ func (c *E3dbIdentityClient) AddAccessControlGroupsPolicy(ctx context.Context, p
 // CreatePAMJiraPlugin creates an integration with Jira for management of Access Requests from Jira
 func (c *E3dbIdentityClient) CreatePAMJiraPlugin(ctx context.Context, params CreatePAMJiraPluginRequest) (*CreatePAMJiraPluginResponse, error) {
 	var plugin *CreatePAMJiraPluginResponse
-	path := c.Host + identityServiceBasePath + "/" + pamPluginResourceName + "/jira"
+	path := c.Host + identityServiceBasePath + "/" + pamJiraPluginResourceName
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return plugin, err
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &plugin)
 	return plugin, err
+}
+
+// DeletePAMJiraPlugin deletes an integration with Jira for management of Access Requests from Jira
+func (c *E3dbIdentityClient) DeletePAMJiraPlugin(ctx context.Context, params DeletePAMJiraPluginRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + pamJiraPluginResourceName + "/" + strconv.FormatInt(params.PluginID, 10)
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
+	return err
 }

@@ -1232,5 +1232,10 @@ type CreatePAMJiraPluginRequest struct {
 	BotUserAPIKey string `json:"bot_user_api_key"`
 }
 
-// CreatePAMJiraPluginResponse represents the created jira integration
+// CreatePAMJiraPluginResponse represents the created Jira integration
 type CreatePAMJiraPluginResponse = PAMJiraPlugin
+
+// DeletePAMJiraPluginRequest wraps data required for deleting an integration with Jira
+type DeletePAMJiraPluginRequest struct {
+	PluginID int64
+}
