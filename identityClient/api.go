@@ -1208,10 +1208,16 @@ type CreatePAMJiraPluginRequest struct {
 // CreatePAMJiraPluginResponse represents the created Jira integration
 type CreatePAMJiraPluginResponse = PAMJiraPlugin
 
-// DeletePAMJiraPluginRequest wraps data required for deleting an integration with Jira
-type DeletePAMJiraPluginRequest struct {
+// PAMJiraPluginByIDRequest wraps the plugin's id
+type PAMJiraPluginByIDRequest struct {
 	PluginID int64
 }
+
+// DeletePAMJiraPluginRequest wraps data required for deleting an integration with Jira
+type DeletePAMJiraPluginRequest = PAMJiraPluginByIDRequest
+
+// DescribePAMJiraPluginRequest wraps necessary data for describing an existing Jira integration
+type DescribePAMJiraPluginRequest = PAMJiraPluginByIDRequest
 
 // UpdatePAMJiraPluginRequest wraps data to update a Jira integration's credentials
 type UpdatePAMJiraPluginRequest struct {
