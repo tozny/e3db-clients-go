@@ -1223,6 +1223,7 @@ type PAMJiraPlugin struct {
 	ID                   int64  `json:"id"`
 	AutomationAuthHeader string `json:"automation_auth_header"`
 	BotUserEmail         string `json:"bot_user_email"`
+	JiraHostURL          string `json:"jira_host_url"` // example: https://toznysecurity.atlassian.net
 }
 
 // CreatePAMJiraPluginRequest wraps the data necessary for creating a new PAMJiraPlugin
@@ -1230,6 +1231,7 @@ type CreatePAMJiraPluginRequest struct {
 	RealmName     string `json:"realm_name"`
 	BotUserEmail  string `json:"bot_user_email"`
 	BotUserAPIKey string `json:"bot_user_api_key"`
+	JiraHostURL   string `json:"jira_host_url"`
 }
 
 // CreatePAMJiraPluginResponse represents the created Jira integration
@@ -1251,6 +1253,7 @@ type UpdatePAMJiraPluginRequest struct {
 	PluginID      int64
 	BotUserEmail  string `json:"bot_user_email"`
 	BotUserAPIKey string `json:"bot_user_api_key"`
+	JiraHostURL   string `json:"jira_host_url"`
 }
 
 // UpdatePAMJiraPluginResponse is the updated PAM Jira plugin information
