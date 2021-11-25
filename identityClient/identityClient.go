@@ -1361,6 +1361,18 @@ func (c *E3dbIdentityClient) DeletePAMJiraPlugin(ctx context.Context, params Del
 	return err
 }
 
+// DescribePAMJiraPlugin Describes an existing Jira integration's credentials
+func (c *E3dbIdentityClient) DescribePAMJiraPlugin(ctx context.Context, params DescribePAMJiraPluginRequest) (*PAMJiraPlugin, error) {
+	var plugin *PAMJiraPlugin
+	path := c.Host + identityServiceBasePath + "/" + pamJiraPluginResourceName + "/" + strconv.FormatInt(params.PluginID, 10)
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return plugin, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &plugin)
+	return plugin, err
+}
+
 // UpdatePAMJiraPlugin updates an existing Jira integration's credentials
 func (c *E3dbIdentityClient) UpdatePAMJiraPlugin(ctx context.Context, params UpdatePAMJiraPluginRequest) (*UpdatePAMJiraPluginResponse, error) {
 	var plugin *UpdatePAMJiraPluginResponse
