@@ -1346,3 +1346,16 @@ func (c *E3dbIdentityClient) UpdatePAMJiraPlugin(ctx context.Context, params Upd
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &plugin)
 	return plugin, err
 }
+
+// PingPAMJiraPlugin tests a Jira integration's credentials by making an authenticated request to read
+// data from Jira using the plugin's credentials. Success means TozID was able to read information about
+// the automated Jira user configured in the plugin.
+func (c *E3dbIdentityClient) PingPAMJiraPlugin(ctx context.Context, params PingPAMJiraPluginRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + pamJiraPluginResourceName + "/" + strconv.FormatInt(params.PluginID, 10) + "/ping"
+	request, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}

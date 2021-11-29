@@ -1221,6 +1221,9 @@ type DeletePAMJiraPluginRequest = PAMJiraPluginByIDRequest
 // DescribePAMJiraPluginRequest wraps necessary data for describing an existing Jira integration
 type DescribePAMJiraPluginRequest = PAMJiraPluginByIDRequest
 
+// PingPAMJiraPluginRequest wraps necessary data for testing an existing Jira integration's credentials
+type PingPAMJiraPluginRequest = PAMJiraPluginByIDRequest
+
 // UpdatePAMJiraPluginRequest wraps data to update a Jira integration's credentials
 type UpdatePAMJiraPluginRequest struct {
 	PluginID      int64
