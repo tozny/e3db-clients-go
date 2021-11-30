@@ -102,7 +102,7 @@ func (c *Client) RemoveResourceServerPolicy(accessToken string, realmName string
 // ==========================================================================
 
 // CreateResourceServerResource
-func (c *Client) CreateResourceServerResource(accessToken string, realmName string, clientID string, request CreateResourceRequest) (string, error) {
+func (c *Client) CreateResourceServerResource(accessToken string, realmName string, clientID string, request CreatePermissionRequest) (string, error) {
 	return c.post(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, resourceResourceName))
 }
 
@@ -112,8 +112,36 @@ func (c *Client) CreateResourceServerStaticPolicy(accessToken string, realmName 
 }
 
 // CreateResourceServerResourcePermission
-func (c *Client) CreateResourceServerResourcePermission(accessToken string, realmName string, clientID string, request CreateResourcePermissionRequest) (string, error) {
+func (c *Client) CreateResourceServerResourcePermission(accessToken string, realmName string, clientID string, request CreateResourceRequest) (string, error) {
 	return c.post(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, permissionResourceName, resourceResourceName))
+}
+
+// ==========================================================================
+// Create and Update Access Control Policy
+// ==========================================================================
+
+// CreateResourceServerGroupPolicy
+func (c *Client) CreateResourceServerGroupPolicy(accessToken string, realmName string, clientID string, request CreateGroupPolicyRequest) (string, error) {
+	return c.post(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupResourceName))
+}
+
+// UpdateResourceServerGroupPermission
+func (c *Client) UpdateResourceServerGroupPermission(accessToken string, realmName string, clientID string, policyID string, request UpdateAccessControlPolicy) error {
+	return c.put(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, permissionResourceName, resourceResourceName, policyID))
+}
+
+// UpdateResourceServerGroupsPolicy
+func (c *Client) UpdateResourceServerGroupsPolicy(accessToken string, realmName string, clientID string, groupPolicyID string, request UpdateAccessControlGroupPolicy) error {
+	return c.put(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupResourceName, groupPolicyID))
+}
+
+// ==========================================================================
+// Remove Group Access Control Policy
+// ==========================================================================
+
+// RemoveGroupResourceServerPolicy deletes a group policy from the resource server for the client
+func (c *Client) RemoveGroupResourceServerPolicy(accessToken string, realmName string, clientID string, policyID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, policyID))
 }
 
 // ==========================================================================
@@ -241,4 +269,56 @@ func (c *Client) RemoveGroupClientRoleMappings(accessToken, realmName, groupId, 
 		return err
 	}
 	return makeJSONCall(accessToken, request, nil)
+}
+
+// GetToznyInternalGroupPolicy
+func (c *Client) GetToznyInternalGroupPolicy(accessToken string, realmName string, clientID string) ([]InternalGroupPolicy, error) {
+	resp := []InternalGroupPolicy{}
+	url := fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName)
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+	urlParams := req.URL.Query()
+	urlParams.Set("name", toznyInternalGroupPolicyName)
+	req.URL.RawQuery = urlParams.Encode()
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+
+// GetToznyInternalDenyPolicy
+func (c *Client) GetToznyInternalDenyPolicy(accessToken string, realmName string, clientID string) ([]InternalDenyPolicy, error) {
+	resp := []InternalDenyPolicy{}
+	url := fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName)
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+	urlParams := req.URL.Query()
+	urlParams.Set("name", toznyInternalDenyPolicyName)
+	req.URL.RawQuery = urlParams.Encode()
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+
+// GetToznyInternalAuthorizationPermission
+func (c *Client) GetToznyInternalAuthorizationPermission(accessToken string, realmName string, clientID string) ([]InternalAuthorizationPermission, error) {
+	resp := []InternalAuthorizationPermission{}
+	url := fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, permissionResourceName)
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+	urlParams := req.URL.Query()
+	urlParams.Set("name", toznyInternalAuthzMap)
+	req.URL.RawQuery = urlParams.Encode()
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
+}
+
+// GetToznyInternalAuthorizationResource
+func (c *Client) GetToznyInternalAuthorizationResource(accessToken string, realmName string, clientID string) ([]InternalAuthorizationResource, error) {
+	resp := []InternalAuthorizationResource{}
+	url := fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, resourceResourceName)
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("GET", path, nil)
+	urlParams := req.URL.Query()
+	urlParams.Set("name", toznyInternalAuthzMap)
+	req.URL.RawQuery = urlParams.Encode()
+	err = c.requestWithQueryParams(accessToken, req, &resp)
+	return resp, err
 }

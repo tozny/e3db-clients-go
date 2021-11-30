@@ -1300,16 +1300,15 @@ func (c *E3dbIdentityClient) FederatedIdentityKeyCheck(ctx context.Context, para
 	return err
 }
 
-// AccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
-func (c *E3dbIdentityClient) AccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) (*AccessControlPolicyResponse, error) {
-	var response *AccessControlPolicyResponse
+// EnableAccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
+func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName
-	req, err := e3dbClients.CreateRequest("POST", path, nil)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
-		return response, err
+		return err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
-	return response, err
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
 }
 
 // RemoveAccessControlGroupsPolicy unenrolls groups to Access Control Policy, returning error (if any).
@@ -1321,7 +1320,7 @@ func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context
 	}
 	urlParams := req.URL.Query()
 	for _, group := range params.Groups {
-		urlParams.Add("group_ids", group.ID)
+		urlParams.Add("group_id", group.ID)
 	}
 	req.URL.RawQuery = urlParams.Encode()
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)

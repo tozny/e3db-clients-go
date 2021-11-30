@@ -59,6 +59,10 @@ const (
 	realmsResourceName                           = "realms"
 	staticResourceName                           = "static"
 	permissionResourceName                       = "permission"
+	toznyInternalGroupPolicyName                 = "__ToznyInternalGroupPolicy"
+	toznyInternalDenyPolicyName                  = "__ToznyInternalDenyPolicy"
+	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
+	toznyInternalAuthzMap                        = "__ToznyInternalAuthzMap"
 )
 
 var (
@@ -1108,6 +1112,7 @@ func (c *Client) InitiateLogin(realmName string, loginURLEncoded InitiatePKCELog
 	return resp.RawResponse, nil
 }
 
+// requestWithQueryParams creates a request with query params
 func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, data interface{}) error {
 	req, err := setAuthorizationAndHostHeaders(req, accessToken)
 	if err != nil {
