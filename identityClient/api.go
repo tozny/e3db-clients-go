@@ -1025,6 +1025,9 @@ type AccessPolicy struct {
 	ApprovalRoles                []Role `json:"approval_roles"`
 	RequiredApprovals            int    `json:"required_approvals"`
 	MaximumAccessDurationSeconds int    `json:"max_access_duration_seconds"`
+	PluginType                   string `json:"plugin_type"`            // supported plugin types: jira
+	PluginID                     string `json:"plugin_id"`              // PAMJiraPlugin.ID
+	PluginMPCFlowSource          string `json:"plugin_mpc_flow_source"` // board_id from jira instance that manages MPC
 }
 
 // AccessPolicyAttributes the same as AccessPolicy but only includes attributes no assocatied data
@@ -1068,9 +1071,14 @@ type ListAccessPoliciesResponse struct {
 }
 
 type PAMRealmSettings struct {
-	MPCEnabledForRealm           bool `json:"mpc_enabled_for_realm"`
-	DefaultAccessDurationSeconds int  `json:"default_access_duration_seconds"`
-	DefaultRequiredApprovals     int  `json:"default_required_approvals"`
+	MPCEnabledForRealm           bool               `json:"mpc_enabled_for_realm"`
+	DefaultAccessDurationSeconds int                `json:"default_access_duration_seconds"`
+	DefaultRequiredApprovals     int                `json:"default_required_approvals"`
+	Plugins                      PAMPluginRealmInfo `json:"plugins"`
+}
+
+type PAMPluginRealmInfo struct {
+	Jira []PAMJiraPlugin `json:"jira"`
 }
 
 // InitializeFederationConnectionRequest wraps parameters needed for a realm to begin a federation connection
