@@ -37,6 +37,7 @@ const (
 	pamRESTResourcePath           = "resource"
 	pamPolicyResourceName         = "policies"
 	federationResourceName        = "federation"
+	accessRequestPathPrefix       = "access_requests"
 )
 
 var (
@@ -1358,4 +1359,17 @@ func (c *E3dbIdentityClient) PingPAMJiraPlugin(ctx context.Context, params PingP
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 	return err
+}
+
+// CreatePAMJiraAccessRequest creates a new access request from Jira
+func (c *E3dbIdentityClient) CreatePAMJiraAccessRequest(ctx context.Context, params CreatePAMJiraAccessRequestRequest) (*AccessRequestResponse, error) {
+	var accessRequest *AccessRequestResponse
+	path := c.Host + identityServiceBasePath + "/" + pamJiraPluginResourceName + "/" + accessRequestPathPrefix + "/open"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return nil, err
+	}
+	// What type of call should this be ??
+	err = e3dbClients.MakePublicCall(ctx, c.requester, request, accessRequest)
+	return accessRequest, err
 }

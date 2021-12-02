@@ -1234,3 +1234,11 @@ type UpdatePAMJiraPluginRequest struct {
 
 // UpdatePAMJiraPluginResponse is the updated PAM Jira plugin information
 type UpdatePAMJiraPluginResponse = PAMJiraPlugin
+
+// CreatePAMJiraAccessRequestRequest wraps data to make an access request from Jira
+type CreatePAMJiraAccessRequestRequest struct {
+	GroupName       string `json:"group_name"`
+	Reason          string `json:"reason"`
+	RequestTicketID string `json:"request_ticket_id"`
+	RequestorEmail  string `json:"requestor_email"`
+}
