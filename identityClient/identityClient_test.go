@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
 	"github.com/tozny/utils-go"
 )
@@ -40,9 +41,41 @@ var (
 	accountServiceClient           = accountClient.New(ValidAccountClientConfig)
 )
 
-func createIdentityAndRegisterWithRealm(t *testing.T, realm *Realm, registrationToken string) *RegisterIdentityResponse {
+func createFakePasswordNoteForIdentity(clientConfig e3dbClients.ClientConfig, recipientKey, username, realmName string) (*storageClient.Note, error) {
+	noteName, err := e3dbClients.DeriveIdentityCredentialsNoteName(username, realmName)
+	data := map[string]string{
+		"key1": "rawnote",
+		"key2": "unprocessednote",
+		"key3": "organicnote",
+	}
+	if err != nil {
+		return nil, err
+	}
+	ak := e3dbClients.RandomSymmetricKey()
+	eak, err := e3dbClients.EncryptAccessKey(ak, clientConfig.EncryptionKeys)
+	if err != nil {
+		return nil, err
+	}
+	encryptedData := e3dbClients.EncryptData(data, ak)
+	return &storageClient.Note{
+		Mode:                "Sodium",
+		IDString:            noteName,
+		ClientID:            clientConfig.ClientID,
+		RecipientSigningKey: recipientKey,
+		WriterSigningKey:    clientConfig.SigningKeys.Public.Material,
+		WriterEncryptionKey: clientConfig.EncryptionKeys.Public.Material,
+		EncryptedAccessKey:  eak,
+		Type:                "Integration Test",
+		Data:                *encryptedData,
+		Plain:               map[string]string{"extra1": "not encrypted", "extra2": "more plain data"},
+		Signature:           "signed",
+		MaxViews:            5,
+	}, err
+}
+
+func createIdentityAndRegisterWithRealm(t *testing.T, realm *Realm, registrationToken string, clientConfig e3dbClients.ClientConfig) *RegisterIdentityResponse {
 	identityName := uuid.New().String()
-	identityEmail := identityName + "@email.com"
+	identityEmail := "test-emails-group+" + identityName + "tozny.com"
 	identityFirstName := "Sigmund"
 	identityLastName := "Freud"
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
@@ -72,6 +105,16 @@ func createIdentityAndRegisterWithRealm(t *testing.T, realm *Realm, registration
 	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
 	if err != nil {
 		t.Errorf("RegisterIdentity Error: %+v\n", err)
+	}
+	// Write a password note for the new identity
+	StorageClient := storageClient.New(clientConfig)
+	passwordNote, err := createFakePasswordNoteForIdentity(clientConfig, clientConfig.SigningKeys.Public.Material, identityName, realm.Name)
+	if err != nil {
+		t.Fatalf("error %+v creating password note for identity with name %s in realm %s", err, identityName, realm.Name)
+	}
+	_, err = StorageClient.WriteNote(testContext, *passwordNote)
+	if err != nil {
+		t.Fatalf("error %+v writing password note %+v", err, passwordNote)
 	}
 	return identity
 }
@@ -126,7 +169,7 @@ func syncContainsIdentity(syncedIdentities []DetailedFederatedIdentity, createdI
 	return false
 }
 
-func ConfigureAndCreateAFederatedRealm(t *testing.T) (*Realm, E3dbIdentityClient, string, map[string]string) {
+func ConfigureAndCreateAFederatedRealm(t *testing.T, name string) (*Realm, E3dbIdentityClient, string, map[string]string, e3dbClients.ClientConfig) {
 	accountTag := uuid.New().String()
 	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
 	if err != nil {
@@ -134,17 +177,17 @@ func ConfigureAndCreateAFederatedRealm(t *testing.T) (*Realm, E3dbIdentityClient
 	}
 	queenClientInfo.Host = toznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := fmt.Sprintf("realmName%d", time.Now().Unix())
+	realmName := fmt.Sprintf("%s%d", name, time.Now().Unix())
 	sovereignName := "QueenCoolName"
-	params := CreateRealmRequest{
-		RealmName:     realmName,
-		SovereignName: sovereignName,
-	}
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
 	}
 	realm := createRealmWithParams(t, identityServiceClient, params)
 
@@ -180,7 +223,7 @@ func ConfigureAndCreateAFederatedRealm(t *testing.T) (*Realm, E3dbIdentityClient
 	credentials := make(map[string]string)
 	credentials[TozIDFederationAuthHeader] = response.APICredential
 
-	return realm, identityServiceClient, registrationToken, credentials
+	return realm, identityServiceClient, registrationToken, credentials, queenClientInfo
 }
 
 func createIdentityServiceClient(t *testing.T) E3dbIdentityClient {
@@ -2367,7 +2410,8 @@ func TestSearchingIdentitiesWithEmailValidRealmReturnsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
-	identityName := "Katie"
+	identityTag := uuid.New().String()
+	identityName := "Katie" + identityTag
 	identityEmail := "katie@tozny.com"
 	identityFirstName := "Katie"
 	identityLastName := "Rock"
@@ -3911,7 +3955,8 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 
 func TestGetFederatedIdentitiesForSyncWithDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestGetFederatedIdentitiesForSyncWithDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
@@ -3919,11 +3964,11 @@ func TestGetFederatedIdentitiesForSyncWithDetails(t *testing.T) {
 	var err error
 
 	// Create and register many Identities with the Realm
-	pages := 1
+	pages := 4
 	perPage := 50
 	numberOfIdentities := pages * perPage
 	for i := 0; i < numberOfIdentities; i++ {
-		createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 	}
 
 	first := 0
@@ -3961,14 +4006,15 @@ func TestGetFederatedIdentitiesForSyncWithDetails(t *testing.T) {
 
 func TestSyncASingleFederatedIdentityWithDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestSyncASingleFederatedIdentityWithDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register Identity with Realm
-	identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+	identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 
 	// Get the UserID of the Identity
 	id, err := identityServiceClient.DescribeIdentity(testContext, realm.Name, identity.Identity.Name)
@@ -4008,7 +4054,8 @@ func TestSyncASingleFederatedIdentityWithDetails(t *testing.T) {
 
 func TestSyncSomeFederatedIdentitiesWithDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestSyncSomeFederatedIdentitiesWithDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var syncResponse *GetFederatedIdentitiesForSyncResponse
@@ -4018,7 +4065,7 @@ func TestSyncSomeFederatedIdentitiesWithDetails(t *testing.T) {
 	numberOfIdentities := 10
 	var names []string
 	for i := 0; i < numberOfIdentities; i++ {
-		registerIdentity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		registerIdentity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 		identity, err := identityServiceClient.DescribeIdentity(testContext, realm.Name, registerIdentity.Identity.Name)
 		if err != nil {
 			t.Fatalf("Error %s while describing Identity %s for Realm %s", err, registerIdentity.Identity.Name, realm.Name)
@@ -4056,7 +4103,8 @@ func TestSyncSomeFederatedIdentitiesWithDetails(t *testing.T) {
 
 func TestSyncAllFederatedIdentitiesWithNoDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestSyncAllFederatedIdentitiesWithNoDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
@@ -4068,7 +4116,7 @@ func TestSyncAllFederatedIdentitiesWithNoDetails(t *testing.T) {
 	perPage := 50
 	numberOfIdentities := pages * perPage
 	for i := 0; i < numberOfIdentities; i++ {
-		createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 	}
 
 	first := 0
@@ -4107,7 +4155,8 @@ func TestSyncAllFederatedIdentitiesWithNoDetails(t *testing.T) {
 
 func TestSyncSomeFederatedIdentitiesWithNoDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestSyncSomeFederatedIdentitiesWithNoDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var syncResponse *GetFederatedIdentitiesForSyncResponse
@@ -4116,7 +4165,7 @@ func TestSyncSomeFederatedIdentitiesWithNoDetails(t *testing.T) {
 	numberOfIdentities := 10
 	var names []string
 	for i := 0; i < numberOfIdentities; i++ {
-		registerIdentity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		registerIdentity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 		identity, err := identityServiceClient.DescribeIdentity(testContext, realm.Name, registerIdentity.Identity.Name)
 		if err != nil {
 			t.Fatalf("Error %s while describing Identity %s for Realm %s", err, registerIdentity.Identity.Name, realm.Name)
@@ -4154,14 +4203,15 @@ func TestSyncSomeFederatedIdentitiesWithNoDetails(t *testing.T) {
 
 func TestSyncASingleFederatedIdentityWithNoDetails(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestSyncASingleFederatedIdentityWithNoDetails"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var syncResponse *GetFederatedIdentitiesForSyncResponse
 	var err error
 
 	// Create and register Identity with Realm
-	identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+	identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 
 	// Get the UserID of the Identity
 	id, err := identityServiceClient.DescribeIdentity(testContext, realm.Name, identity.Identity.Name)
@@ -4200,7 +4250,8 @@ func TestSyncASingleFederatedIdentityWithNoDetails(t *testing.T) {
 
 func TestGetFederatedIdentitiesForSyncMultiplePagesOfIdentities(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestGetFederatedIdentitiesForSyncMultiplePagesOfIdentities"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
@@ -4212,7 +4263,7 @@ func TestGetFederatedIdentitiesForSyncMultiplePagesOfIdentities(t *testing.T) {
 	perPage := 5
 	numberOfIdentities := pages * perPage
 	for i := 0; i < numberOfIdentities; i++ {
-		createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 	}
 
 	first := 0
@@ -4250,7 +4301,8 @@ func TestGetFederatedIdentitiesForSyncMultiplePagesOfIdentities(t *testing.T) {
 
 func TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var syncResponse *GetFederatedIdentitiesForSyncResponse
@@ -4319,7 +4371,7 @@ func TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings(t *tes
 	perPage := 50
 	numberOfIdentities := pages * perPage
 	for i := 0; i < numberOfIdentities; i++ {
-		identityResponse := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		identityResponse := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 		groupID := []string{group.ID}
 		updateGroupMembership(t, identityServiceClient, "update", realm.Name, identityResponse.Identity.ToznyID.String(), groupID)
 	}
@@ -4376,7 +4428,8 @@ func TestGetFederatedIdentitiesForSyncGetsRolesGroupsAndGroupRoleMappings(t *tes
 
 func TestGetFederatedIdentitiesForSyncLimitSetToOneNoRepeatsOrSkips(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestGetFederatedIdentitiesForSyncLimitSetToOneNoRepeatsOrSkips"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
@@ -4389,7 +4442,7 @@ func TestGetFederatedIdentitiesForSyncLimitSetToOneNoRepeatsOrSkips(t *testing.T
 	numberOfIdentities := pages * perPage
 	var createdIdentities []*RegisterIdentityResponse
 	for i := 0; i < numberOfIdentities; i++ {
-		identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 		createdIdentities = append(createdIdentities, identity)
 	}
 
@@ -4449,7 +4502,8 @@ func TestGetFederatedIdentitiesForSyncLimitSetToOneNoRepeatsOrSkips(t *testing.T
 
 func TestGetFederatedIdentitiesForSyncLimitSetToTwoNoRepeatsOrSkips(t *testing.T) {
 	// Setup
-	realm, identityServiceClient, registrationToken, credentials := ConfigureAndCreateAFederatedRealm(t)
+	testName := "TestGetFederatedIdentitiesForSyncLimitSetToTwoNoRepeatsOrSkips"
+	realm, identityServiceClient, registrationToken, credentials, clientConfig := ConfigureAndCreateAFederatedRealm(t, testName)
 	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
 
 	var totalIdentities []DetailedFederatedIdentity
@@ -4462,7 +4516,7 @@ func TestGetFederatedIdentitiesForSyncLimitSetToTwoNoRepeatsOrSkips(t *testing.T
 	numberOfIdentities := pages * perPage
 	var createdIdentities []*RegisterIdentityResponse
 	for i := 0; i < numberOfIdentities; i++ {
-		identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken)
+		identity := createIdentityAndRegisterWithRealm(t, realm, registrationToken, clientConfig)
 		createdIdentities = append(createdIdentities, identity)
 	}
 
