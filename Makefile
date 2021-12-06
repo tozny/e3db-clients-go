@@ -53,11 +53,15 @@ it : lint
 
 # Run all Identity Integration tests
 test-identity:
-	go test -timeout 20m -v identityClient/identityClient_test.go identityClient/identityClient.go identityClient/api.go
+	go test -timeout 20m -v identityClient/identityClient_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run Internal Identity Integration Tests
 test-intenal-identity:
-	go test  -v  identityClient/identityClient_internal_test.go identityClient/identityClient.go identityClient/api.go
+	go test  -v  identityClient/identityClient_internal_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
+
+# Run Federation Identity Integration Tests
+test-federation-identity:
+	go test  -v  identityClient/identityClient_federation_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run all Storage Integration tests
 test-storage:
