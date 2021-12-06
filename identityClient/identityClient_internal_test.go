@@ -13,6 +13,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
+	"github.com/tozny/utils-go"
 )
 
 var (
@@ -55,6 +56,28 @@ var (
 	InternalBootstrapClient      = New(InternalBootIdentityClientConfig)
 )
 
+func internalCreateRealmWithParams(t *testing.T, identityServiceClient E3dbIdentityClient, params CreateRealmRequest) *Realm {
+	var realm *Realm
+	var err error
+	retries := 2
+
+	ready := func() bool {
+		realm, err = identityServiceClient.CreateRealm(internalTestContext, params)
+		if err != nil {
+			t.Logf("FAILED to create realm. Will try %d times in total.", retries+1)
+			return false
+		}
+		return true
+	}
+
+	success := utils.Await(ready, retries)
+	if !success {
+		t.Fatalf("%s realm creation failed after %d retries; %+v %+v\n", err, retries, params, identityServiceClient)
+	}
+
+	return realm
+}
+
 func internalUniqueString(prefix string) string {
 	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
 }
@@ -63,20 +86,20 @@ func internalUniqueString(prefix string) string {
 // retry limit and no active locks.
 func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdentityStatusIdentityAccountIsUnlocked")
+	realmName := internalUniqueString("TestInternalIdentityStatusIdentityAccountIsUnlocked")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -89,7 +112,7 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -109,10 +132,10 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -129,7 +152,7 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 	}
 	// Add half of the audit's threshold in order to keep account unlocked
 	for i := 0; i <= retryLimit/2; i++ {
-		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditFailedParamsUsername)
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditFailedParamsUsername)
 		if err != nil {
 			t.Fatalf("InternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditFailedParamsUsername)
 		}
@@ -143,7 +166,7 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 		RealmDomain:     realm.Domain,
 		StorageClientID: identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(internalTestContext, reqParamsStorageClientID)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
 	}
@@ -157,20 +180,20 @@ func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
 // most recent failed audits to be less than the retry limit.
 func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked")
+	realmName := internalUniqueString("TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -183,7 +206,7 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -203,10 +226,10 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -222,7 +245,7 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 		t.Errorf("TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlocked: Error %s while converting string %s to int", err, InternalIdentityLoginRetries)
 	}
 	for i := 0; i <= retryLimit; i++ {
-		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditFailedParamsUsername)
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditFailedParamsUsername)
 		if err != nil {
 			t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditFailedParamsUsername)
 		}
@@ -236,7 +259,7 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 		Status:      "success",
 		RequestType: "test with username",
 	}
-	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditSuccessParamsUsername)
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditSuccessParamsUsername)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditSuccessParamsUsername)
 	}
@@ -249,7 +272,7 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 		RealmDomain:     realm.Domain,
 		StorageClientID: identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(internalTestContext, reqParamsStorageClientID)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
 	}
@@ -260,20 +283,20 @@ func TestInternalIdentityStatusSuccessWithinTimePeriodKeepsIdentityAccountUnlock
 
 func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalToznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = toznyCyclopsHost
+	queenClientInfo.Host = internalToznyCyclopsHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds")
+	realmName := internalUniqueString("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -286,7 +309,7 @@ func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = toznyCyclopsHost
+	queenClientInfo.Host = internalToznyCyclopsHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -306,10 +329,10 @@ func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: toznyCyclopsHost,
+		Host: internalToznyCyclopsHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -319,7 +342,7 @@ func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 		Status:      "fail",
 		RequestType: "test without realm domain",
 	}
-	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsClientID)
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsClientID)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds Error: %+v with request params: %+v\n", err, auditParamsClientID)
 	}
@@ -334,20 +357,20 @@ func TestInternalCreateIdentityLoginAuditClientIDNoRealmSucceeds(t *testing.T) {
 // Tests that the Identity's account becomes locked if there are more audits than the retry limit.
 func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount")
+	realmName := internalUniqueString("TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -360,7 +383,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -380,10 +403,10 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -393,7 +416,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 		Status:      "fail",
 		RequestType: "test with username",
 	}
-	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUsername)
+	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsUsername)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUsername)
 	}
@@ -414,7 +437,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 		t.Errorf("TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount: Error %s while converting string %s to int", err, InternalIdentityLoginRetries)
 	}
 	for i := 0; i <= retryLimit; i++ {
-		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUserID)
+		auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsUserID)
 		if err != nil {
 			t.Errorf("InternalCreateIdentityLoginAudit Error: %+v\n", err)
 		}
@@ -428,7 +451,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 		RealmDomain:     realm.Domain,
 		StorageClientID: identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParamsStorageClientID)
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(internalTestContext, reqParamsStorageClientID)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
 	}
@@ -440,7 +463,7 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 		RealmDomain: realm.Domain,
 		UserID:      auditParamsUserID.UserID,
 	}
-	status, err = identityServiceClient.InternalIdentityStatusByUserId(testContext, reqParamsUserID)
+	status, err = identityServiceClient.InternalIdentityStatusByUserId(internalTestContext, reqParamsUserID)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByUserID Error: %+v\n", err)
 	}
@@ -451,20 +474,20 @@ func TestInternalIdentityStatusMoreFailedAuditsThanThresholdLockIdentityAccount(
 
 func TestInternalIdentityStatusByUserID(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdenttiyStatusEndpoints")
+	realmName := internalUniqueString("TestInternalIdenttiyStatusEndpoints")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -477,7 +500,7 @@ func TestInternalIdentityStatusByUserID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -497,10 +520,10 @@ func TestInternalIdentityStatusByUserID(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Errorf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -508,7 +531,7 @@ func TestInternalIdentityStatusByUserID(t *testing.T) {
 		RealmDomain: realm.Domain,
 		UserID:      identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByUserId(testContext, reqParams)
+	status, err := identityServiceClient.InternalIdentityStatusByUserId(internalTestContext, reqParams)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByUserID Error: %+v\n", err)
 	}
@@ -519,20 +542,20 @@ func TestInternalIdentityStatusByUserID(t *testing.T) {
 
 func TestInternalIdentityStatusByStorageClientID(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdenttiyStatusEndpoints")
+	realmName := internalUniqueString("TestInternalIdenttiyStatusEndpoints")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -545,7 +568,7 @@ func TestInternalIdentityStatusByStorageClientID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -565,10 +588,10 @@ func TestInternalIdentityStatusByStorageClientID(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Errorf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -576,7 +599,7 @@ func TestInternalIdentityStatusByStorageClientID(t *testing.T) {
 		RealmDomain:     realm.Domain,
 		StorageClientID: identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(testContext, reqParams)
+	status, err := identityServiceClient.InternalIdentityStatusByStorageClientId(internalTestContext, reqParams)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByStorageClientId Error: %+v\n", err)
 	}
@@ -670,20 +693,20 @@ func TestInternalIdentityLoginWithAuthenticatedRealmIdentity(t *testing.T) {
 
 func TestInternalIdentityStatusByOnlyStorageClientId(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("internalIdentityStatusByOnlyStorageClientId")
+	realmName := internalUniqueString("internalIdentityStatusByOnlyStorageClientId")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -696,7 +719,7 @@ func TestInternalIdentityStatusByOnlyStorageClientId(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -716,17 +739,17 @@ func TestInternalIdentityStatusByOnlyStorageClientId(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Errorf("RegisterIdentity Error: %+v\n", err)
 	}
 	reqParams := InternalIdentityStatusStorageClientIdRequest{
 		StorageClientID: identity.Identity.ToznyID,
 	}
-	status, err := identityServiceClient.InternalIdentityStatusByOnlyStorageClientId(testContext, reqParams)
+	status, err := identityServiceClient.InternalIdentityStatusByOnlyStorageClientId(internalTestContext, reqParams)
 	if err != nil {
 		t.Errorf("InternalIdentityStatusByOnlyStorageClientId Error: %+v\n", err)
 	}
@@ -737,20 +760,20 @@ func TestInternalIdentityStatusByOnlyStorageClientId(t *testing.T) {
 
 func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &internalAccountServiceClient, accountTag, internalE3dbAuthHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = e3dbIdentityHost
+	queenClientInfo.Host = internalE3dbIdentityHost
 	identityServiceClient := New(queenClientInfo)
-	realmName := uniqueString("TestInternalIdenttiyStatusEndpoints")
+	realmName := internalUniqueString("TestInternalIdenttiyStatusEndpoints")
 	sovereignName := "Yassqueen"
 	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
-	realm := createRealmWithParams(t, identityServiceClient, params)
-	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	realm := internalCreateRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(internalTestContext, realm.Name)
 	identityName := "Freud"
 	identityEmail := "test-emails-group+freud@tozny.com"
 	identityFirstName := "Sigmund"
@@ -763,7 +786,7 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = e3dbAccountHost
+	queenClientInfo.Host = internalE3dbAccountHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
@@ -783,10 +806,10 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: e3dbIdentityHost,
+		Host: internalE3dbIdentityHost,
 	}
 	anonClient := New(anonConfig)
-	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	identity, err := anonClient.RegisterIdentity(internalTestContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
 	}
@@ -796,7 +819,7 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 		Status:      "fail",
 		RequestType: "test with username",
 	}
-	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUsername)
+	auditResponse, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsUsername)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUsername)
 	}
@@ -809,7 +832,7 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 		Status:      "fail",
 		RequestType: "test with client ID",
 	}
-	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsClientID)
+	auditResponseWithUserID, err := identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsClientID)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsClientID)
 	}
@@ -822,7 +845,7 @@ func TestInternalCreateIdentityLoginAudit(t *testing.T) {
 		Status:      "success",
 		RequestType: "test with user ID",
 	}
-	auditResponse, err = identityServiceClient.InternalCreateIdentityLoginAudit(testContext, auditParamsUserID)
+	auditResponse, err = identityServiceClient.InternalCreateIdentityLoginAudit(internalTestContext, auditParamsUserID)
 	if err != nil {
 		t.Fatalf("TestInternalCreateIdentityLoginAudit Error: %+v with request params: %+v\n", err, auditParamsUserID)
 	}
