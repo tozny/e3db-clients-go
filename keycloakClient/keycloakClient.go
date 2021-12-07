@@ -26,6 +26,7 @@ const (
 	roleResourceName                             = "roles"
 	roleByIDResourceName                         = "roles-by-id"
 	groupResourceName                            = "groups"
+	groupSingleResourceName                      = "group"
 	roleMappingResourceName                      = "role-mappings"
 	realmResourceName                            = "realm"
 	adminResourceName                            = "admin"
@@ -63,6 +64,7 @@ const (
 	toznyInternalDenyPolicyName                  = "__ToznyInternalDenyPolicy"
 	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
 	toznyInternalAuthzMap                        = "__ToznyInternalAuthzMap"
+	toznyInternalAuthzResource                   = "__ToznyInternalAuthz"
 )
 
 var (

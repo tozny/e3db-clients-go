@@ -1314,7 +1314,7 @@ func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, para
 // RemoveAccessControlGroupsPolicy unenrolls groups to Access Control Policy, returning error (if any).
 func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context, params RemoveAccessControlPolicyGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
-	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
 	if err != nil {
 		return err
 	}
@@ -1329,7 +1329,7 @@ func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context
 // AddAccessControlGroupsPolicy Enrolls groups to Access Control Policy, returning error (if any).
 func (c *E3dbIdentityClient) AddAccessControlGroupsPolicy(ctx context.Context, params AddAccessControlPolicyGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
-	req, err := e3dbClients.CreateRequest("POST", path, nil)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return err
 	}

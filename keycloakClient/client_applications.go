@@ -122,7 +122,7 @@ func (c *Client) CreateResourceServerResourcePermission(accessToken string, real
 
 // CreateResourceServerGroupPolicy
 func (c *Client) CreateResourceServerGroupPolicy(accessToken string, realmName string, clientID string, request CreateGroupPolicyRequest) (string, error) {
-	return c.post(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupResourceName))
+	return c.post(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupSingleResourceName))
 }
 
 // UpdateResourceServerGroupPermission
@@ -132,7 +132,7 @@ func (c *Client) UpdateResourceServerGroupPermission(accessToken string, realmNa
 
 // UpdateResourceServerGroupsPolicy
 func (c *Client) UpdateResourceServerGroupsPolicy(accessToken string, realmName string, clientID string, groupPolicyID string, request UpdateAccessControlGroupPolicy) error {
-	return c.put(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupResourceName, groupPolicyID))
+	return c.put(accessToken, request, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientID, authzResourceName, resourceServerResourceName, policyResourceName, groupSingleResourceName, groupPolicyID))
 }
 
 // ==========================================================================
@@ -317,7 +317,7 @@ func (c *Client) GetToznyInternalAuthorizationResource(accessToken string, realm
 	path := c.apiURL.String() + url
 	req, err := http.NewRequest("GET", path, nil)
 	urlParams := req.URL.Query()
-	urlParams.Set("name", toznyInternalAuthzMap)
+	urlParams.Set("name", toznyInternalAuthzResource)
 	req.URL.RawQuery = urlParams.Encode()
 	err = c.requestWithQueryParams(accessToken, req, &resp)
 	return resp, err

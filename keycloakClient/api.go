@@ -600,12 +600,16 @@ type UpdateAccessControlGroupPolicy struct {
 
 // InternalGroupPolicy wraps the Tozny internal group policy
 type InternalGroupPolicy struct {
-	DecisionStrategy   string `json:"decisionStrategy"`
-	Logic              string `json:"logic"`
-	GroupConfiguration string `json:"config"`
-	Name               string `json:"name"`
-	Type               string `json:"type"`
-	PolicyID           string `json:"id"`
+	DecisionStrategy   string      `json:"decisionStrategy"`
+	Logic              string      `json:"logic"`
+	GroupConfiguration GroupConfig `json:"config"`
+	Name               string      `json:"name"`
+	Type               string      `json:"type"`
+	PolicyID           string      `json:"id"`
+}
+
+type GroupConfig struct {
+	Groups string `json:"groups"`
 }
 
 // InternalDenyPolicy wraps the Tozny internal deny policy
@@ -644,7 +648,7 @@ type InternalAuthorizationResource struct {
 	Name                     string                   `json:"name"`
 	DisplayName              string                   `json:"displayName"`
 	ResourceID               string                   `json:"_id"`
-	Uris                     string                   `json:"uris"`
+	Uris                     []string                 `json:"uris"`
 	OwnerManagedAccess       bool                     `json:"ownerManagedAccess"`
 	ClientApplicationDetails ClientApplicationDetails `json:"owner"`
 }
