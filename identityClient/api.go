@@ -1190,3 +1190,30 @@ type FederatedIdentityKeyCheckRequest struct {
 	ClientID                        uuid.UUID `json:"client_id"`
 	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
 }
+
+// AccessControlPolicyRequest wraps the values required to enable or disable an Access Control Policy for an application.
+type AccessControlPolicyRequest struct {
+	RealmName     string
+	ApplicationID string
+	Enable        bool `json:"enable"`
+}
+
+// AddAccessControlPolicyGroupRequest wraps the values needed to Add a group to an Application's Access Control Policy.
+type AddAccessControlPolicyGroupRequest struct {
+	RealmName     string
+	ApplicationID string
+	Groups        []AccessControlPolicyGroup `json:"groups"`
+}
+
+// AccessControlPolicyGroup the information required to add a group to Access Control Policy for a Application.
+type AccessControlPolicyGroup struct {
+	ID               string `json:"id"`
+	ExtendToChildren bool   `json:"extend_to_children"`
+}
+
+// RemoveAccessControlPolicyGroupRequest wraps the values needed to remove a group to an Application's Access Control Policy.
+type RemoveAccessControlPolicyGroupRequest struct {
+	RealmName     string
+	ApplicationID string
+	Groups        []AccessControlPolicyGroup `json:"groups"`
+}

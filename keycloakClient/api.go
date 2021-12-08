@@ -533,3 +533,122 @@ type InitiatePKCELogin struct {
 	CodeChallenge       string `schema:"code_challenge"`
 	CodeChallengeMethod string `schema:"code_challenge_method"`
 }
+
+// CreateResourcePermissionRequest wraps the parameters needed for creating a resource permission
+type CreatePermissionRequest struct {
+	Attributes         map[string]interface{} `json:"attributes"`
+	DisplayName        string                 `json:"displayName"`
+	Name               string                 `json:"name"`
+	OwnerManagedAccess string                 `json:"ownerManagedAccess"`
+	Uris               []string               `json:"uris"`
+}
+
+// CreatePolicyRequest wraps the parameters needed for creating a resource policy
+type CreatePolicyRequest struct {
+	AllowOrDeny      string `json:"allowOrDeny"`
+	DecisionStrategy string `json:"decisionStrategy"`
+	Logic            string `json:"logic"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+}
+
+// AccessControlPolicyGroup wraps the information needed for an Access Control Policy Group
+type AccessControlPolicyGroup struct {
+	ExtendToChildren string `json:"extendChildren"`
+	ID               string `json:"id"`
+	Path             string `json:"path"`
+}
+
+// CreateGroupPolicyRequest wraps the parameters needed for creating a group policy
+type CreateGroupPolicyRequest struct {
+	DecisionStrategy string                     `json:"decisionStrategy"`
+	Logic            string                     `json:"logic"`
+	Groups           []AccessControlPolicyGroup `json:"groups"`
+	Name             string                     `json:"name"`
+	Type             string                     `json:"type"`
+}
+
+// CreateResourceRequest wraps the parameters needed for creating a resource
+type CreateResourceRequest struct {
+	DecisionStrategy string   `json:"decisionStrategy"`
+	Logic            string   `json:"logic"`
+	Name             string   `json:"name"`
+	Type             string   `json:"type"`
+	Policies         []string `json:"policies"`
+	Resource         []string `json:"resources"`
+}
+
+// UpdateAccessControlPolicy wraps the parameters needed for updating a policy
+type UpdateAccessControlPolicy struct {
+	DecisionStrategy string   `json:"decisionStrategy"`
+	Logic            string   `json:"logic"`
+	Name             string   `json:"name"`
+	Type             string   `json:"type"`
+	Policies         []string `json:"policies"`
+	Resource         []string `json:"resources"`
+}
+
+// UpdateAccessControlGroupPolicy wraps the parameters needed for updating a group policy
+type UpdateAccessControlGroupPolicy struct {
+	DecisionStrategy string                     `json:"decisionStrategy"`
+	Logic            string                     `json:"logic"`
+	PolicyID         string                     `json:"id"`
+	Groups           []AccessControlPolicyGroup `json:"groups"`
+	Name             string                     `json:"name"`
+	Type             string                     `json:"type"`
+}
+
+// InternalGroupPolicy wraps the Tozny internal group policy
+type InternalGroupPolicy struct {
+	DecisionStrategy   string      `json:"decisionStrategy"`
+	Logic              string      `json:"logic"`
+	GroupConfiguration GroupConfig `json:"config"`
+	Name               string      `json:"name"`
+	Type               string      `json:"type"`
+	PolicyID           string      `json:"id"`
+}
+
+type GroupConfig struct {
+	Groups string `json:"groups"`
+}
+
+// InternalDenyPolicy wraps the Tozny internal deny policy
+type InternalDenyPolicy struct {
+	DecisionStrategy string           `json:"decisionStrategy"`
+	Logic            string           `json:"logic"`
+	PermissionStatus PermissionStatus `json:"config"`
+	Name             string           `json:"name"`
+	Type             string           `json:"type"`
+	PolicyID         string           `json:"id"`
+}
+
+// PermissionStatus wraps the current permission status
+type PermissionStatus struct {
+	AllowOrDeny string `json:"allowOrDeny"`
+}
+
+// ClientApplicationDetails wraps the Client Application brief details
+type ClientApplicationDetails struct {
+	ClientID string `json:"id"`
+	Name     string `json:"name"`
+}
+
+// InternalAuthorizationPermission wraps the Tozny Internal Authorization permission details
+type InternalAuthorizationPermission struct {
+	DecisionStrategy string `json:"decisionStrategy"`
+	Logic            string `json:"logic"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	PolicyID         string `json:"id"`
+}
+
+// InternalAuthorizationResource wraps the Tozny Internal Authorization resource details.
+type InternalAuthorizationResource struct {
+	Attributes               *map[string]interface{}  `json:"attributes"`
+	Name                     string                   `json:"name"`
+	DisplayName              string                   `json:"displayName"`
+	ResourceID               string                   `json:"_id"`
+	Uris                     []string                 `json:"uris"`
+	OwnerManagedAccess       bool                     `json:"ownerManagedAccess"`
+	ClientApplicationDetails ClientApplicationDetails `json:"owner"`
+}

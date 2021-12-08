@@ -15,26 +15,28 @@ import (
 )
 
 const (
-	identityServiceBasePath       = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
-	realmResourceName             = "realm"
-	providerResourceName          = "provider"
-	providerMapperResourceName    = "mapper"
-	applicationResourceName       = "application"
-	auditResourceName             = "audits"
-	identityResourceName          = "identity"
-	loginResourceName             = "login"
-	roleResourceName              = "role"
-	groupResourceName             = "group"
-	defaultGroupResourceName      = "default-groups"
-	roleMapperResourceName        = "role_mapping"
-	realmLoginPathPrefix          = "/auth/realms"
-	realmLoginPathPostfix         = "/protocol/openid-connect/token"
-	realmLoginAuthPathPostfix     = "/protocol/openid-connect/auth"
-	applicationMapperResourceName = "mapper"
-	pamResourceName               = "pam"
-	pamRESTResourcePath           = "resource"
-	pamPolicyResourceName         = "policies"
-	federationResourceName        = "federation"
+	identityServiceBasePath              = "/v1/identity" // HTTP PATH prefix for calls to the Identity service
+	realmResourceName                    = "realm"
+	providerResourceName                 = "provider"
+	providerMapperResourceName           = "mapper"
+	applicationResourceName              = "application"
+	auditResourceName                    = "audits"
+	identityResourceName                 = "identity"
+	loginResourceName                    = "login"
+	roleResourceName                     = "role"
+	groupResourceName                    = "group"
+	defaultGroupResourceName             = "default-groups"
+	roleMapperResourceName               = "role_mapping"
+	realmLoginPathPrefix                 = "/auth/realms"
+	realmLoginPathPostfix                = "/protocol/openid-connect/token"
+	realmLoginAuthPathPostfix            = "/protocol/openid-connect/auth"
+	applicationMapperResourceName        = "mapper"
+	pamResourceName                      = "pam"
+	pamRESTResourcePath                  = "resource"
+	pamPolicyResourceName                = "policies"
+	federationResourceName               = "federation"
+	accessControlPolicyResourceName      = "access-control"
+	accessControlGroupPolicyResourceName = "access-control-groups"
 )
 
 var (
@@ -1296,4 +1298,41 @@ func (c *E3dbIdentityClient) FederatedIdentityKeyCheck(ctx context.Context, para
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 	return err
+}
+
+// EnableAccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
+func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// RemoveAccessControlGroupsPolicy unenrolls groups to Access Control Policy, returning error (if any).
+func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context, params RemoveAccessControlPolicyGroupRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	for _, group := range params.Groups {
+		urlParams.Add("group_id", group.ID)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// AddAccessControlGroupsPolicy Enrolls groups to Access Control Policy, returning error (if any).
+func (c *E3dbIdentityClient) AddAccessControlGroupsPolicy(ctx context.Context, params AddAccessControlPolicyGroupRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+
 }
