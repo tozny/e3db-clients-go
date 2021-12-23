@@ -884,15 +884,15 @@ func TestIdentityDetails(t *testing.T) {
 }
 func TestDescribeIdentityWithEmailUsername(t *testing.T) {
 	accountTag := uuid.New().String()
-	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, cyclopsServiceHost)
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
 	}
-	queenClientInfo.Host = cyclopsServiceHost
-	identityServiceClient := identityClient.New(queenClientInfo)
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
 	realmName := uniqueString("TestDescribeIdentityWithEmailUsername")
 	sovereignName := "Yassqueen"
-	params := identityClient.CreateRealmRequest{
+	params := CreateRealmRequest{
 		RealmName:     realmName,
 		SovereignName: sovereignName,
 	}
@@ -910,17 +910,17 @@ func TestDescribeIdentityWithEmailUsername(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s generating encryption keys", err)
 	}
-	queenClientInfo.Host = cyclopsServiceHost
+	queenClientInfo.Host = toznyCyclopsHost
 	accountToken := createAccountResponse.AccountServiceToken
 	queenAccountClient := accountClient.New(queenClientInfo)
 	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
-	registerParams := identityClient.RegisterIdentityRequest{
+	registerParams := RegisterIdentityRequest{
 		RealmRegistrationToken: registrationToken,
 		RealmName:              realm.Name,
-		Identity: identityClient.Identity{
+		Identity: Identity{
 			Name:        identityName,
 			Email:       identityEmail,
 			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
@@ -930,9 +930,9 @@ func TestDescribeIdentityWithEmailUsername(t *testing.T) {
 		},
 	}
 	anonConfig := e3dbClients.ClientConfig{
-		Host: cyclopsServiceHost,
+		Host: toznyCyclopsHost,
 	}
-	anonClient := identityClient.New(anonConfig)
+	anonClient := New(anonConfig)
 	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
 	if err != nil {
 		t.Fatalf("RegisterIdentity Error: %+v\n", err)
