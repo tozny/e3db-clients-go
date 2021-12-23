@@ -238,9 +238,9 @@ func (c *E3dbIdentityClient) ListIdentities(ctx context.Context, params ListIden
 }
 
 // DescribeIdentity gets detailed information for an identity in a given realm.
-func (c *E3dbIdentityClient) DescribeIdentity(ctx context.Context, realmName string, clientID string) (*IdentityDetails, error) {
+func (c *E3dbIdentityClient) DescribeIdentity(ctx context.Context, realmName string, username string) (*IdentityDetails, error) {
 	var identity *IdentityDetails
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + identityResourceName + "/" + clientID
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/" + identityResourceName + "/" + username
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return identity, err

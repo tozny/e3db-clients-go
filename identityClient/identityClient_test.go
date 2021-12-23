@@ -882,7 +882,68 @@ func TestIdentityDetails(t *testing.T) {
 		t.Errorf("Expected sovereign to have the realm-admin role in the realm-management client, but it was not found: %+v", realmManagementRoles)
 	}
 }
+func TestDescribeIdentityWithEmailUsername(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	identityServiceClient := identityClient.New(queenClientInfo)
+	realmName := uniqueString("TestDescribeIdentityWithEmailUsername")
+	sovereignName := "Yassqueen"
+	params := identityClient.CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	identityName := "test-emails-group+ALLUPERCASE@tozny.com"
+	identityEmail := "test-emails-group+ALLUPERCASE@tozny.com"
+	identityFirstName := "Sigmund"
+	identityLastName := "Freud"
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		t.Fatalf("error %s generating identity signing keys", err)
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Fatalf("error %s generating encryption keys", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	registerParams := identityClient.RegisterIdentityRequest{
+		RealmRegistrationToken: registrationToken,
+		RealmName:              realm.Name,
+		Identity: identityClient.Identity{
+			Name:        identityName,
+			Email:       identityEmail,
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{signingKeys.Public.Type: signingKeys.Public.Material},
+			FirstName:   identityFirstName,
+			LastName:    identityLastName,
+		},
+	}
+	anonConfig := e3dbClients.ClientConfig{
+		Host: cyclopsServiceHost,
+	}
+	anonClient := identityClient.New(anonConfig)
+	identity, err := anonClient.RegisterIdentity(testContext, registerParams)
+	if err != nil {
+		t.Fatalf("RegisterIdentity Error: %+v\n", err)
+	}
+	// Get the User ID of the Identity
+	_, err = identityServiceClient.DescribeIdentity(testContext, realm.Name, identity.Identity.Name)
+	if err != nil {
+		t.Fatalf("Describe Identity Error %+v for identity: %+v\n", err, identity)
+	}
 
+}
 func TestDeleteIdentityRemoves(t *testing.T) {
 	client, registrationToken := createIdentityServiceClientAndToken(t)
 
