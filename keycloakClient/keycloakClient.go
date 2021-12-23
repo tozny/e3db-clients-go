@@ -701,7 +701,8 @@ func (c *Client) RemoveGroupRealmRoleMappings(accessToken, realmName, groupId st
 // GetUserDetails gets a detailed represention of the user with resolved groups and roles.
 func (c *Client) GetUserDetails(accessToken string, realmName, username string) (UserDetailsRepresentation, error) {
 	var resp = UserDetailsRepresentation{}
-	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", userExtensionPath, realmName, adminResourceName, userResourceName, username))
+	encodedUsername := url.PathEscape(username)
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", userExtensionPath, realmName, adminResourceName, userResourceName, encodedUsername))
 	return resp, err
 }
 
