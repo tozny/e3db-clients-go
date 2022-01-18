@@ -200,7 +200,7 @@ func TestAccountDeleteSuccessCanRecreateAccountAndRealmsWithSameEmailReturns200(
 	// Create Account
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
 	randomUUID := uuid.New().String()
-	accountEmail := fmt.Sprintf("testemail-%s@test.com", randomUUID)
+	accountEmail := fmt.Sprintf("test-emails-group+%s@tozny.com", randomUUID)
 	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccountWithEmail(t, &registrationClient, randomUUID, accountEmail, cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
@@ -296,7 +296,7 @@ func TestAccountDeleteSuccessCanRecreateAccountAndRealmsAndIdentityWithSameEmail
 	// Create Account
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
 	randomUUID := uuid.New().String()
-	accountEmail := fmt.Sprintf("testemail-%s@test.com", randomUUID)
+	accountEmail := fmt.Sprintf("test-emails-group+%s@tozny.com", randomUUID)
 	queenClientInfo, createAccountResponse, err := e3dbTest.MakeE3DBAccountWithEmail(t, &registrationClient, randomUUID, accountEmail, cyclopsServiceHost)
 	if err != nil {
 		t.Fatalf("Error %s making new account", err)
