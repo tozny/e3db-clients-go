@@ -60,6 +60,7 @@ const (
 	realmsResourceName                           = "realms"
 	staticResourceName                           = "static"
 	permissionResourceName                       = "permission"
+	mfaResourceName                              = "mfa"
 	toznyInternalGroupPolicyName                 = "__ToznyInternalGroupPolicy"
 	toznyInternalDenyPolicyName                  = "__ToznyInternalDenyPolicy"
 	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
@@ -264,8 +265,6 @@ func setAuthorizationAndHostHeadersPlusSessionToken(req *http.Request, accessTok
 	req.Header.Add("X-Forwarded-Proto", "https")
 	// This may need to be a Add
 	req.Header.Set("X-Tozny-Session", sessionToken)
-	// is this always the content type? fails with 415 if content type isn't specified
-	req.Header.Add("Content-Type", "application/json")
 	req.Host = host
 	return req, nil
 }
@@ -318,7 +317,7 @@ func (c *Client) post(accessToken string, data interface{}, url string) (string,
 	return location, nil
 
 }
-func (c *Client) postWithToznySessionToken(accessToken string, data interface{}, url string, sessionToken string) (string, error) {
+func (c *Client) postJSONWithToznySessionToken(accessToken string, data interface{}, url string, sessionToken string) (string, error) {
 	path := c.apiURL.String() + url
 	buf := &bytes.Buffer{}
 	err := json.NewEncoder(buf).Encode(data)
@@ -333,6 +332,7 @@ func (c *Client) postWithToznySessionToken(accessToken string, data interface{},
 	if err != nil {
 		return "", err
 	}
+	req.Header.Add("Content-Type", "application/json")
 	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
 	if err != nil {
 		return "", e3dbClients.NewError(err.Error(), path, response.StatusCode)
@@ -340,6 +340,26 @@ func (c *Client) postWithToznySessionToken(accessToken string, data interface{},
 	location := response.Header.Get("Location")
 	return location, nil
 
+}
+func (c *Client) postFormDataWithToznySessionToken(url, accessToken, sessionToken string, data url.Values, result interface{}) error {
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeadersPlusSessionToken(req, accessToken, sessionToken)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, result)
+	if err != nil {
+		if response == nil {
+			return err
+		}
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
 }
 func (c *Client) delete(accessToken string, data interface{}, url string) error {
 	path := c.apiURL.String() + url
@@ -1079,7 +1099,7 @@ func (c *Client) GetSAMLDescriptor(realmName string) (string, error) {
 
 // ExpireSession clears a session based on a valid session token
 func (c *Client) ExpireSession(accessToken, realmName, sessionToken string) error {
-	_, err := c.postWithToznySessionToken(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", userExtensionPath, realmName, adminResourceName, logoutResourceName), sessionToken)
+	_, err := c.postJSONWithToznySessionToken(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", userExtensionPath, realmName, adminResourceName, logoutResourceName), sessionToken)
 	return err
 }
 
@@ -1113,6 +1133,29 @@ func (c *Client) InitiateLogin(realmName string, loginURLEncoded InitiatePKCELog
 		}
 	}
 	return resp.RawResponse, nil
+}
+
+// InitiateWebAuthnChallenge initiates the flow for registering a WebAuthn device
+func (c *Client) InitiateWebAuthnChallenge(accessToken, sessionToken, realmDomain string) (InitiateWebAuthnChallengeResponse, error) {
+	var result InitiateWebAuthnChallengeResponse
+	path := fmt.Sprintf("/auth/realms/%s/%s/webauthn-challenge", realmDomain, mfaResourceName)
+	err := c.postFormDataWithToznySessionToken(path, accessToken, sessionToken, url.Values{}, &result)
+	return result, err
+}
+
+// RegisterWebAuthnDevice registers & persists the WebAuthn MFA device
+func (c *Client) RegisterWebAuthnDevice(accessToken, sessionToken, realmDomain string, data RegisterWebAuthnDeviceRequest) error {
+	query := url.Values{}
+	query.Add("tab_id", data.TabID) // post requires tab id in the query to map to previous session
+	path := fmt.Sprintf("/auth/realms/%s/%s/webauthn-register%s", realmDomain, mfaResourceName, query.Encode())
+	formData := url.Values{
+		"clientDataJSON":        {data.ClientDataJSON},
+		"attestationObject":     {data.AttestationObject},
+		"publicKeyCredentialId": {data.PublicKeyCredentialID},
+		"authenticatorLabel":    {data.AuthenticatorLabel},
+	}
+	err := c.postFormDataWithToznySessionToken(path, accessToken, sessionToken, formData, nil)
+	return err
 }
 
 // requestWithQueryParams creates a request with query params

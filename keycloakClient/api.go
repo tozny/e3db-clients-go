@@ -652,3 +652,36 @@ type InternalAuthorizationResource struct {
 	OwnerManagedAccess       bool                     `json:"ownerManagedAccess"`
 	ClientApplicationDetails ClientApplicationDetails `json:"owner"`
 }
+
+// InitiateWebAuthnChallengeResponse wraps the challenge login action data for WebAuthn
+// This is the login action that comes directly from keycloak.
+type InitiateWebAuthnChallengeResponse struct {
+	ActionContext InitiateWebAuthnChallengeContext `json:"login_context"`
+	TabID         string                           `json:"tab_id"`
+}
+
+// InitiateWebAuthnChallengeContext contains the actual challenge data & WebAuthn policy info
+// required for registering a WebAuthn hardware MFA device.
+type InitiateWebAuthnChallengeContext struct {
+	ExcludeCredentialIDs            string `json:"excludeCredentialIds"`
+	AuthenticatorAttachment         string `json:"authenticatorAttachment"`
+	RequireResidentKey              string `json:"requireResidentKey"`
+	SignatureAlgorithms             string `json:"signatureAlgorithms"`
+	RelyingPartyID                  string `json:"rpId"`
+	UserID                          string `json:"userid"`
+	CreateTimeout                   int    `json:"createTimeout"`
+	Challenge                       string `json:"challenge"`
+	AttestationConveyancePreference string `json:"attestationConveyancePreference"`
+	UserVerificationRequirement     string `json:"userVerificationRequirement"`
+	Username                        string `json:"username"`
+	RelyingPartyEntityName          string `json:"rpEntityName"`
+}
+
+// RegisterWebAuthnDeviceRequest wraps the signed challenge data for registering a WebAuthn MFA device
+type RegisterWebAuthnDeviceRequest struct {
+	ClientDataJSON        string // base64url encoded
+	AttestationObject     string // base64url encoded
+	PublicKeyCredentialID string // base64url encoded
+	AuthenticatorLabel    string // user-friendly name for the device
+	TabID                 string // TabID returned by the registration process
+}
