@@ -1269,3 +1269,33 @@ type UpdatePAMJiraPluginRequest struct {
 
 // UpdatePAMJiraPluginResponse is the updated PAM Jira plugin information
 type UpdatePAMJiraPluginResponse = PAMJiraPlugin
+
+// InitiateWebAuthnChallengeRequest wraps info for initiating the registration process of a WebAuthn device
+type InitiateWebAuthnChallengeRequest struct {
+	IdentityID   string `json:"identity_id"`
+	SessionToken string
+}
+
+// InitiateWebAuthnChallengeResponse wraps the challenge login action data for WebAuthn
+// This is the login action that comes directly from keycloak.
+type InitiateWebAuthnChallengeResponse struct {
+	TabID         string                           `json:"tab_id"`
+	ActionContext InitiateWebAuthnChallengeContext `json:"login_context"`
+}
+
+// InitiateWebAuthnChallengeContext contains the actual challenge data & WebAuthn policy info
+// required for registering a WebAuthn hardware MFA device.
+type InitiateWebAuthnChallengeContext struct {
+	Challenge                       string `json:"challenge"`
+	Username                        string `json:"username"`
+	UserId                          string `json:"user_id"`
+	AttestationConveyancePreference string `json:"attestation_conveyance_preference"`
+	AuthenticatorAttachment         string `json:"authenticator_attachment"`
+	ExcludeCredentialIds            string `json:"exclude_credential_ids"`
+	RequireResidentKey              string `json:"require_resident_key"`
+	SignatureAlgorithms             string `json:"signature_algorithms"`
+	RelyingPartyId                  string `json:"relying_party_id"`
+	RelyingPartyEntityName          string `json:"relying_party_name"`
+	UserVerificationRequirement     string `json:"user_verification_requirement"`
+	CreateTimeout                   int    `json:"create_timeout"`
+}

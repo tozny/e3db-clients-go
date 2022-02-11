@@ -39,6 +39,8 @@ const (
 	federationResourceName               = "federation"
 	accessControlPolicyResourceName      = "access-control"
 	accessControlGroupPolicyResourceName = "access-control-groups"
+	mfaResourceName                      = "mfa"
+	toznySessionHeader                   = "X-Tozny-Session"
 )
 
 var (
@@ -1396,4 +1398,17 @@ func (c *E3dbIdentityClient) PingPAMJiraPlugin(ctx context.Context, params PingP
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 	return err
+}
+
+// InitiateWebAuthnChallenge starts the WebAuthn MFA device registration flow
+func (c *E3dbIdentityClient) InitiateWebAuthnChallenge(ctx context.Context, params InitiateWebAuthnChallengeRequest) (InitiateWebAuthnChallengeResponse, error) {
+	var result InitiateWebAuthnChallengeResponse
+	path := fmt.Sprintf("%s%s/%s/webauthn-challenge", c.Host, identityServiceBasePath, mfaResourceName)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	request.Header.Add(toznySessionHeader, params.SessionToken)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
+	return result, err
 }
