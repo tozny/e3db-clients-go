@@ -1299,3 +1299,34 @@ type InitiateWebAuthnChallengeContext struct {
 	UserVerificationRequirement     string `json:"user_verification_requirement"`
 	CreateTimeout                   int    `json:"create_timeout"`
 }
+
+// RegisterMFADeviceRequest wraps information for finalizing the registation of an MFA device for
+// an identity.
+type RegisterMFADeviceRequest struct {
+	IdentityID   string                 `json:"identity_id"`
+	TabID        string                 `json:"tab_id"`
+	MFADevices   MFADeviceRegistrations `json:"mfa_devices"`
+	SessionToken string
+}
+
+// MFADeviceRegistrations is an object containing MFA device registration data keyed to the type of
+// device.
+type MFADeviceRegistrations struct {
+	TOTP     *TOTPDeviceRegistration     `json:"totp"`
+	WebAuthn *WebAuthnDeviceRegistration `json:"webauthn"`
+}
+
+// TOTPDeviceRegistration wraps the data necessary for registering a TOTP device
+// Note: not presently supported. See keycloak's account/MFAResource for registration.
+type TOTPDeviceRegistration struct {
+	Secret string `json:"secret"`
+	TOTP   string `json:"totp"`
+}
+
+// WebAuthnDeviceRegistration wraps the data necessary for registering a WebAuthn device (including FIDO2!)
+type WebAuthnDeviceRegistration struct {
+	ClientDataJSON        string `json:"client_data_json"`
+	AttestationObject     string `json:"attestation_object"`
+	PublicKeyCredentialID string `json:"public_key_credential_id"`
+	AuthenticatorLabel    string `json:"authenticator_label"`
+}

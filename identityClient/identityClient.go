@@ -1412,3 +1412,15 @@ func (c *E3dbIdentityClient) InitiateWebAuthnChallenge(ctx context.Context, para
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// RegisterMFADevice registers & persists an MFA device to an identity
+func (c *E3dbIdentityClient) RegisterMFADevice(ctx context.Context, params RegisterMFADeviceRequest) error {
+	path := fmt.Sprintf("%s%s/%s", c.Host, identityServiceBasePath, mfaResourceName)
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	request.Header.Add(toznySessionHeader, params.SessionToken)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
+	return err
+}
