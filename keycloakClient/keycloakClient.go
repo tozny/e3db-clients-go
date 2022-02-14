@@ -1147,7 +1147,7 @@ func (c *Client) InitiateWebAuthnChallenge(accessToken, sessionToken, realmDomai
 func (c *Client) RegisterWebAuthnDevice(accessToken, sessionToken, realmDomain string, data RegisterWebAuthnDeviceRequest) error {
 	query := url.Values{}
 	query.Add("tab_id", data.TabID) // post requires tab id in the query to map to previous session
-	path := fmt.Sprintf("/auth/realms/%s/%s/webauthn-register%s", realmDomain, mfaResourceName, query.Encode())
+	path := fmt.Sprintf("/auth/realms/%s/%s/webauthn-register?%s", realmDomain, mfaResourceName, query.Encode())
 	formData := url.Values{
 		"clientDataJSON":        {data.ClientDataJSON},
 		"attestationObject":     {data.AttestationObject},
