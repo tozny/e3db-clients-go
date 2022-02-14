@@ -231,6 +231,7 @@ type CredentialRepresentation struct {
 	Temporary         *bool                `json:"temporary,omitempty"`
 	Type              *string              `json:"type,omitempty"`
 	Value             *string              `json:"value,omitempty"`
+	UserLabel         *string              `json:"userLabel,omitempty"`
 }
 
 type FederatedIdentityRepresentation struct {

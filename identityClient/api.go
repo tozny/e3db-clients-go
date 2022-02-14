@@ -1330,3 +1330,38 @@ type WebAuthnDeviceRegistration struct {
 	PublicKeyCredentialID string `json:"public_key_credential_id"`
 	AuthenticatorLabel    string `json:"authenticator_label"`
 }
+
+// ListIdentitiesMFADeviceRequest wraps the values needed to request the MFA credentials for Identities
+type ListIdentitiesMFADeviceRequest struct {
+	RealmName  string      `json:"realm_name"`
+	Identities []uuid.UUID `json:"identities"`
+}
+
+// IdentityCredentialInformation wraps a User's configured MFA credential data
+type IdentityCredentialInformation struct {
+	ToznyID            uuid.UUID               `json:"tozny_id"`
+	UserID             string                  `json:"user_id"`
+	TOTPDeviceList     []TOTPAuthenticator     `json:"totp_devices"`
+	WebAuthnDeviceList []WebAuthnAuthenticator `json:"webauthn_devices"`
+}
+
+// TOTPAuthenticator wraps the information for a TOTP MFA authenticator
+type TOTPAuthenticator struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	UserLabel string    `json:"user_label"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// WebAuthnAuthenticator wraps the informarion for a WebAuthN authenticator
+type WebAuthnAuthenticator struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	UserLabel string    `json:"user_label"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// ListIdentitesMFADeviceResponse wraps the response the List Identities MFA credential
+type ListIdentitesMFADeviceResponse struct {
+	IdentitiesCredentials []IdentityCredentialInformation `json:"identities_credentials"`
+}

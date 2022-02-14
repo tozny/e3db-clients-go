@@ -1414,13 +1414,26 @@ func (c *E3dbIdentityClient) InitiateWebAuthnChallenge(ctx context.Context, para
 }
 
 // RegisterMFADevice registers & persists an MFA device to an identity
-func (c *E3dbIdentityClient) RegisterMFADevice(ctx context.Context, params RegisterMFADeviceRequest) error {
+func (c *E3dbIdentityClient) RegisterMFADevice(ctx context.Context, params RegisterMFADeviceRequest) (IdentityCredentialInformation, error) {
+	var response IdentityCredentialInformation
 	path := fmt.Sprintf("%s%s/%s", c.Host, identityServiceBasePath, mfaResourceName)
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
-		return err
+		return response, err
 	}
 	request.Header.Add(toznySessionHeader, params.SessionToken)
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
-	return err
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, response)
+	return response, err
+}
+
+// ListIdentitiesMFACredentials returns the identities mfa devices currently registered
+func (c *E3dbIdentityClient) ListIdentitiesMFACredentials(ctx context.Context, params ListIdentitiesMFADeviceRequest) (ListIdentitesMFADeviceResponse, error) {
+	var result ListIdentitesMFADeviceResponse
+	path := fmt.Sprintf("%s%s/%s", c.Host, identityServiceBasePath, mfaResourceName)
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, result)
+	return result, err
 }
