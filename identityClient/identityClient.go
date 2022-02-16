@@ -1422,7 +1422,7 @@ func (c *E3dbIdentityClient) RegisterMFADevice(ctx context.Context, params Regis
 		return response, err
 	}
 	request.Header.Add(toznySessionHeader, params.SessionToken)
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, response)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &response)
 	return response, err
 }
 
@@ -1434,6 +1434,6 @@ func (c *E3dbIdentityClient) ListIdentitiesMFACredentials(ctx context.Context, p
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }

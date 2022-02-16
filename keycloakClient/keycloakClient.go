@@ -1158,6 +1158,12 @@ func (c *Client) RegisterWebAuthnDevice(accessToken, sessionToken, realmDomain s
 	return err
 }
 
+func (c *Client) GetUserCredentials(accessToken string, realmName, userID string) ([]CredentialRepresentation, error) {
+	var resp = []CredentialRepresentation{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/credentials", realmRootPath, realmName, userResourceName, userID))
+	return resp, err
+}
+
 // requestWithQueryParams creates a request with query params
 func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, data interface{}) error {
 	req, err := setAuthorizationAndHostHeaders(req, accessToken)
