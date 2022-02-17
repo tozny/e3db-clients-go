@@ -1333,9 +1333,9 @@ type WebAuthnDeviceRegistration struct {
 
 // ListIdentitiesMFADeviceRequest wraps the values needed to request the MFA credentials for Identities
 type ListIdentitiesMFADeviceRequest struct {
-	RealmName         string      `json:"realm_name"`
-	IdentityClientIDs []uuid.UUID `json:"identity_client_ids"`
-	UserIDs           []string    `json:"user_ids"`
+	RealmName string      `json:"realm_name"`
+	ToznyIDs  []uuid.UUID `json:"tozny_ids"`
+	UserIDs   []string    `json:"user_ids"`
 }
 
 // IdentityCredentialInformation wraps a User's configured MFA credential data
