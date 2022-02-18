@@ -61,6 +61,7 @@ const (
 	staticResourceName                           = "static"
 	permissionResourceName                       = "permission"
 	mfaResourceName                              = "mfa"
+	credentialsResourceName                      = "credentials"
 	toznyInternalGroupPolicyName                 = "__ToznyInternalGroupPolicy"
 	toznyInternalDenyPolicyName                  = "__ToznyInternalDenyPolicy"
 	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
@@ -1162,6 +1163,11 @@ func (c *Client) GetUserCredentials(accessToken string, realmName, userID string
 	var resp = []CredentialRepresentation{}
 	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/credentials", realmRootPath, realmName, userResourceName, userID))
 	return resp, err
+}
+
+func (c *Client) RemoveMFADevice(accessToken, realmName, userID, mfaID string) error {
+	var err = c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, credentialsResourceName, mfaID))
+	return err
 }
 
 // requestWithQueryParams creates a request with query params

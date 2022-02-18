@@ -1437,3 +1437,15 @@ func (c *E3dbIdentityClient) ListIdentitiesMFACredentials(ctx context.Context, p
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// DeleteMFAInformation removes an mfa device that is currently registered to an Identity
+func (c *E3dbIdentityClient) DeleteMFAInformation(ctx context.Context, params DeleteMFAInformationRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + mfaResourceName + "/" + params.ID
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
+	return err
+
+}

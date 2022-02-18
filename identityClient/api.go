@@ -1362,7 +1362,13 @@ type WebAuthnAuthenticator struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// ListIdentitesMFADeviceResponse wraps the response the List Identities MFA credential
+// ListIdentitesMFADeviceResponse wraps the response of the List Identities MFA credential handler
 type ListIdentitesMFADeviceResponse struct {
 	IdentitiesCredentials []IdentityCredentialInformation `json:"identities_credentials"`
+}
+
+// DeleteMFAInformationRequest wraps the request for making a delete request to the
+// Identity Service MFA endpoint.
+type DeleteMFAInformationRequest struct {
+	ID string `json:"mfa_id"` // The ID of the MFA credential to be deleted.
 }
