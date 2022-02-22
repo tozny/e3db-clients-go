@@ -171,19 +171,19 @@ type InitialLoginResponse struct {
 	NoteID                                 string `json:"note_id"`
 }
 
-// IdentitySessionRequestResponse is returned by the IdentitySesssionRequest. It contains data related to what additional
+// IdentitySessionRequestResponse is returned by the IdentitySessionRequest. It contains data related to what additional
 // actions are needed to create a session and how to create the session
 type IdentitySessionRequestResponse struct {
 	LoginAction     bool                   `json:"login_action"`
 	LoginActionType string                 `json:"type"`
 	ActionURL       string                 `json:"action_url"`
 	Fields          map[string]string      `json:"fields"`
-	Context         map[string]string      `json:"context"`
+	Context         map[string]interface{} `json:"context"`
 	ContentType     string                 `json:"content_type"`
 	Message         SessionResponseMessage `json:"message"`
 }
 
-// SessionResponseMessage provides information reagarding the error status of login actions
+// SessionResponseMessage provides information regarding the error status of login actions
 // IsError is the most reliable source of information if the login action was successful or not
 type SessionResponseMessage struct {
 	Summary     string `json:"summary"`
