@@ -1427,8 +1427,8 @@ func (c *E3dbIdentityClient) RegisterMFADevice(ctx context.Context, params Regis
 }
 
 // ListIdentitiesMFACredentials returns the identities mfa devices currently registered
-func (c *E3dbIdentityClient) ListIdentitiesMFACredentials(ctx context.Context, params ListIdentitiesMFADeviceRequest) (ListIdentitesMFADeviceResponse, error) {
-	var result ListIdentitesMFADeviceResponse
+func (c *E3dbIdentityClient) ListIdentitiesMFACredentials(ctx context.Context, params ListIdentitiesMFADeviceRequest) (ListIdentitiesMFADeviceResponse, error) {
+	var result ListIdentitiesMFADeviceResponse
 	path := fmt.Sprintf("%s%s/%s/search", c.Host, identityServiceBasePath, mfaResourceName)
 	request, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {

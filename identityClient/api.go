@@ -1272,7 +1272,7 @@ type UpdatePAMJiraPluginResponse = PAMJiraPlugin
 
 // InitiateWebAuthnChallengeRequest wraps info for initiating the registration process of a WebAuthn device
 type InitiateWebAuthnChallengeRequest struct {
-	IdentityID   string `json:"identity_id"`
+	ToznyID      string `json:"tozny_id"`
 	SessionToken string
 }
 
@@ -1303,7 +1303,7 @@ type InitiateWebAuthnChallengeContext struct {
 // RegisterMFADeviceRequest wraps information for finalizing the registation of an MFA device for
 // an identity.
 type RegisterMFADeviceRequest struct {
-	IdentityID   string                 `json:"identity_id"`
+	ToznyID      string                 `json:"tozny_id"`
 	TabID        string                 `json:"tab_id"`
 	MFADevices   MFADeviceRegistrations `json:"mfa_devices"`
 	SessionToken string
@@ -1340,10 +1340,10 @@ type ListIdentitiesMFADeviceRequest struct {
 
 // IdentityCredentialInformation wraps a User's configured MFA credential data
 type IdentityCredentialInformation struct {
-	ToznyID            uuid.UUID               `json:"tozny_id"`
-	UserID             string                  `json:"user_id"`
-	TOTPDeviceList     []TOTPAuthenticator     `json:"totp_devices"`
-	WebAuthnDeviceList []WebAuthnAuthenticator `json:"webauthn_devices"`
+	ToznyID         uuid.UUID               `json:"tozny_id"`
+	UserID          string                  `json:"user_id"`
+	TOTPDevices     []TOTPAuthenticator     `json:"totp_devices"`
+	WebAuthnDevices []WebAuthnAuthenticator `json:"webauthn_devices"`
 }
 
 // TOTPAuthenticator wraps the information for a TOTP MFA authenticator
@@ -1354,7 +1354,7 @@ type TOTPAuthenticator struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// WebAuthnAuthenticator wraps the informarion for a WebAuthN authenticator
+// WebAuthnAuthenticator wraps the information for a WebAuthN authenticator
 type WebAuthnAuthenticator struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`
@@ -1362,8 +1362,8 @@ type WebAuthnAuthenticator struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// ListIdentitesMFADeviceResponse wraps the response of the List Identities MFA credential handler
-type ListIdentitesMFADeviceResponse struct {
+// ListIdentitiesMFADeviceResponse wraps the response of the List Identities MFA credential handler
+type ListIdentitiesMFADeviceResponse struct {
 	IdentitiesCredentials []IdentityCredentialInformation `json:"identities_credentials"`
 }
 
