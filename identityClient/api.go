@@ -1157,30 +1157,50 @@ type TotpMFASettings struct {
 	Priority       int    `json:"priority"`
 }
 
-// DetailedFederatedIdentity wraps the information about a federated Identity
-type DetailedFederatedIdentity struct {
-	SubjectID                         string              `json:"subject_id"`
-	ToznyID                           uuid.UUID           `json:"tozny_id"`
-	Username                          string              `json:"username"`
-	Email                             string              `json:"email"`
-	FirstName                         string              `json:"first_name"`
-	LastName                          string              `json:"last_name"`
-	RealmName                         string              `json:"realm_name"`
-	Active                            bool                `json:"active"`
-	FederationSource                  string              `json:"federation_source"` // Enum [tozid,ldap]
-	Roles                             RoleMapping         `json:"roles"`
-	Group                             []Group             `json:"group"`
-	GroupRoleMappings                 []RoleMapping       `json:"group_role_mapping"`
-	Attributes                        map[string][]string `json:"attributes"`
-	TozIDPasswordNotePublicSigningKey string              `json:"tozid_password_note_public_signing_key"`
-	MFASettings                       TotpMFASettings     `json:"totp_mfa_settings"`
-}
-
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
 type GetFederatedIdentitiesForSyncResponse struct {
 	FederatedIdentities []DetailedFederatedIdentity `json:"federated_identities"`
 	NextToken           int                         `json:"next_token"`
 }
+
+/////////////////////////
+// WEBAUTHN MFA UPDATE CODE
+/////////////////////////
+// MFACredential wraps the information about an Identity's MFA settings
+type MFACredential struct {
+	ID             string `json:"id"`
+	Salt           []byte `json:"salt"`
+	CredentialType string `json:"type"`
+	PrimaryUserID  string `json:"primary_user_id"`
+	CreatedDate    int    `json:"created_date"`
+	UserLabel      string `json:"user_label"`
+	SecretData     string `json:"secret_data"`
+	CredentialData string `json:"credential_data"`
+	Priority       int    `json:"priority"`
+}
+
+// DetailedFederatedIdentity wraps the information about a federated Identity
+type DetailedFederatedIdentity struct {
+	SubjectID                         string              `json:"subject_id"` // Identity's User ID
+	ToznyID                           uuid.UUID           `json:"tozny_id"`   // Identity's Tozny Client ID
+	Username                          string              `json:"username"`   // Identity's unique username
+	Email                             string              `json:"email"`
+	FirstName                         string              `json:"first_name"`
+	LastName                          string              `json:"last_name"`
+	RealmName                         string              `json:"realm_name"`
+	Active                            bool                `json:"active"`
+	FederationSource                  string              `json:"federation_source"` // TozID or LDAP federation
+	Roles                             RoleMapping         `json:"roles"`
+	Group                             []Group             `json:"group"`
+	GroupRoleMappings                 []RoleMapping       `json:"group_role_mapping"`
+	Attributes                        map[string][]string `json:"attributes"`
+	TozIDPasswordNotePublicSigningKey string              `json:"tozid_password_note_public_signing_key"`
+	MFACredentials                    []MFACredential     `json:"mfa_credentials"`
+}
+
+///
+///
+///
 
 // RegisterFederatedIdentityRequest wraps parameters needed to create and register a federated identity with a realm.
 type RegisterFederatedIdentityRequest struct {
