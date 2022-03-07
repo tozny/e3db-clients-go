@@ -83,6 +83,13 @@ type AuthenticatorConfigRepresentation struct {
 	Id     *string                 `json:"id,omitempty"`
 }
 
+// AuthenticatorProvider is a stub of an authenticator available to an execution or auth flow
+type AuthenticatorProvider struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+}
+
 type ClientTemplateRepresentation struct {
 	Attributes                *map[string]interface{}         `json:"attributes,omitempty"`
 	BearerOnly                *bool                           `json:"bearerOnly,omitempty"`
