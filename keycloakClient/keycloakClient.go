@@ -1054,6 +1054,14 @@ func (c *Client) GetUserFederationProviders(accessToken string, realmName string
 	return resp, err
 }
 
+// ListAuthenticatorProviders lists the available auth providers that can be used in auth flow executions
+func (c *Client) ListAuthenticatorProviders(accessToken, realmName string) ([]AuthenticatorProvider, error) {
+	resp := []AuthenticatorProvider{}
+	url := fmt.Sprintf("%s/%s/%s/authenticator-providers", realmRootPath, realmName, authenticationResourceName)
+	err := c.get(accessToken, &resp, url)
+	return resp, err
+}
+
 // CreateAuthenticationExecutionForFlow add a new authentication execution to a flow.
 // 'flowAlias' is the alias of the parent flow.
 func (c *Client) CreateAuthenticationExecutionForFlow(accessToken string, realmName, flowAlias, provider string) (string, error) {
