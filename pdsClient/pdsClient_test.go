@@ -719,7 +719,7 @@ func TestSharedEncryptedRecordsCanBeDecryptedBySharee(t *testing.T) {
 	}
 }
 
-func TestSharedReadersFoundAfterSharingRecords(t *testing.T) {
+func TestInternalSharedReadersFoundAfterSharingRecords(t *testing.T) {
 	// Create a client to share records with
 	sharee, shareeID, _, err := test.CreatePDSClient(testContext, toznyCyclopsHost, toznyCyclopsHost, validPDSRegistrationToken, fmt.Sprintf("test-emails-group+%d@tozny.com", uuid.New()), defaultPDSUserRecordType)
 	if err != nil {
@@ -797,7 +797,7 @@ func TestDeleteRecord(t *testing.T) {
 		t.Fatalf("Error deleting written record %s\n", err)
 	}
 }
-func TestFindModifiedRecords(t *testing.T) {
+func TestInternalFindModifiedRecords(t *testing.T) {
 	// Create record to delete
 	startTime := time.Now()
 	ctx := context.TODO()
