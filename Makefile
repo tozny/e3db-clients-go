@@ -1,3 +1,8 @@
+# Make commands for testing should have the following pattern:
+# `test-{service}` should run tests that use only external-facing client functions
+# `test-internal-{service}` should run all tests, including ones calling internal endpoints
+# Tests that make use of internal endpoints must be prefixed "TestInternal".
+
 # Import environment file
 include .env
 # Source all variables in environment file
@@ -10,6 +15,7 @@ $(error TOZNY_PLATFORM_DIR is not set)
 endif
 
 export GO111MODULE=on
+export NONINTERNAL_PATTERN='^Test[^(Internal)]'
 
 all: clean build up test down
 
@@ -56,8 +62,8 @@ test-identity:
 	go test -timeout 20m -v identityClient/identityClient_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run Internal Identity Integration Tests
-test-intenal-identity:
-	go test  -v  identityClient/identityClient_internal_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
+test-internal-identity:
+	go test -v identityClient/identityClient_test.go identityClient/identityClient_internal_test.go identityClient/test_helpers_test.go identityClient/identityClient.go identityClient/api.go
 
 # Run Federation Identity Integration Tests
 test-federation-identity:
@@ -67,14 +73,21 @@ test-federation-identity:
 test-storage:
 	go test -count=1 -v storageClient/storageClient_test.go
 
+# Run all Account-V1 Integration tests
+test-account:
+	go test -count=1 -v accountClient/accountClient_test.go -run ${NONINTERNAL_PATTERN}
+test-internal-account:
+	go test -count=1 -v accountClient/accountClient_test.go
+
 # Run all Account-V2 Integration tests
 test-account-v2:
 	go test -count=1 -v accountClient/accountClientV2_test.go
 
 # Run all Storage-V1 (PDS) Integration tests
 test-pds:
+	go test -count=1 -v pdsClient/pdsClient_test.go -run ${NONINTERNAL_PATTERN}
+test-internal-pds:
 	go test -count=1 -v pdsClient/pdsClient_test.go
-
 
 # Run all KeycloakClient Integration tests
 test-keycloak:
