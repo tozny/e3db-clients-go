@@ -3830,3 +3830,187 @@ func TestShareFileWithGroupReturnsSuccess(t *testing.T) {
 		t.Errorf("Didnt return the version (%+v) (%+v)", responseVal, listReturn)
 	}
 }
+
+func TestRemoveAllButOneManagerReturnsSuccess(t *testing.T) {
+	// Create clients for this test: queenClient (manager), groupMember1 (manager), groupMember2 (non-manager)
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, internalE3dbAccountHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	reg, ClientConfig2, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, internalE3dbAccountHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	ClientConfig2.Host = cyclopsServiceHost
+	groupMember1 := storageClient.New(ClientConfig)
+	groupMember2 := storageClient.New(ClientConfig2)
+	queenClient := storageClient.New(queenClientInfo)
+	// Generate a key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// Encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group
+	newGroup := storageClient.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	// Create a request to create a new membership key for client1
+	membershipKeyRequest := storageClient.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember1.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Create a request to create a new membership key for client2
+	membershipKeyRequest2 := storageClient.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMember2.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse2, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest2)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Add clients  to group
+	// groupMember1 has manage capabilities
+	groupMember1Capabilities := []string{storageClient.ShareContentGroupCapability, storageClient.ReadContentGroupCapability, storageClient.ManageMembershipGroupCapability}
+	// groupMember2 does not have manage capabilities
+	groupMember2Capabilities := []string{storageClient.ShareContentGroupCapability, storageClient.ReadContentGroupCapability}
+	memberRequest := []storageClient.GroupMember{}
+	// Add groupMember1 and groupMember2 clients to request
+	memberRequest = append(memberRequest,
+		storageClient.GroupMember{
+			ClientID:        uuid.MustParse(groupMember1.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMember1Capabilities})
+	memberRequest = append(memberRequest,
+		storageClient.GroupMember{
+			ClientID:        uuid.MustParse(groupMember2.ClientID),
+			MembershipKey:   membershipKeyResponse2,
+			CapabilityNames: groupMember2Capabilities})
+
+	addMemberRequest := storageClient.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	// List groups for queenClient before deleting queenClient
+	listRequest := storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(queenClient.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListBeforeDeleteQueen, err := queenClient.ListGroups(testCtx, listRequest)
+	// List groups for groupMember1 before deleting queenClient
+	listRequest = storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(groupMember1.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListBeforeDeleteGroupMember1, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListBeforeDeleteGroupMember1, err)
+	}
+	// List groups for groupMember2 before deleting queenClient
+	listRequest = storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(groupMember2.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListBeforeDeleteGroupMember2, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListBeforeDeleteGroupMember2, err)
+	}
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListBeforeDeleteQueen, err)
+	}
+	// Remove Queen
+	memberRequest = []storageClient.GroupMember{}
+	//Adding Queen to request
+	memberRequest = append(memberRequest, storageClient.GroupMember{ClientID: uuid.MustParse(queenClient.ClientID)})
+	deleteMemberRequest := storageClient.DeleteGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	err = queenClient.DeleteGroupMembers(testCtx, deleteMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to delete Group Member for Group: Request:  %+v Err: %+v", deleteMemberRequest, err)
+	}
+	// Check size of each members' groups is same after deletion attempt
+	// List groups for queenClient after deleting queenClient
+	listRequest = storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(queenClient.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListAfterDeleteQueen, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListAfterDeleteQueen, err)
+	}
+	// List groups for groupMember1 after deleting queenClient
+	listRequest = storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(groupMember1.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListAfterDeleteGroupMember1, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListAfterDeleteGroupMember1, err)
+	}
+	// List groups for groupMember2 after deleting queenClient
+	listRequest = storageClient.ListGroupsRequest{
+		ClientID:  uuid.MustParse(groupMember2.ClientID),
+		NextToken: 0,
+		Max:       10,
+	}
+	responseListAfterDeleteGroupMember2, err := queenClient.ListGroups(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list Group: Response( %+v) \n error %+v", responseListAfterDeleteGroupMember2, err)
+	}
+	// Check that only the queen was deleted
+	if len(responseListBeforeDeleteQueen.Groups)-1 != len(responseListAfterDeleteQueen.Groups) {
+		t.Fatalf("Failed to delete Queen from Group: Err: %+v Request: %+v", err, deleteMemberRequest)
+	}
+	if len(responseListBeforeDeleteGroupMember1.Groups) != len(responseListAfterDeleteGroupMember1.Groups) {
+		t.Fatalf("Failed to keep Group Member 1 in Group: Err: %+v Request: %+v", err, deleteMemberRequest)
+	}
+	if len(responseListBeforeDeleteGroupMember2.Groups) != len(responseListAfterDeleteGroupMember2.Groups) {
+		t.Fatalf("Failed to keep Group Member 2 in group: Err: %+v Request: %+v", err, deleteMemberRequest)
+	}
+}
