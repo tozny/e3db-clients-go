@@ -36,6 +36,7 @@ var (
 	decryptedFileName    = "decrypted"
 	downloadedFileName   = "downloaded"
 	identityLoginRetries = 10
+	accountServiceHost   = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
 )
 
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
@@ -3845,11 +3846,11 @@ func TestRemoveAllButOneManagerReturnsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
 	}
-	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, internalE3dbAccountHost, registrationToken, "name")
+	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, accountServiceHost, registrationToken, "name")
 	if err != nil {
 		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
 	}
-	reg, ClientConfig2, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, internalE3dbAccountHost, registrationToken, "name")
+	reg, ClientConfig2, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, accountServiceHost, registrationToken, "name")
 	if err != nil {
 		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
 	}
