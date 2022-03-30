@@ -37,10 +37,11 @@ type InternalNoteInfoResponse struct {
 
 // CreateGroupRequest wraps parameters needed to request creation of a group
 type CreateGroupRequest struct {
-	Name              string `json:"group_name"`
-	PublicKey         string `json:"public_key"`
-	Description       string `json:"description"`
-	EncryptedGroupKey string `json:"encrypted_group_key"`
+	Name              string   `json:"group_name"`
+	PublicKey         string   `json:"public_key"`
+	Description       string   `json:"description"`
+	EncryptedGroupKey string   `json:"encrypted_group_key"`
+	Capability        []string `json:"capability"`
 }
 
 // Group wraps values related to managing client membership and capabilities for resources such as records.
