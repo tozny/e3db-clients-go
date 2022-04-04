@@ -4015,3 +4015,124 @@ func TestRemoveAllButOneManagerReturnsSuccess(t *testing.T) {
 		t.Fatalf("Failed to keep Group Member 2 in group: Err: %+v Request: %+v", err, deleteMemberRequest)
 	}
 }
+
+func TestCreateGroupWithClientCapabilitiesSucceeds(t *testing.T) {
+	// Create client for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, accountServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	queenClient := storageClient.New(queenClientInfo)
+	// Generate a key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// Encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group
+	// Create capability array for queenClient, the client creating the group.
+	queenCapabilities := []string{storageClient.ShareContentGroupCapability, storageClient.ReadContentGroupCapability}
+	newGroup := storageClient.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+		Capabilities:      queenCapabilities,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	listMemberRequest := storageClient.ListGroupMembersRequest{GroupID: response.GroupID}
+	listMemberResponse, err := queenClient.ListGroupMembers(testCtx, listMemberRequest)
+	// Create a map of all the capabilities added
+	expectedCapabilities := map[string]bool{}
+	for _, capability := range queenCapabilities {
+		expectedCapabilities[capability] = true
+	}
+	// Check if the expected capabilities are the same as the actual capabilities added
+	for _, capability := range (*listMemberResponse)[0].CapabilityNames {
+		if expectedCapabilities[capability] {
+			delete(expectedCapabilities, capability)
+		}
+	}
+	if len(expectedCapabilities) != 0 {
+		queenCapabilities = append(queenCapabilities, storageClient.ManageMembershipGroupCapability)
+		t.Fatalf("Failed to create Queen Client with expected capabilities: %+v. Instead created Queen Client with actual capabilities: %+v", queenCapabilities, (*listMemberResponse)[0].CapabilityNames)
+	}
+}
+
+func TestCreateGroupWithoutClientCapabilitiesSucceeds(t *testing.T) {
+	// Create client for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, accountServiceHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	queenClient := storageClient.New(queenClientInfo)
+	// Generate a key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// Encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group
+	newGroup := storageClient.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	listMemberRequest := storageClient.ListGroupMembersRequest{GroupID: response.GroupID}
+	listMemberResponse, err := queenClient.ListGroupMembers(testCtx, listMemberRequest)
+	// Check that only manage membership capability was added for queenClient
+	if len((*listMemberResponse)[0].CapabilityNames) != 1 {
+		t.Fatalf("Queen should only have management capability but instead has %+v", (*listMemberResponse)[0].CapabilityNames)
+	}
+	if (*listMemberResponse)[0].CapabilityNames[0] != storageClient.ManageMembershipGroupCapability {
+		t.Fatalf("Manage membership was not added to queenClient.")
+	}
+}
