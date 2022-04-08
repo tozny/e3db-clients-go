@@ -652,3 +652,22 @@ func (c *StorageClient) InternalGetNoteInfo(ctx context.Context, noteName string
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+//InternalClientGroupMembershipFetch is an internal endpoint used to fetch a clients membership within a group for given capabilities
+func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, params InternalFetchClientMembership) (*InternalFetchClientMembershipResponse, error) {
+	var result *InternalFetchClientMembershipResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	// Set Query Parameters
+	urlParams := req.URL.Query()
+	urlParams.Set("client_id", params.ClientID.String())
+	for _, capability := range params.Capabilities {
+		urlParams.Add("capabilities", capability)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}

@@ -72,6 +72,8 @@ test-federation-identity:
 # Run all Storage Integration tests
 test-storage:
 	go test -count=1 -v storageClient/storageClient_test.go
+test-storage-internal:
+	go test -count=1 -v storageClient/storageClient_internal_test.go
 
 # Run all Account-V1 Integration tests
 test-account:

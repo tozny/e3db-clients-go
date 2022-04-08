@@ -457,3 +457,20 @@ type OutgoingSharePolicy struct {
 	ReaderID   string `json:"reader_id"`
 	RecordType string `json:"record_type"`
 }
+
+//InternalFetchGroupInfo wraps the Capability for the Client with the Groups they are authorized for
+type InternalFetchGroupInfo struct {
+	GroupIDs   []uuid.UUID `json:"group_ids"`
+	Capability string      `json:"capability"`
+}
+
+// InternalFetchClientMembershipResponse wraps the response object for the Client's group memberships
+type InternalFetchClientMembershipResponse struct {
+	Groups []InternalFetchGroupInfo `json:"groups"`
+}
+
+//InternalFetchClientMembership wraps all values needed for fetching a client's group membership for a given capability
+type InternalFetchClientMembership struct {
+	ClientID     uuid.UUID `json:"client_id"`
+	Capabilities []string  `json:"capabilities"`
+}
