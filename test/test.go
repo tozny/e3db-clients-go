@@ -356,3 +356,9 @@ func CreateGroupMembershipKey(ctx context.Context, queenClient storageClient.Sto
 	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(ctx, membershipKeyRequest)
 	return membershipKeyResponse, err
 }
+
+func VerifyFieldUnmarshalledCorrectly(t *testing.T, fieldName string, expected interface{}, actual interface{}) {
+	if expected != actual {
+		t.Fatalf("%s has unmarshalled incorectly, expected: %s, actual: %s", fieldName, expected, actual)
+	}
+}

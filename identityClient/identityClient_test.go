@@ -1,9 +1,11 @@
 package identityClient
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -3475,4 +3477,53 @@ func TestListCreatedAccessRequestPolicy(t *testing.T) {
 
 	}
 
+}
+
+func TestRealmSettingsUpdateRequesMarshalUnmarshalCorrectly(t *testing.T) {
+	secretsEnabled := true
+	mfaAvailable := []string{"one", "two"}
+	emailLookupsEnabled := true
+	tozIDFederationEnabled := true
+	mpcEnabled := true
+	forgotPasswordCustomLink := "http://custom-link.com"
+	forgotPasswordCustomText := "Call helpdesk"
+
+	realmUpdateSettingsRequest := RealmSettingsUpdateRequest{
+		SecretsEnabled:           &secretsEnabled,
+		MFAAvailable:             &mfaAvailable,
+		EmailLookupsEnabled:      &emailLookupsEnabled,
+		TozIDFederationEnabled:   &tozIDFederationEnabled,
+		MPCEnabled:               &mpcEnabled,
+		ForgotPasswordCustomLink: &forgotPasswordCustomLink,
+		ForgotPasswordCustomText: &forgotPasswordCustomText,
+	}
+
+	marshalled, err := json.Marshal(realmUpdateSettingsRequest)
+	if err != nil {
+		t.Fatalf("can't marshal RealmSettingsUpdateRequest %s", err.Error())
+
+	}
+
+	var unmarshalledRealmUpdateSettingsRequest RealmSettingsUpdateRequest
+	err = json.Unmarshal(marshalled, &unmarshalledRealmUpdateSettingsRequest)
+	if err != nil {
+		t.Fatalf("can't unmarshal RealmSettingsUpdateRequest %s", err.Error())
+
+	}
+	test.VerifyFieldUnmarshalledCorrectly(t, "SecretsEnabled", *realmUpdateSettingsRequest.SecretsEnabled,
+		*unmarshalledRealmUpdateSettingsRequest.SecretsEnabled)
+	test.VerifyFieldUnmarshalledCorrectly(t, "EmailLookupsEnabled", *realmUpdateSettingsRequest.EmailLookupsEnabled,
+		*unmarshalledRealmUpdateSettingsRequest.EmailLookupsEnabled)
+	test.VerifyFieldUnmarshalledCorrectly(t, "TozIDFederationEnabled", *realmUpdateSettingsRequest.TozIDFederationEnabled,
+		*unmarshalledRealmUpdateSettingsRequest.TozIDFederationEnabled)
+	test.VerifyFieldUnmarshalledCorrectly(t, "MPCEnabled", *realmUpdateSettingsRequest.MPCEnabled,
+		*unmarshalledRealmUpdateSettingsRequest.MPCEnabled)
+	test.VerifyFieldUnmarshalledCorrectly(t, "ForgotPasswordCustomLink", *realmUpdateSettingsRequest.ForgotPasswordCustomLink,
+		*unmarshalledRealmUpdateSettingsRequest.ForgotPasswordCustomLink)
+	test.VerifyFieldUnmarshalledCorrectly(t, "ForgotPasswordCustomText", *realmUpdateSettingsRequest.ForgotPasswordCustomText,
+		*unmarshalledRealmUpdateSettingsRequest.ForgotPasswordCustomText)
+	if !reflect.DeepEqual(*realmUpdateSettingsRequest.MFAAvailable, *unmarshalledRealmUpdateSettingsRequest.MFAAvailable) {
+		t.Fatalf("MFAAvailable has unmarshalled incorectly, expected: %s, actual: %s", *realmUpdateSettingsRequest.MFAAvailable,
+			*unmarshalledRealmUpdateSettingsRequest.MFAAvailable)
+	}
 }

@@ -904,11 +904,13 @@ type SearchIdentitiesInformation struct {
 
 // RealmSettingsUpdateRequest wraps the setting available for realm admins to update
 type RealmSettingsUpdateRequest struct {
-	SecretsEnabled         *bool     `json:"secrets_enabled,omitempty"`
-	MFAAvailable           *[]string `json:"mfa_available,omitempty"`
-	EmailLookupsEnabled    *bool     `json:"email_lookups_enabled,omitempty"`
-	TozIDFederationEnabled *bool     `json:"tozid_federation_enabled,omitempty"`
-	MPCEnabled             *bool     `json:"mpc_enabled,omitempty"`
+	SecretsEnabled           *bool     `json:"secrets_enabled,omitempty"`
+	MFAAvailable             *[]string `json:"mfa_available,omitempty"`
+	EmailLookupsEnabled      *bool     `json:"email_lookups_enabled,omitempty"`
+	TozIDFederationEnabled   *bool     `json:"tozid_federation_enabled,omitempty"`
+	MPCEnabled               *bool     `json:"mpc_enabled,omitempty"`
+	ForgotPasswordCustomLink *string   `json:"forgot_password_custom_link,omitempty"`
+	ForgotPasswordCustomText *string   `json:"forgot_password_custom_text,omitempty"`
 }
 
 // CreateAccessRequestRequest wraps parameters for creating a new open Access Request
