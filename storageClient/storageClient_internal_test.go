@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
+	"github.com/tozny/e3db-clients-go/pdsClient"
 	"github.com/tozny/e3db-clients-go/storageClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
 	"github.com/tozny/e3db-clients-go/test"
@@ -472,6 +473,156 @@ func TestInternalMembershipFetchClientWithCapabilitiesMemberNotApartofReturnsSuc
 	}
 }
 
+func TestInternalGetGroupsAllowedReadsReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, createAccountResponse, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+	accountToken := createAccountResponse.AccountServiceToken
+	queenAccountClient := accountClient.New(queenClientInfo)
+	registrationToken, err := test.CreateRegistrationToken(&queenAccountClient, accountToken)
+	if err != nil {
+		t.Fatalf("error %s creating account registration token using %+v %+v", err, queenAccountClient, accountToken)
+	}
+	reg, ClientConfig, err := test.RegisterClientWithAccountService(testCtx, ClientServiceHost, internalE3dbAccountHost, registrationToken, "name")
+	if err != nil {
+		t.Fatalf("Error registering Client %+v %+v %+v ", reg, err, ClientConfig)
+	}
+	ClientConfig.Host = cyclopsServiceHost
+	groupMemberToAdd := storageClient.New(ClientConfig)
+	queenClient := storageClient.New(queenClientInfo)
+	// Generate a Key pair for the group
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	// encrypt the created private key for groups
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	// Create a new group to give membership key for the client
+	newGroup := storageClient.CreateGroupRequest{
+		Name:              "TestGroup1" + uuid.New().String(),
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	//Create a request to create a new membership key
+	membershipKeyRequest := storageClient.CreateMembershipKeyRequest{
+		GroupAdminID:      queenClient.ClientID,
+		NewMemberID:       groupMemberToAdd.ClientID,
+		EncryptedGroupKey: response.EncryptedGroupKey,
+		ShareePublicKey:   queenClient.EncryptionKeys.Public.Material,
+	}
+	membershipKeyResponse, err := queenClient.CreateGroupMembershipKey(testCtx, membershipKeyRequest)
+	if err != nil {
+		t.Fatalf("Failed to create membership key \n response %+v \n error %+v", membershipKeyResponse, err)
+	}
+	// Add client to group
+	groupMemberCapabilities := []string{storageClient.ShareContentGroupCapability, storageClient.ReadContentGroupCapability}
+	memberRequest := []storageClient.GroupMember{}
+	memberRequest = append(memberRequest,
+		storageClient.GroupMember{
+			ClientID:        uuid.MustParse(groupMemberToAdd.ClientID),
+			MembershipKey:   membershipKeyResponse,
+			CapabilityNames: groupMemberCapabilities})
+
+	addMemberRequest := storageClient.AddGroupMembersRequest{
+		GroupID:      response.GroupID,
+		GroupMembers: memberRequest,
+	}
+	_, err = queenClient.AddGroupMembers(testCtx, addMemberRequest)
+	if err != nil {
+		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
+	}
+	clientID := queenClientInfo.ClientID
+	// Create an access key to allow for decrypting
+	// records of this type
+	recordType := "test"
+	_, pdsStorageClient, clientID := makeWriterForRecordType(testCtx, []string{recordType}, t)
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID:   clientID,
+		UserID:     clientID,
+		ReaderID:   clientID,
+		RecordType: recordType,
+	}
+	resp, err := pdsStorageClient.GetOrCreateAccessKey(testCtx, keyReq)
+	if err != nil {
+		t.Fatalf("Failed to create shared AK client %+v, req: %+v resp: %+v, err: %s", pdsStorageClient, keyReq, resp, err)
+	}
+	// Encrypt Access Key
+	wrappedAccessKey, err := EncryptAccessKeyForGroup(groupMemberToAdd, resp)
+	// Create Group AccessKey
+	accessKeyRequest := storageClient.GroupAccessKeyRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: wrappedAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, encryptedGroupAccessKey, err := groupMemberToAdd.CreateGroupAccessKey(testCtx, accessKeyRequest)
+	if err != nil {
+		t.Errorf("Error trying get group access key %+v %s", clientID, err)
+	}
+	// Share record with group
+	recordShareRequest := storageClient.ShareGroupRecordRequest{
+		GroupID:            response.GroupID,
+		RecordType:         recordType,
+		EncryptedAccessKey: encryptedGroupAccessKey,
+		PublicKey:          response.PublicKey,
+	}
+	_, err = groupMemberToAdd.ShareRecordWithGroup(testCtx, recordShareRequest)
+	if err != nil {
+		t.Errorf("Error trying to share the record with group %+v ", err)
+	}
+	// Fetch with Internal Client the Groups Allowed
+	param := storageClient.InternalAllowedGroupsForPolicyRequest{
+		WriterID:    groupMemberToAdd.ClientID,
+		ContentType: recordType,
+	}
+	fetchResponse, err := InternalBootstrapClient.InternalGroupAllowedReads(testCtx, param)
+	if err != nil {
+		t.Fatalf("Failed to fetch Group allowed reads groups: Request:  %+v Err: %+v", param, err)
+	}
+	if fetchResponse.GroupIDs[0] != response.GroupID {
+		t.Fatalf("Expected Group %+v Shared with Record got %+v", response.GroupID, fetchResponse)
+	}
+}
+
+func TestInternalGetGroupsAllowedReadsWithNoResultsReturnsSuccess(t *testing.T) {
+	// Create Clients for this test
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost})
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = cyclopsServiceHost
+
+	clientID := queenClientInfo.ClientID
+	// Fetch with Internal Client the Groups Allowed
+	param := storageClient.InternalAllowedGroupsForPolicyRequest{
+		WriterID:    clientID,
+		ContentType: "non-existant-record-type",
+	}
+	fetchResponse, err := InternalBootstrapClient.InternalGroupAllowedReads(testCtx, param)
+	if err != nil {
+		t.Fatalf("Failed to fetch Group allowed reads groups: Request:  %+v Err: %+v", param, err)
+	}
+	if len(fetchResponse.GroupIDs) > 0 {
+		t.Fatalf("Expected no Group ids, recieved %+v", fetchResponse)
+	}
+}
+
 func internalGenerateNote(recipientSigningKey string, clientConfig e3dbClients.ClientConfig) (*storageClientV2.Note, error) {
 	rawData := map[string]string{
 		"key1": "rawnote",
@@ -497,4 +648,35 @@ func internalGenerateNote(recipientSigningKey string, clientConfig e3dbClients.C
 		Signature:           "signed",
 		MaxViews:            5,
 	}, err
+}
+func makeWriterForRecordType(ctx context.Context, recordTypes []string, t *testing.T) (storageClient.StorageClient, pdsClient.E3dbPDSClient, string) {
+	sc, pdsStorageClient, clientID := getClientIDAndStorageClient(t)
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: clientID.String(),
+		UserID:   clientID.String(),
+		ReaderID: clientID.String(),
+	}
+	for _, recordType := range recordTypes {
+		keyReq.RecordType = recordType
+		_, err := pdsStorageClient.GetOrCreateAccessKey(ctx, keyReq)
+		if err != nil {
+			t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+		}
+	}
+	return sc, pdsStorageClient, clientID.String()
+}
+func getClientIDAndStorageClient(t *testing.T) (storageClient.StorageClient, pdsClient.E3dbPDSClient, uuid.UUID) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	pdsStorageClient := pdsClient.New(queenClientConfig)
+	sc := storageClient.New(queenClientConfig)
+	queenClientID, err := uuid.Parse(queenClientConfig.ClientID)
+	if err != nil {
+		t.Fatalf("Returned queen client ID could not be parsed to a UUID")
+	}
+	return sc, pdsStorageClient, queenClientID
 }

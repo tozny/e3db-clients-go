@@ -474,3 +474,14 @@ type InternalFetchClientMembership struct {
 	ClientID     uuid.UUID `json:"client_id"`
 	Capabilities []string  `json:"capabilities"`
 }
+
+// InternalAllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group
+type InternalAllowedGroupsForPolicyRequest struct {
+	WriterID    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
+// InternalAllowedGroupsForPolicyResponse wraps the response object for the group ids in allowed reads
+type InternalAllowedGroupsForPolicyResponse struct {
+	GroupIDs []uuid.UUID `json:"group_ids"`
+}

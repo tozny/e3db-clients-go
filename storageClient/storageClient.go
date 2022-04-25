@@ -671,3 +671,15 @@ func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, 
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// InternalGroupAllowedReads is an internal endpoint used to fetch the allowed group reads for a writer id and content type
+func (c *StorageClient) InternalGroupAllowedReads(ctx context.Context, params InternalAllowedGroupsForPolicyRequest) (*InternalAllowedGroupsForPolicyResponse, error) {
+	var result *InternalAllowedGroupsForPolicyResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/allowed_readers"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
