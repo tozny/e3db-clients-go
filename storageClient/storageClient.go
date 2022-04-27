@@ -683,3 +683,15 @@ func (c *StorageClient) InternalGroupAllowedReads(ctx context.Context, params In
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// InternalGroupModifiedAllowedReadsBatch fetches modified allowed reads for group records
+func (c *StorageClient) InternalGroupModifiedAllowedReadsBatch(ctx context.Context, params InternalSearchModifiedGroupAllowedReadsRequest) (*InternalSearchModifiedGroupAllowedReadsResponse, error) {
+	var result *InternalSearchModifiedGroupAllowedReadsResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/modified_allowed_reads"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}

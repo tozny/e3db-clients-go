@@ -485,3 +485,29 @@ type InternalAllowedGroupsForPolicyRequest struct {
 type InternalAllowedGroupsForPolicyResponse struct {
 	GroupIDs []uuid.UUID `json:"group_ids"`
 }
+
+// InternalSearchModifiedGroupAllowedReadsResponse wraps the response for the modified allowed reads for Group records
+type InternalSearchModifiedGroupAllowedReadsResponse struct {
+	NextToken         int64              `json:"next_token"`
+	GroupAllowedReads []GroupAllowedRead `json:"group_allowed_reads"`
+}
+
+// GroupAllowedRead wraps the Sharing tuples for Groups
+type GroupAllowedRead struct {
+	UserID      string `json:"user_id"`
+	WriterID    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
+// InternalModifiedRange wraps the range of time to search
+type InternalModifiedRange struct {
+	After  time.Time `json:"modified_after"`
+	Before time.Time `json:"modified_before"`
+}
+
+// InternalSearchModifiedGroupAllowedReadsRequest wraps the request for the modified allowed reads for Group records
+type InternalSearchModifiedGroupAllowedReadsRequest struct {
+	NextToken int64                  `json:"next_token,omitempty"`
+	Limit     int                    `json:"limit,omitempty"`
+	Range     *InternalModifiedRange `json:"range,omitempty"`
+}
