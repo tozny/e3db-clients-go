@@ -695,3 +695,15 @@ func (c *StorageClient) InternalGroupModifiedAllowedReadsBatch(ctx context.Conte
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+//TODO comment
+func (c *StorageClient) GetGroupRecordsByRecordID(ctx context.Context, params GetGroupRecordsRequest) (*GetGroupRecordsResponse, error) {
+	var result *GetGroupRecordsResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/search"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}

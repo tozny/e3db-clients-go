@@ -108,6 +108,17 @@ type ListGroupsResponse struct {
 	NextToken int64   `json:"next_token"`
 }
 
+// TODO comment
+type GetGroupRecordsRequest struct {
+	RecordIDs []string  `json:"record_ids"`
+	ReaderID  uuid.UUID `json:"reader_id"`
+}
+
+// TODO comment
+type GetGroupRecordsResponse struct {
+	ResultList []pdsClient.ListedRecord `json:"results"`
+}
+
 // AddingCapabilityRequest wraps values used to add a capability for Groups.
 type AddingCapabilityRequest struct {
 	ClientID       uuid.UUID `json:"client_id"`
