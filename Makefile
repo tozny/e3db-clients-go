@@ -94,3 +94,7 @@ test-internal-pds:
 # Run all KeycloakClient Integration tests
 test-keycloak:
 	go test -count=1 -v KeycloakClient/keycloakClient_test.go KeycloakClient/KeycloakClient.go KeycloakClient/api.go
+
+# Run all SecureCompute integration test 
+test-secure:
+	go test -count=1 -v secureComputeClient/secureComputeClient_test.go secureComputeClient/secureComputeClient.go
