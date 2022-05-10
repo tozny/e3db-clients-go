@@ -43,16 +43,16 @@ type FetchSubscriptionsRequest struct {
 
 // ComputationRecordRequirement wraps all required content type
 type ComputationRecordRequirement struct {
-	ContentType string `json:"content_type,omitempty"`
-	SharedWith  string `json:"shared_with,omitempty"`
-	Description string `json:"description,omitempty"`
+	ContentType string    `json:"content_type,omitempty"`
+	SharedWith  uuid.UUID `json:"shared_with,omitempty"`
+	Description string    `json:"description,omitempty"`
 }
 
 // ComputationDataRequirement wraps all required user data
 type ComputationDataRequirement struct {
-	DataTag     string `json:"data_tag,omitempty"`
-	SharedWith  string `json:"shared_with,omitempty"`
-	Description string `json:"description,omitempty"`
+	DataTag     string    `json:"data_tag,omitempty"`
+	SharedWith  uuid.UUID `json:"shared_with,omitempty"`
+	Description string    `json:"description,omitempty"`
 }
 
 // Computation wraps all data for a computation
