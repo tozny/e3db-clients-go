@@ -13,7 +13,8 @@ COPY ./go.sum ./go.mod ./
 
 RUN go mod download
 
+RUN go get -u github.com/vakenbolt/go-test-report/
+
 COPY . ./
 
 ENTRYPOINT ["test.sh"]
-
