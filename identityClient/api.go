@@ -1374,3 +1374,13 @@ type ListIdentitiesMFADeviceResponse struct {
 type DeleteMFAInformationRequest struct {
 	ID string `json:"mfa_id"` // The ID of the MFA credential to be deleted.
 }
+
+// CountRealmIdentitiesResponse wraps the count of Identities in a Realm
+type CountRealmIdentitiesResponse struct {
+	IdentityCount int `json:"identity_count"`
+}
+
+// CountRealmIdentitiesRequest wraps the request to get the number of Identities in a Realm
+type CountRealmIdentitiesRequest struct {
+	RealmName string
+}
