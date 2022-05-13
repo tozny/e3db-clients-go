@@ -693,3 +693,8 @@ type RegisterWebAuthnDeviceRequest struct {
 	AuthenticatorLabel    string // user-friendly name for the device
 	TabID                 string // TabID returned by the registration process
 }
+
+// CountRealmIdentitiesResponse wraps the count of Identities in a Realm
+type CountRealmIdentitiesResponse struct {
+	IdentityCount int `json:"identity_count"`
+}
