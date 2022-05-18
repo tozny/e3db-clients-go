@@ -1374,3 +1374,13 @@ type ListIdentitiesMFADeviceResponse struct {
 type DeleteMFAInformationRequest struct {
 	ID string `json:"mfa_id"` // The ID of the MFA credential to be deleted.
 }
+
+// PublicRealm represents the public information about a realm resource
+type PublicRealm struct {
+	Name                     string    `json:"name"`                                  // User defined realm identifier.
+	BrokerIdentityToznyID    uuid.UUID `json:"broker_id,omitempty"`                   // The Tozny Storage ID to use for enabling brokered interactions between the realm and it's Identities. Will be empty if no realm broker Identity has been registered.
+	Domain                   string    `json:"domain"`                                // Case insensitive (Lower cased) version of realm name
+	ForgotPasswordCustomLink string    `json:"forgot_password_custom_link,omitempty"` // Custom forgot password link for the realm
+	ForgotPasswordCustomText string    `json:"forgot_password_custom_text,omitempty"` // Custom forgot password text for the realm. Used for the offline password recovery
+
+}

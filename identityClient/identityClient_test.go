@@ -13,6 +13,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
+	testUtils "github.com/tozny/utils-go/test"
 )
 
 func TestHealthCheckPassesIfServiceIsRunning(t *testing.T) {
@@ -3526,4 +3527,68 @@ func TestRealmSettingsUpdateRequesMarshalUnmarshalCorrectly(t *testing.T) {
 		t.Fatalf("MFAAvailable has unmarshalled incorectly, expected: %s, actual: %s", *realmUpdateSettingsRequest.MFAAvailable,
 			*unmarshalledRealmUpdateSettingsRequest.MFAAvailable)
 	}
+}
+func TestPublicInfoContainsForgotPasswordCustomizations(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = toznyCyclopsHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := "TestForgotPassword"
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	if realm.Name != realmName {
+		t.Errorf("expected realm name to be %+v , got %+v", realmName, realm)
+	}
+
+	url := fmt.Sprintf("%s/v1/identity/info/realm/%s", identityServiceClient.Host, realm.Name)
+
+	beforeSettingsUpdateResponse, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("error %v fetching public realm info for %q", err, realmName)
+	}
+	var withDefaultLink PublicRealm
+	testUtils.UnmarshalJSONRequest(t, beforeSettingsUpdateResponse, &withDefaultLink)
+	if err != nil {
+		t.Fatalf("error %q fetching public realm info for %q using %+v\n", err, realmName, identityServiceClient)
+	}
+
+	if withDefaultLink.ForgotPasswordCustomLink != "/forgot" {
+		t.Fatalf("default forgot password route is wrong: %s", withDefaultLink.ForgotPasswordCustomLink)
+
+	}
+
+	customForgotPassLink := "http://my_link"
+	customForgotPassText := "my custom text"
+
+	registerParams := RealmSettingsUpdateRequest{
+		ForgotPasswordCustomLink: &customForgotPassLink,
+		ForgotPasswordCustomText: &customForgotPassText,
+	}
+	err = identityServiceClient.RealmSettingsUpdate(testContext, realmName, registerParams)
+	if err != nil {
+		t.Fatalf("error %s updateting realm settings %+v %+v", err, identityServiceClient, registerParams)
+	}
+
+	afterSettingsUpdateResponse, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("error %v fetching public realm info for %q", err, realmName)
+	}
+	var info PublicRealm
+	testUtils.UnmarshalJSONRequest(t, afterSettingsUpdateResponse, &info)
+	if err != nil {
+		t.Fatalf("error %q fetching public realm info for %q using %+v\n", err, realmName, identityServiceClient)
+	}
+
+	test.VerifyFieldUnmarshalledCorrectly(t, "ForgotPasswordCustomLink", customForgotPassLink, info.ForgotPasswordCustomLink)
+	test.VerifyFieldUnmarshalledCorrectly(t, "ForgotPasswordCustomText", customForgotPassText, info.ForgotPasswordCustomText)
+
 }
