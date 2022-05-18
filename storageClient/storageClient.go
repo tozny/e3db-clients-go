@@ -696,7 +696,7 @@ func (c *StorageClient) InternalGroupModifiedAllowedReadsBatch(ctx context.Conte
 	return result, err
 }
 
-//TODO comment
+// GetGroupRecordsByRecordID Fetches records shared with groups based on search query
 func (c *StorageClient) GetGroupRecordsByRecordID(ctx context.Context, params GetGroupRecordsRequest) (*GetGroupRecordsResponse, error) {
 	var result *GetGroupRecordsResponse
 	path := c.Host + "/internal" + storageServiceBasePath + "/groups/search"
