@@ -1,15 +1,9 @@
 package metricClient
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"testing"
 
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -28,6 +22,7 @@ var (
 	}
 )
 
+/*
 func TestQueenAuth(t *testing.T) {
 	// Create internal account client
 	accounter := accountClient.New(ValidInternalClientConfig)
@@ -108,3 +103,4 @@ func TestQueenAuth(t *testing.T) {
 		t.Fatalf("Non-queen clients should not be allowed to make requests to metrics, via cyclops.\n")
 	}
 }
+*/

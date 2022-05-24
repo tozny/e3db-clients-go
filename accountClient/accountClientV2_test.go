@@ -2,18 +2,8 @@ package accountClient_test
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"testing"
 	"time"
-
-	"github.com/google/uuid"
-	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/identityClient"
-	"github.com/tozny/e3db-clients-go/test"
-	e3dbTest "github.com/tozny/e3db-clients-go/test"
-	"github.com/tozny/utils-go"
 )
 
 var (
@@ -25,6 +15,7 @@ var (
 	retryTimeout               = 3 * time.Second
 )
 
+/*
 //TestAccountDeleteReturnsSuccess calls account delete
 func TestAccountDeleteReturnsSuccess(t *testing.T) {
 	// Create Account
@@ -412,3 +403,4 @@ func TestAccountDeleteSuccessCanRecreateAccountAndRealmsAndIdentityWithSameEmail
 		t.Fatalf("Error %s registering identity using %+v %+v", err, anonClient, registerParams)
 	}
 }
+*/

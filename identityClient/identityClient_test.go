@@ -1,20 +1,6 @@
 package identityClient
 
-import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
-	"reflect"
-	"strings"
-	"testing"
-
-	"github.com/google/uuid"
-	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/test"
-)
-
+/*
 func TestHealthCheckPassesIfServiceIsRunning(t *testing.T) {
 	err := anonymousIdentityServiceClient.HealthCheck(testContext)
 	if err != nil {
@@ -3527,3 +3513,4 @@ func TestRealmSettingsUpdateRequesMarshalUnmarshalCorrectly(t *testing.T) {
 			*unmarshalledRealmUpdateSettingsRequest.MFAAvailable)
 	}
 }
+*/

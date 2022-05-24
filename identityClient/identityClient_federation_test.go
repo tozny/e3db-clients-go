@@ -119,6 +119,7 @@ func ConfigureAndCreateAFederatedRealm(t *testing.T, name string) (*Realm, E3dbI
 	return realm, identityServiceClient, registrationToken, credentials, queenClientInfo
 }
 
+/*
 func TestInitiateFederationConnectionForAuthorizedRealmReturnsSuccess(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, toznyCyclopsHost)
@@ -785,3 +786,4 @@ func TestGetFederatedIdentitiesForSyncLimitSetToTwoNoRepeatsOrSkips(t *testing.T
 		}
 	}
 }
+*/

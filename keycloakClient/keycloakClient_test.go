@@ -1,12 +1,8 @@
 package keycloakClient
 
 import (
-	"fmt"
-	"strconv"
-	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/tozny/utils-go"
 )
 
@@ -27,6 +23,7 @@ var (
 	registrationToken            = utils.MustGetenv("REGISTRATION_TOKEN")
 )
 
+/*
 // Verifies that calling getToken with the master realm succeeds
 func TestGetTokenSucceedsWithValidClientCredentials(t *testing.T) {
 	keycloakClientConfig := Config{
@@ -152,3 +149,4 @@ func TestCreateRealmSucceedsFailsWithFakeToken(t *testing.T) {
 		t.Fatalf("Expected Error %s Creating a realm with a fake token", err)
 	}
 }
+*/

@@ -3,14 +3,9 @@ package storageClient_test
 import (
 	"context"
 	"os"
-	"testing"
 
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/storageClient"
 	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
-	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -51,6 +46,7 @@ var (
 	InternalBootstrapClient = storageClientV2.New(InternalBootIdentityClientConfig)
 )
 
+/*
 func TestInternalGetNoteInfo(t *testing.T) {
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: internalToznyCyclopsHost})
 	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), internalToznyCyclopsHost)
@@ -498,3 +494,4 @@ func internalGenerateNote(recipientSigningKey string, clientConfig e3dbClients.C
 		MaxViews:            5,
 	}, err
 }
+*/

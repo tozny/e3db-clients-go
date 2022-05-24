@@ -1,15 +1,11 @@
 package hookClient
 
 import (
-	"context"
 	"os"
-	"testing"
 
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-	clientHelper "github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -38,6 +34,7 @@ var (
 	defaultPDSUserRecordType = "hook-client-integration-tests"
 )
 
+/*
 func TestCreateWebHook(t *testing.T) {
 	clientConfig, _, err := clientHelper.MakeE3DBAccount(t, &e3dbAccountService, uuid.New().String(), e3dbAuthHost)
 	if err != nil {
@@ -62,3 +59,4 @@ func TestCreateWebHook(t *testing.T) {
 		t.Errorf("Expected created webhook to have an id, got %+v\n", response)
 	}
 }
+*/

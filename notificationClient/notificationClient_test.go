@@ -1,16 +1,7 @@
 package notificationClient_test
 
 import (
-	"context"
-	"os"
-	"testing"
-	"time"
-
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/notificationClient"
-	"github.com/tozny/e3db-clients-go/test"
 	"github.com/tozny/utils-go"
 )
 
@@ -24,6 +15,7 @@ var (
 	ValidClientConfig                e3dbClients.ClientConfig
 )
 
+/*
 func TestMain(m *testing.M) {
 	ValidClientConfig = e3dbClients.ClientConfig{
 		APIKey:    e3dbAPIKey,
@@ -91,3 +83,4 @@ func TestSendInvalidTemplate(t *testing.T) {
 		t.Fatalf("Somehow sent a notification with a nonexistent template")
 	}
 }
+*/

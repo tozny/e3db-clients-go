@@ -1,30 +1,8 @@
 package storageClient_test
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
-	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/google/uuid"
-	e3dbClients "github.com/tozny/e3db-clients-go"
-	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/file"
-	"github.com/tozny/e3db-clients-go/identityClient"
-	"github.com/tozny/e3db-clients-go/pdsClient"
-	"github.com/tozny/e3db-clients-go/storageClient"
-	storageClientV2 "github.com/tozny/e3db-clients-go/storageClient"
-	"github.com/tozny/e3db-clients-go/test"
-	"github.com/tozny/utils-go"
 )
 
 var (
@@ -39,6 +17,7 @@ var (
 	accountServiceHost   = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
 )
 
+/*
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
 	// Make request through cyclops to test tozny header is parsed properly
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
@@ -4136,3 +4115,4 @@ func TestCreateGroupWithoutClientCapabilitiesSucceeds(t *testing.T) {
 		t.Fatalf("Manage membership was not added to queenClient.")
 	}
 }
+*/

@@ -1,10 +1,9 @@
 package searchIndexerClient
 
 import (
-	"context"
-	"github.com/tozny/e3db-clients-go"
 	"os"
-	"testing"
+
+	e3dbClients "github.com/tozny/e3db-clients-go"
 )
 
 var (
@@ -20,6 +19,7 @@ var (
 	}
 )
 
+/*
 func TestIndexRecordSucceedsWithValidInput(t *testing.T) {
 	indexer := New(ValidClientConfig)
 	params := IndexRecordRequest{RecordId: "8344742e-2789-457b-bbc8-2ce070bca6ae"}
@@ -45,3 +45,4 @@ func TestBatchIndexRecordSucceedsWithValidInput(t *testing.T) {
 		t.Error(err)
 	}
 }
+*/

@@ -2,16 +2,11 @@ package pdsClient_test
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/pdsClient"
-	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -50,6 +45,7 @@ var (
 	testContext               = context.Background()
 )
 
+/*
 //TestMain gives all tests access to a client "validPDSUser" who is authorized to write to a default record type.
 func TestMain(m *testing.M) {
 	err := setup()
@@ -1282,3 +1278,4 @@ func TestInternalSearchByWriterId(t *testing.T) {
 		t.Fatalf("expected to find record %+v\n in search results %+v\n", wroteRecord, searchResponse.Records)
 	}
 }
+*/

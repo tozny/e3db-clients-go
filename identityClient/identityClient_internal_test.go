@@ -2,17 +2,12 @@ package identityClient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
-	"github.com/tozny/e3db-clients-go/test"
 )
 
 var (
@@ -59,6 +54,7 @@ func internalUniqueString(prefix string) string {
 	return fmt.Sprintf("%s%d", prefix, time.Now().Unix())
 }
 
+/*
 // Tests that the Identity's account remains unlocked if there are fewer audits than the
 // retry limit and no active locks.
 func TestInternalIdentityStatusIdentityAccountIsUnlocked(t *testing.T) {
@@ -978,3 +974,4 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 		t.Fatalf("%+v when trying to remove LDAP cache for user %q", err, expectedLDAPData.ID)
 	}
 }
+*/
