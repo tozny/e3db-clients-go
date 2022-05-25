@@ -1453,7 +1453,7 @@ func (c *E3dbIdentityClient) DeleteMFAInformation(ctx context.Context, params De
 // GetRealmUserCount gets the numbers of users in a specified Realm
 func (c *E3dbIdentityClient) GetRealmUserCount(ctx context.Context, params CountRealmIdentitiesRequest) (CountRealmIdentitiesResponse, error) {
 	var identityCount CountRealmIdentitiesResponse
-	path := fmt.Sprintf("%s/%s/%s/%s/%s/count", c.Host, identityServiceBasePath, realmResourceName, params.RealmName, identityResourceName)
+	path := fmt.Sprintf("%s%s/%s/%s/%s/count", c.Host, identityServiceBasePath, realmResourceName, params.RealmName, identityResourceName)
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return identityCount, err
