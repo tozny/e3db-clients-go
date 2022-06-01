@@ -17,4 +17,6 @@ RUN go get -u github.com/vakenbolt/go-test-report/
 
 COPY . ./
 
-ENTRYPOINT ["test.sh"]
+RUN chmod +x ./test.sh
+
+ENTRYPOINT ["./test.sh"]
