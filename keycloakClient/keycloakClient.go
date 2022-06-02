@@ -1178,10 +1178,12 @@ func (c *Client) RemoveMFADevice(accessToken, realmName, userID, mfaID string) e
 	return err
 }
 
-// GetRealmUserCount gets the number of users ina specified Realm
+// GetRealmUserCount gets the number of users in a specified Realm
 func (c *Client) GetRealmUserCount(accessToken, realmName string) (CountRealmIdentitiesResponse, error) {
 	var resp CountRealmIdentitiesResponse
-	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/count", realmRootPath, realmName, userResourceName))
+	var numberOfIdentities int
+	var err = c.get(accessToken, &numberOfIdentities, fmt.Sprintf("/auth/admin/realms/%s/users/count", realmName))
+	resp.IdentityCount = numberOfIdentities
 	return resp, err
 }
 
