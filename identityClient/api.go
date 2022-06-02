@@ -1384,3 +1384,13 @@ type PublicRealm struct {
 	ForgotPasswordCustomText string    `json:"forgot_password_custom_text,omitempty"` // Custom forgot password text for the realm. Used for the offline password recovery
 
 }
+
+// CountRealmIdentitiesResponse wraps the count of Identities in a Realm
+type CountRealmIdentitiesResponse struct {
+	IdentityCount int `json:"identity_count"`
+}
+
+// CountRealmIdentitiesRequest wraps the request to get the number of Identities in a Realm
+type CountRealmIdentitiesRequest struct {
+	RealmName string
+}
