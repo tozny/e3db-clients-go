@@ -1159,6 +1159,19 @@ type TotpMFASettings struct {
 	Priority       int    `json:"priority"`
 }
 
+// MFACredential wraps the information about an Identity's MFA settings
+type MFACredential struct {
+	ID             string `json:"id"`
+	Salt           []byte `json:"salt"`
+	CredentialType string `json:"type"`
+	PrimaryUserID  string `json:"primary_user_id"`
+	CreatedDate    int    `json:"created_date"`
+	UserLabel      string `json:"user_label"`
+	SecretData     string `json:"secret_data"`
+	CredentialData string `json:"credential_data"`
+	Priority       int    `json:"priority"`
+}
+
 // DetailedFederatedIdentity wraps the information about a federated Identity
 type DetailedFederatedIdentity struct {
 	SubjectID                         string              `json:"subject_id"`
@@ -1175,7 +1188,7 @@ type DetailedFederatedIdentity struct {
 	GroupRoleMappings                 []RoleMapping       `json:"group_role_mapping"`
 	Attributes                        map[string][]string `json:"attributes"`
 	TozIDPasswordNotePublicSigningKey string              `json:"tozid_password_note_public_signing_key"`
-	MFASettings                       TotpMFASettings     `json:"totp_mfa_settings"`
+	MFACredentials                    []MFACredential     `json:"mfa_credentials"`
 }
 
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
