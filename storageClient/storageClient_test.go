@@ -3326,7 +3326,7 @@ func TestShareRecordWithGroupReturnsSuccess(t *testing.T) {
 		Data:            listReturn.ResultList[0].Data,
 		RecordSignature: listReturn.ResultList[0].RecordSignature,
 	}
-	decryptedRecord, err := groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].AccessKey)
+	decryptedRecord, err := groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].GroupAccessKey)
 	if err != nil {
 		t.Errorf("Couldnt decrypt record %+v Error: %+v", record, err)
 	}
@@ -3590,7 +3590,7 @@ func TestShareRecordWithMultipleGroupsandOneUnsharesReturnsSuccess(t *testing.T)
 		Data:            listReturn.ResultList[0].Data,
 		RecordSignature: listReturn.ResultList[0].RecordSignature,
 	}
-	_, err = groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].AccessKey)
+	_, err = groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].GroupAccessKey)
 	if err != nil {
 		t.Errorf("Couldnt decrypt record %+v Error: %+v", record, err)
 	}
@@ -3813,7 +3813,7 @@ func TestShareFileWithGroupReturnsSuccess(t *testing.T) {
 		Data:            listReturn.ResultList[0].Data,
 		RecordSignature: listReturn.ResultList[0].RecordSignature,
 	}
-	decryptedRecord, err := groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].AccessKey)
+	decryptedRecord, err := groupMember2PDS.DecryptGroupRecordWithGroupEncryptedAccessKey(testCtx, record, listReturn.ResultList[0].GroupAccessKey)
 	if err != nil {
 		t.Errorf("Couldnt decrypt record %+v Error: %+v", record, err)
 	}
