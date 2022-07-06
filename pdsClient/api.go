@@ -264,7 +264,9 @@ type ClientKey struct {
 type ListedRecord struct {
 	Metadata        Meta              `json:"meta"`
 	Data            map[string]string `json:"record_data"`
+	SharingModel    string            `json:"sharing_model"`
 	AccessKey       *GetEAKResponse   `json:"access_key"`
+	GroupAccessKey  *GetEAKResponse   `json:"group_access_key"`
 	RecordSignature string            `json:"rec_sig,omitempty"`
 }
 
