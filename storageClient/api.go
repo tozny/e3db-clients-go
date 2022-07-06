@@ -108,13 +108,13 @@ type ListGroupsResponse struct {
 	NextToken int64   `json:"next_token"`
 }
 
-// TODO comment
+// GetGroupRecordsRequest wraps values for a search request for group records
 type GetGroupRecordsRequest struct {
 	RecordIDs []string  `json:"record_ids"`
 	ReaderID  uuid.UUID `json:"reader_id"`
 }
 
-// TODO comment
+// GetGroupRecordsResponse wraps values for a search response for group records
 type GetGroupRecordsResponse struct {
 	ResultList []pdsClient.ListedRecord `json:"results"`
 }
