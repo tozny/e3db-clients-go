@@ -1069,8 +1069,12 @@ func (c *Client) GetAuthenticationFlowsForRealm(accessToken, realmName string) (
 	return resp, err
 }
 
-func (c *Client) DeleteAuthenticationFlowOfRealm(accessToken string, realmName, flowId string) error {
+func (c *Client) DeleteAuthenticationFlowFromRealm(accessToken string, realmName, flowId string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/flows/%s", realmRootPath, realmName, authenticationResourceName, flowId))
+}
+
+func (c *Client) DeleteExecutionFromRealm(accessToken string, realmName, executionId string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/executions/%s", realmRootPath, realmName, authenticationResourceName, executionId))
 }
 
 // CreateAuthenticationExecutionForFlow add a new authentication execution to a flow.
