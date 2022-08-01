@@ -1062,6 +1062,21 @@ func (c *Client) ListAuthenticatorProviders(accessToken, realmName string) ([]Au
 	return resp, err
 }
 
+func (c *Client) GetAuthenticationFlowsForRealm(accessToken, realmName string) ([]AuthenticationFlowRepresentation, error) {
+	resp := []AuthenticationFlowRepresentation{}
+	url := fmt.Sprintf("%s/%s/%s/flows", realmRootPath, realmName, authenticationResourceName)
+	err := c.get(accessToken, &resp, url)
+	return resp, err
+}
+
+func (c *Client) DeleteAuthenticationFlowFromRealm(accessToken string, realmName, flowId string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/flows/%s", realmRootPath, realmName, authenticationResourceName, flowId))
+}
+
+func (c *Client) DeleteExecutionFromRealm(accessToken string, realmName, executionId string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/executions/%s", realmRootPath, realmName, authenticationResourceName, executionId))
+}
+
 // CreateAuthenticationExecutionForFlow add a new authentication execution to a flow.
 // 'flowAlias' is the alias of the parent flow.
 func (c *Client) CreateAuthenticationExecutionForFlow(accessToken string, realmName, flowAlias, provider string) (string, error) {
