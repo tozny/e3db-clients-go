@@ -1188,7 +1188,7 @@ type DetailedFederatedIdentity struct {
 	GroupRoleMappings                 []RoleMapping       `json:"group_role_mapping"`
 	Attributes                        map[string][]string `json:"attributes"`
 	TozIDPasswordNotePublicSigningKey string              `json:"tozid_password_note_public_signing_key"`
-	MFACredentials                    []MFACredential     `json:"mfa_credentials"`
+	MFASettings                       TotpMFASettings     `json:"totp_mfa_settings"`
 }
 
 // GetFederatedIdentitiesForSyncResponse wraps the Identities returned by a federated Realm's sync
