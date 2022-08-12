@@ -1159,6 +1159,38 @@ func (c *Client) InitiateLogin(realmName string, loginURLEncoded InitiatePKCELog
 	return resp.RawResponse, nil
 }
 
+// InitiateLogin begins the login flow for an external identity provider
+func (c *Client) InitiateEIDPLogin(realmName string, loginURLEncoded InitiateEIDPLogin) (*http.Response, error) {
+	// Create Gentleman Client
+	var gentlemanClient = gentleman.New()
+	{
+		gentlemanClient = gentlemanClient.URL(c.config.AddrAPI)
+		gentlemanClient = gentlemanClient.Use(timeout.Request(c.config.Timeout))
+	}
+	// Create Request
+	var req *gentleman.Request
+	{
+		var authPath = fmt.Sprintf(initiateLoginPath, realmName)
+		req = gentlemanClient.Post()
+		req = req.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+		req = req.Path(authPath)
+		req = req.Type("urlencoded")
+		data := url.Values{}
+		encoder.Encode(loginURLEncoded, data)
+		req = req.BodyString(data.Encode())
+	}
+	// Send Request
+	var resp *gentleman.Response
+	{
+		var err error
+		resp, err = req.Do()
+		if err != nil {
+			return nil, fmt.Errorf("Could not Initiate Login: Error %+v", err)
+		}
+	}
+	return resp.RawResponse, nil
+}
+
 // InitiateWebAuthnChallenge initiates the flow for registering a WebAuthn device
 func (c *Client) InitiateWebAuthnChallenge(accessToken, sessionToken, realmDomain string) (InitiateWebAuthnChallengeResponse, error) {
 	var result InitiateWebAuthnChallengeResponse

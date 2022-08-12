@@ -542,6 +542,20 @@ type InitiatePKCELogin struct {
 	CodeChallengeMethod string `schema:"code_challenge_method"`
 }
 
+// InitiateEIDPLogin wraps all the components neccesary for an external identity provider login
+type InitiateEIDPLogin struct {
+	Nonce         string `schema:"nonce"`
+	ClientID      string `schema:"client_id"`
+	ResponseType  string `schema:"response_type"`
+	Scope         string `schema:"scope"`
+	RedirectURI   string `schema:"redirect_uri"`
+	ResponseMode  string `schema:"response_mode"`
+	State         string `schema:"state"`
+	Username      string `schema:"username"`
+	Target        string `schema:"target"`
+	AuthSessionID string `schema:"auth_session_id"`
+}
+
 // CreateResourcePermissionRequest wraps the parameters needed for creating a resource permission
 type CreatePermissionRequest struct {
 	Attributes         map[string]interface{} `json:"attributes"`
