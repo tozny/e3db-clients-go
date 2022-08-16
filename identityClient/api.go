@@ -697,12 +697,13 @@ type RoleMapping struct {
 
 // Role wraps a single role representation in a realm
 type Role struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Composite   bool   `json:"composite"`
-	ClientRole  bool   `json:"client_role"`
-	ContainerID string `json:"container_id"`
+	ID          string              `json:"id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Composite   bool                `json:"composite"`
+	ClientRole  bool                `json:"client_role"`
+	ContainerID string              `json:"container_id"`
+	Attributes  map[string][]string `json:"attributes"`
 }
 
 // Group wraps a single group representation in a realm
