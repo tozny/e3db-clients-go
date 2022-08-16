@@ -331,6 +331,7 @@ type RoleRepresentation struct {
 	Id                 *string                       `json:"id,omitempty"`
 	Name               *string                       `json:"name,omitempty"`
 	ScopeParamRequired *bool                         `json:"scopeParamRequired,omitempty"`
+	Attributes         *map[string][]string          `json:"attributes,omitempty"`
 }
 
 type RolesRepresentation struct {
