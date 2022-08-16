@@ -5,14 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/tozny/e3db-clients-go/request"
+	"github.com/tozny/utils-go"
 	"github.com/tozny/utils-go/logging"
 	"github.com/tozny/utils-go/server"
 	"golang.org/x/oauth2"
+)
+
+var (
+	debugAPIResponse = utils.EnvOrDefault("DEBUG_API_RESPONSE", "false")
 )
 
 // ClientConfig wraps configuration
@@ -140,7 +147,24 @@ func MakeRawServiceCall(client request.Requester, req *http.Request, result inte
 	if result == nil {
 		return nil
 	}
+	// Check if debug is on
+	debugFlag, err := strconv.ParseBool(debugAPIResponse)
+	if debugFlag {
+		var bodyBytes []byte
+		if response.Body != nil {
+			bodyBytes, err = ioutil.ReadAll(response.Body)
+			if err != nil {
+				return &RequestError{
+					URL:     req.URL.String(),
+					message: err.Error(),
+				}
+			}
+			fmt.Printf("Request Path %s \n Response Body %s \n  Response Status Code %d \n ", req.URL, string(bodyBytes), response.StatusCode)
 
+		}
+		// Repopulate body with the data read
+		response.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
 		return &RequestError{
