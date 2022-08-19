@@ -80,14 +80,15 @@ type InternalDeleteRealmsRequest struct {
 
 // PrivateRealmInfo represents the private information about a TozID realm
 type PrivateRealmInfo struct {
-	Name                   string    `json:"name"`
-	BrokerIdentityToznyID  uuid.UUID `json:"broker_id,omitempty"`
-	Domain                 string    `json:"domain"`
-	SecretsEnabled         bool      `json:"secrets_enabled"`
-	MFAAvailable           []string  `json:"mfa_available"`
-	EmailLookupsEnabled    bool      `json:"email_lookups_enabled"`
-	TozIDFederationEnabled bool      `json:"tozid_federation_enabled"`
-	MPCEnabled             bool      `json:"mpc_enabled"`
+	Name                           string    `json:"name"`
+	BrokerIdentityToznyID          uuid.UUID `json:"broker_id,omitempty"`
+	Domain                         string    `json:"domain"`
+	SecretsEnabled                 bool      `json:"secrets_enabled"`
+	MFAAvailable                   []string  `json:"mfa_available"`
+	EmailLookupsEnabled            bool      `json:"email_lookups_enabled"`
+	TozIDFederationEnabled         bool      `json:"tozid_federation_enabled"`
+	MPCEnabled                     bool      `json:"mpc_enabled"`
+	DisableAccountTabForIdentities bool      `json:"disable_account_tab_for_identities"`
 }
 
 // Sovereign represents the top level user of a realm
