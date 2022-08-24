@@ -592,6 +592,12 @@ func (c *Client) GetRealmRoles(accessToken string, realmName string) ([]RoleRepr
 	return resp, err
 }
 
+func (c *Client) GetSessionInfo(accessToken string, realmName string, clientID string) ([]string, error) {
+	var resp = []string{}
+	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s", realmRootPath, realmName, "clients", clientID, "user-sessions"))
+	return resp, err
+}
+
 // GetRealmRole gets a specific realm role’s representation
 // GET /auth/admin/realms/demorealm/roles/Admin HTTP/1.1
 // {

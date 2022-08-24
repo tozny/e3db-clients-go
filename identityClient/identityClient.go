@@ -1461,3 +1461,15 @@ func (c *E3dbIdentityClient) GetRealmUserCount(ctx context.Context, params Count
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &identityCount)
 	return identityCount, err
 }
+
+func (c *E3dbIdentityClient) GetSessionInfo(ctx context.Context, params SessionInfoRequest) error {
+	//TODO response
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + params.ClientID + "/sessions"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	var response []string
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return err
+}

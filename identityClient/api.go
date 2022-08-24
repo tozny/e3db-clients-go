@@ -1411,3 +1411,8 @@ type CountRealmIdentitiesResponse struct {
 type CountRealmIdentitiesRequest struct {
 	RealmName string
 }
+
+type SessionInfoRequest struct {
+	RealmName string
+	ClientID  string
+}
