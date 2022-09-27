@@ -307,6 +307,14 @@ type IdentityProviderRepresentation struct {
 	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
 }
 
+type IdentityProviderRequestRepresentation struct {
+	Alias       string                 `json:"alias"`
+	Config      map[string]interface{} `json:"config"`
+	DisplayName string                 `json:"displayName"`
+	Enabled     bool                   `json:"enabled"`
+	ProviderId  string                 `json:"providerId"`
+}
+
 type RequiredActionProviderRepresentation struct {
 	Alias         *string                 `json:"alias,omitempty"`
 	Config        *map[string]interface{} `json:"config,omitempty"`
