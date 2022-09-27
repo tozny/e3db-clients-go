@@ -152,3 +152,47 @@ func TestCreateRealmSucceedsFailsWithFakeToken(t *testing.T) {
 		t.Fatalf("Expected Error %s Creating a realm with a fake token", err)
 	}
 }
+
+func TestCreateIdentityProvider(t *testing.T) {
+
+	keycloakClientConfig := Config{
+		AddrTokenProvider: cyclopsServiceHost,
+		AddrAPI:           cyclopsServiceHost,
+		Timeout:           HTTPTimeout,
+	}
+
+	kcClient, err := New(keycloakClientConfig)
+	if err != nil {
+		t.Fatalf("Failure creating keycloak client with err: %+v", err)
+	}
+
+	token, err := kcClient.GetToken(keycloakMasterRealm, keycloakUsername, keycloakPassword)
+	if err != nil {
+		t.Fatalf("Get token failed with err: %+v", err)
+	}
+
+	providerConfig := map[string]interface{}{
+		"authorizationUrl": "https://test-auth-url.com",
+		"tokenUrl":         "https://test-auth-url.com",
+		"clientAuthMethod": "client_secret_post",
+		"clientId":         "adadadadadadadadadadadadad",
+		"clientSecret":     "aDAZCSFCCXVsdsdsffsfsfsff",
+	}
+
+	alias := "az-testing-new"
+	displayName := "Azure IdP Testing New"
+	enabled := true
+	providerId := "oidc"
+
+	createProviderParams := IdentityProviderRepresentation{
+		ProviderId:  &providerId,
+		Alias:       &alias,
+		Config:      &providerConfig,
+		DisplayName: &displayName,
+		Enabled:     &enabled,
+	}
+	_, err = kcClient.CreateIdentityProvider(token, "localtest", createProviderParams)
+	if err != nil {
+		t.Fatalf("Error %+v while creating identity provider", err)
+	}
+}

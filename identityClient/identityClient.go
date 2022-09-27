@@ -1461,3 +1461,15 @@ func (c *E3dbIdentityClient) GetRealmUserCount(ctx context.Context, params Count
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &identityCount)
 	return identityCount, err
 }
+
+// CreateIdentityProvider creates an IDP using the specified parameters,
+// returning error (if any).
+func (c *E3dbIdentityClient) CreateIdentityProvider(ctx context.Context, realmName string, params CreateIdentityProviderRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, "")
+	return err
+}

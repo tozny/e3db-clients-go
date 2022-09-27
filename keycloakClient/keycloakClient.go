@@ -1246,3 +1246,8 @@ func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, d
 	}
 	return nil
 }
+
+// Create New Identity Provider
+func (c *Client) CreateIdentityProvider(accessToken string, realmName string, provider IdentityProviderRepresentation) (string, error) {
+	return c.post(accessToken, provider, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances", realmName))
+}
