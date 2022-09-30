@@ -1251,3 +1251,8 @@ func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, d
 func (c *Client) CreateIdentityProvider(accessToken string, realmName string, provider IdentityProviderRequestRepresentation) (string, error) {
 	return c.post(accessToken, provider, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances", realmName))
 }
+
+// Delete Identity Provider
+func (c *Client) DeleteIdentityProvider(accessToken string, realmName string, alias string) error {
+	return c.delete(accessToken, "", fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
+}
