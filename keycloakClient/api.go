@@ -315,6 +315,13 @@ type IdentityProviderRequestRepresentation struct {
 	ProviderId  string                 `json:"providerId"`
 }
 
+type IdentityProviderMapperRequestRepresentation struct {
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
+}
+
 type RequiredActionProviderRepresentation struct {
 	Alias         *string                 `json:"alias,omitempty"`
 	Config        *map[string]interface{} `json:"config,omitempty"`

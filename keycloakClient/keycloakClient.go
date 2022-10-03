@@ -1252,7 +1252,24 @@ func (c *Client) CreateIdentityProvider(accessToken string, realmName string, pr
 	return c.post(accessToken, provider, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances", realmName))
 }
 
+// Get Identity Provider
+func (c *Client) GetIdentityProvider(accessToken string, realmName string, alias string) (IdentityProviderRepresentation, error) {
+	var response = IdentityProviderRepresentation{}
+	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
+	return response, err
+}
+
+// Update Identity Provider
+func (c *Client) UpdateIdentityProvider(accessToken string, realmName string, alias string, data interface{}) error {
+	return c.put(accessToken, data, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
+}
+
 // Delete Identity Provider
 func (c *Client) DeleteIdentityProvider(accessToken string, realmName string, alias string) error {
-	return c.delete(accessToken, "", fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
+	return c.delete(accessToken, nil, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
+}
+
+//Add Mapper to Identity Provider
+func (c *Client) IdentityProviderMapper(accessToken string, realmName string, alias string, mapper IdentityProviderMapperRequestRepresentation) (string, error) {
+	return c.post(accessToken, mapper, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers", realmName, alias))
 }
