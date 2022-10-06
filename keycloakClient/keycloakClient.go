@@ -1270,6 +1270,6 @@ func (c *Client) DeleteIdentityProvider(accessToken string, realmName string, al
 }
 
 //Add Mapper to Identity Provider
-func (c *Client) IdentityProviderMapper(accessToken string, realmName string, alias string, mapper IdentityProviderMapperRequestRepresentation) (string, error) {
+func (c *Client) CreateIdentityProviderMapper(accessToken string, realmName string, alias string, mapper IdentityProviderMapperRequestRepresentation) (string, error) {
 	return c.post(accessToken, mapper, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers", realmName, alias))
 }

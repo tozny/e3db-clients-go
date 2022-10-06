@@ -1419,3 +1419,10 @@ type CreateIdentityProviderRequest struct {
 	DisplayName string                 `json:"displayName"`
 	Enabled     bool                   `json:"enabled,omitempty"`
 }
+
+type IdentityProviderMapperRequest struct {
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
+}
