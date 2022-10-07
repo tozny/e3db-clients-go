@@ -262,3 +262,29 @@ func TestCreateDeleteIdentityProvider(t *testing.T) {
 		t.Fatalf("Error %+v while deleting identity provider", err)
 	}
 }
+
+/*
+func TestGetIdentityProviderMappers(t *testing.T) {
+
+	keycloakClientConfig := Config{
+		AddrTokenProvider: cyclopsServiceHost,
+		AddrAPI:           cyclopsServiceHost,
+		Timeout:           HTTPTimeout,
+	}
+	kcClient, err := New(keycloakClientConfig)
+	if err != nil {
+		t.Fatalf("Failure creating keycloak client with err: %+v", err)
+	}
+	token, err := kcClient.GetToken(keycloakMasterRealm, keycloakUsername, keycloakPassword)
+	if err != nil {
+		t.Fatalf("Get token failed with err: %+v", err)
+	}
+	realmName := "localtest"
+	alias := "azure-ad"
+	response, err := kcClient.GetIdentityProviderMappers(token, realmName, alias)
+	if err != nil {
+		t.Fatalf("Error %+v while creating identity provider", err)
+	}
+	t.Fatalf("Response : %+v", response)
+}
+*/

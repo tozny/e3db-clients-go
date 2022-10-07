@@ -1515,3 +1515,43 @@ func (c *E3dbIdentityClient) CreateIdentityProviderMapper(ctx context.Context, r
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+func (c *E3dbIdentityClient) GetIdentityProviderMappers(ctx context.Context, realmName string, alias string) ([]keycloakClient.IdentityProviderRepresentation, error) {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/all"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *E3dbIdentityClient) GetIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string) (keycloakClient.IdentityProviderRepresentation, error) {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *E3dbIdentityClient) UpdateIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string, params IdentityProviderMapperRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *E3dbIdentityClient) DeleteIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
