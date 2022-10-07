@@ -1486,6 +1486,16 @@ func (c *E3dbIdentityClient) GetIdentityProvider(ctx context.Context, realmName 
 	return idpRepresentation, err
 }
 
+func (c *E3dbIdentityClient) UpdateIdentityProvider(ctx context.Context, realmName string, alias string, params CreateIdentityProviderRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 func (c *E3dbIdentityClient) DeleteIdentityProvider(ctx context.Context, realmName string, alias string) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias
 	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
