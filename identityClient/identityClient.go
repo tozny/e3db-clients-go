@@ -1506,49 +1506,31 @@ func (c *E3dbIdentityClient) DeleteIdentityProvider(ctx context.Context, realmNa
 	return err
 }
 
-func (c *E3dbIdentityClient) CreateIdentityProviderMapper(ctx context.Context, realmName string, alias string, params IdentityProviderMapperRequest) error {
+func (c *E3dbIdentityClient) CreateIdentityProviderMapper(ctx context.Context, realmName string, alias string, params IdentityProviderMapperRequest) (keycloakClient.IdentityProviderMapperResponse, error) {
+	var mapperResponse keycloakClient.IdentityProviderMapperResponse
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper"
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
-		return err
+		return mapperResponse, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
-	return err
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &mapperResponse)
+	return mapperResponse, err
 }
 
-func (c *E3dbIdentityClient) GetIdentityProviderMappers(ctx context.Context, realmName string, alias string) ([]keycloakClient.IdentityProviderRepresentation, error) {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/all"
-	req, err := e3dbClients.CreateRequest("GET", path, params)
+func (c *E3dbIdentityClient) GetIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string) (keycloakClient.IdentityProviderMapperResponse, error) {
+	var representation keycloakClient.IdentityProviderMapperResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/instances/" + id
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
-		return err
+		return representation, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
-	return err
-}
-
-func (c *E3dbIdentityClient) GetIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string) (keycloakClient.IdentityProviderRepresentation, error) {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
-	req, err := e3dbClients.CreateRequest("GET", path, params)
-	if err != nil {
-		return err
-	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
-	return err
-}
-
-func (c *E3dbIdentityClient) UpdateIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string, params IdentityProviderMapperRequest) error {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
-	req, err := e3dbClients.CreateRequest("PUT", path, params)
-	if err != nil {
-		return err
-	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
-	return err
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &representation)
+	return representation, err
 }
 
 func (c *E3dbIdentityClient) DeleteIdentityProviderMapper(ctx context.Context, realmName string, alias string, id string) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + realmName + "/identity-provider/" + alias + "/mapper/" + id
-	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}

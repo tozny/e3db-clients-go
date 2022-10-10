@@ -1282,15 +1282,10 @@ func (c *Client) GetIdentityProviderMappers(accessToken string, realmName string
 }
 
 //Get individual Identity Provider role mapper
-func (c *Client) GetIdentityProviderMapper(accessToken string, realmName string, alias string, id string) (IdentityProviderMapperRequestRepresentation, error) {
-	var response IdentityProviderMapperRequestRepresentation
+func (c *Client) GetIdentityProviderMapper(accessToken string, realmName string, alias string, id string) (IdentityProviderMapperResponse, error) {
+	var response IdentityProviderMapperResponse
 	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 	return response, err
-}
-
-//Update Identity Provider role mapper
-func (c *Client) UpdateIdentityProviderMapper(accessToken string, realmName string, alias string, id string, mapper IdentityProviderMapperRequestRepresentation) (string, error) {
-	return c.put(accessToken, mapper, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 }
 
 //Delete Identity Provider role mapper

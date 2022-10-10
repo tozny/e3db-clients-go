@@ -728,3 +728,11 @@ type RegisterWebAuthnDeviceRequest struct {
 type CountRealmIdentitiesResponse struct {
 	IdentityCount int `json:"identity_count"`
 }
+
+type IdentityProviderMapperResponse struct {
+	Id                     string                 `json:"id"`
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
+}
