@@ -27,6 +27,59 @@ var (
 	registrationToken            = utils.MustGetenv("REGISTRATION_TOKEN")
 )
 
+func CreateRealm(kcClient *Client, adminToken string, realmName string) error {
+
+	// call the post method
+	active := true
+	defaultRealmTheme := "tozny"
+	displayName := "testing"
+	displayNameHTML := fmt.Sprintf("<div class=\"kc-logo-text\"><span>%v</span></div>", displayName)
+	eventsListeners := []string{toggleClientEnableListenerID, jbossLoggingID, toznyEventLogger}
+	attributes := map[string]interface{}{"registrationToken": registrationToken}
+	truePointer := true
+	revokeRefresh, err := strconv.ParseBool(revokeRefreshToken)
+	if err != nil {
+		return err
+	}
+	createRealmParams := RealmRepresentation{
+		Realm:                     &realmName,
+		Enabled:                   &active,
+		AdminTheme:                &defaultRealmTheme,
+		AccountTheme:              &defaultRealmTheme,
+		DisplayName:               &displayName,
+		DisplayNameHtml:           &displayNameHTML,
+		LoginTheme:                &defaultRealmTheme,
+		EventsListeners:           &eventsListeners,
+		AdminEventsDetailsEnabled: &truePointer,
+		Attributes:                &attributes,
+		SSOSessionIdleTimeout:     &ssoSessionIdleTimeout,
+		SSOSessionMaxLifespan:     &ssoSessionMaxLifespan,
+		RefreshTokenMaxReuse:      &refreshTokenMaxReuse,
+		RevokeRefreshToken:        &revokeRefresh,
+		AccessTokenLifespan:       &accessTokenLifespan,
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = kcClient.CreateRealm(adminToken, createRealmParams)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteIdentityProvider(kcClient *Client, adminToken string, realmName string, alias string) error {
+
+	err := kcClient.DeleteIdentityProvider(adminToken, realmName, alias)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Verifies that calling getToken with the master realm succeeds
 func TestGetTokenSucceedsWithValidClientCredentials(t *testing.T) {
 	keycloakClientConfig := Config{
@@ -152,3 +205,86 @@ func TestCreateRealmSucceedsFailsWithFakeToken(t *testing.T) {
 		t.Fatalf("Expected Error %s Creating a realm with a fake token", err)
 	}
 }
+
+func TestCreateDeleteIdentityProvider(t *testing.T) {
+
+	keycloakClientConfig := Config{
+		AddrTokenProvider: cyclopsServiceHost,
+		AddrAPI:           cyclopsServiceHost,
+		Timeout:           HTTPTimeout,
+	}
+
+	kcClient, err := New(keycloakClientConfig)
+	if err != nil {
+		t.Fatalf("Failure creating keycloak client with err: %+v", err)
+	}
+
+	token, err := kcClient.GetToken(keycloakMasterRealm, keycloakUsername, keycloakPassword)
+	if err != nil {
+		t.Fatalf("Get token failed with err: %+v", err)
+	}
+	randomId := uuid.New().String()
+	realmName := "realm-" + randomId
+	err = CreateRealm(kcClient, token, realmName)
+
+	if err != nil {
+		t.Fatalf("Error %+v while creating realm", err)
+	}
+
+	providerConfig := map[string]interface{}{
+		"authorizationUrl": "https://example.com/auth",
+		"tokenUrl":         "https://example.com/token",
+		"clientAuthMethod": "client_secret_post",
+		"clientId":         randomId,
+		"clientSecret":     randomId,
+	}
+
+	alias := "idp-" + randomId
+	displayName := "IdP " + randomId
+	enabled := true
+	providerId := "oidc"
+
+	createProviderParams := IdentityProviderRequestRepresentation{
+		ProviderId:  providerId,
+		Alias:       alias,
+		Config:      providerConfig,
+		DisplayName: displayName,
+		Enabled:     enabled,
+	}
+	_, err = kcClient.CreateIdentityProvider(token, realmName, createProviderParams)
+	if err != nil {
+		t.Fatalf("Error %+v while creating identity provider", err)
+	}
+
+	err = DeleteIdentityProvider(kcClient, token, realmName, alias)
+
+	if err != nil {
+		t.Fatalf("Error %+v while deleting identity provider", err)
+	}
+}
+
+/*
+func TestGetIdentityProviderMappers(t *testing.T) {
+
+	keycloakClientConfig := Config{
+		AddrTokenProvider: cyclopsServiceHost,
+		AddrAPI:           cyclopsServiceHost,
+		Timeout:           HTTPTimeout,
+	}
+	kcClient, err := New(keycloakClientConfig)
+	if err != nil {
+		t.Fatalf("Failure creating keycloak client with err: %+v", err)
+	}
+	token, err := kcClient.GetToken(keycloakMasterRealm, keycloakUsername, keycloakPassword)
+	if err != nil {
+		t.Fatalf("Get token failed with err: %+v", err)
+	}
+	realmName := "localtest"
+	alias := "azure-ad"
+	response, err := kcClient.GetIdentityProviderMappers(token, realmName, alias)
+	if err != nil {
+		t.Fatalf("Error %+v while creating identity provider", err)
+	}
+	t.Fatalf("Response : %+v", response)
+}
+*/

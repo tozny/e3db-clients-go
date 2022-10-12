@@ -307,6 +307,21 @@ type IdentityProviderRepresentation struct {
 	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
 }
 
+type IdentityProviderRequestRepresentation struct {
+	Alias       string                 `json:"alias"`
+	Config      map[string]interface{} `json:"config"`
+	DisplayName string                 `json:"displayName"`
+	Enabled     bool                   `json:"enabled"`
+	ProviderId  string                 `json:"providerId"`
+}
+
+type IdentityProviderMapperRequestRepresentation struct {
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
+}
+
 type RequiredActionProviderRepresentation struct {
 	Alias         *string                 `json:"alias,omitempty"`
 	Config        *map[string]interface{} `json:"config,omitempty"`
@@ -712,4 +727,12 @@ type RegisterWebAuthnDeviceRequest struct {
 // CountRealmIdentitiesResponse wraps the count of Identities in a Realm
 type CountRealmIdentitiesResponse struct {
 	IdentityCount int `json:"identity_count"`
+}
+
+type IdentityProviderMapperResponse struct {
+	Id                     string                 `json:"id"`
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
 }

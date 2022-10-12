@@ -1411,3 +1411,18 @@ type CountRealmIdentitiesResponse struct {
 type CountRealmIdentitiesRequest struct {
 	RealmName string
 }
+
+type CreateIdentityProviderRequest struct {
+	ProviderId  string                 `json:"providerId"`
+	Alias       string                 `json:"alias"`
+	Config      map[string]interface{} `json:"config"`
+	DisplayName string                 `json:"displayName"`
+	Enabled     bool                   `json:"enabled,omitempty"`
+}
+
+type IdentityProviderMapperRequest struct {
+	Config                 map[string]interface{} `json:"config,omitempty"`
+	IdentityProviderAlias  string                 `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
+	Name                   string                 `json:"name,omitempty"`
+}
