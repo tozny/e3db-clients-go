@@ -1418,3 +1418,9 @@ type IdentityProviderMapperRequest struct {
 	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
 	Name                   string                 `json:"name,omitempty"`
 }
+
+// InternalAdministratorLockRemovalRequest wraps the values required for an administrator lock removal for an identity account
+type InternalAdministratorLockRemovalRequest struct {
+	RealmDomain string    `json:"realm_domain"` // The domain name of the realm the Identity is a member of.
+	UserID      uuid.UUID `json:"user_id"`      // The ID of the Identity's keycloak user
+}
