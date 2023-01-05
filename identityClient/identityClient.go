@@ -1549,12 +1549,13 @@ func (c *E3dbIdentityClient) InternalAdministratorAccountLockRemoval(ctx context
 }
 
 // InternalAdministratorAccountLockStatus checks the status of a lock for an identity account
-func (c *E3dbIdentityClient) InternalAdministratorAccountLockStatus(ctx context.Context, params InternalAdministratorLockStatusRequest) error {
+func (c *E3dbIdentityClient) InternalAdministratorAccountLockStatus(ctx context.Context, params InternalAdministratorLockStatusRequest) (InternalAdministratorLockStatusResponse, error) {
 	var response InternalAdministratorLockStatusResponse
 	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/" + strings.ToLower(params.RealmDomain) + "/identity/" + params.UserID.String() + "/account/lock/status"
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
-		return err
+		return response, err
 	}
-	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
 }
