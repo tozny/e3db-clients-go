@@ -1424,3 +1424,16 @@ type InternalAdministratorLockRemovalRequest struct {
 	RealmDomain string    `json:"realm_domain"` // The domain name of the realm the Identity is a member of.
 	UserID      uuid.UUID `json:"user_id"`      // The ID of the Identity's keycloak user
 }
+
+// InternalAdministratorLockStatusResponse wraps the values required for an administrator to check the status of a account lock
+type InternalAdministratorLockStatusResponse struct {
+	RealmDomain string    `json:"realm_domain"` // The domain name of the realm the Identity is a member of.
+	UserID      uuid.UUID `json:"user_id"`      // The ID of the Identity's keycloak user
+	Locked      bool      `json:"locked"`
+}
+
+// InternalAdministratorLockStatusRequest wraps the values required for an administrator to check the status of a account lock
+type InternalAdministratorLockStatusRequest struct {
+	RealmDomain string    `json:"realm_domain"` // The domain name of the realm the Identity is a member of.
+	UserID      uuid.UUID `json:"user_id"`      // The ID of the Identity's keycloak user
+}
