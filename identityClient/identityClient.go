@@ -1537,3 +1537,25 @@ func (c *E3dbIdentityClient) DeleteIdentityProviderMapper(ctx context.Context, r
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+// InternalAdministratorAccountLockRemoval removes a lock for an identity account with auditing
+func (c *E3dbIdentityClient) InternalAdministratorAccountLockRemoval(ctx context.Context, params InternalAdministratorLockRemovalRequest) error {
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/" + strings.ToLower(params.RealmDomain) + "/identity/" + params.UserID.String() + "/account/lock/remove"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
+// InternalAdministratorAccountLockStatus checks the status of a lock for an identity account
+func (c *E3dbIdentityClient) InternalAdministratorAccountLockStatus(ctx context.Context, params InternalAdministratorLockStatusRequest) (InternalAdministratorLockStatusResponse, error) {
+	var response InternalAdministratorLockStatusResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/" + strings.ToLower(params.RealmDomain) + "/identity/" + params.UserID.String() + "/account/lock/status"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
