@@ -508,7 +508,7 @@ type CreateRealmApplicationRequest struct {
 // UpdateApplicationSettings wraps API level values for a (client) application of a TozID realm.
 type UpdateApplicationSettings struct {
 	// Keycloak UUID
-	ID string `json:"id"`
+	ApplicationID string `json:"id"`
 	// What protocol (e.g. OpenIDConnect or SAML) is used to authenticate with the application
 	Protocol     string                  `json:"protocol"`
 	OIDCSettings ApplicationOIDCSettings `json:"application_oidc_settings"`
