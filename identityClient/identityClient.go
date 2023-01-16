@@ -393,6 +393,19 @@ func (c *E3dbIdentityClient) CreateRealmApplication(ctx context.Context, params 
 	return application, err
 }
 
+// UpdateRealmApplication updates a realm application using the specified parameters,
+// returning the created realm application or error (if any).
+func (c *E3dbIdentityClient) UpdateRealmApplication(ctx context.Context, params UpdateRealmApplicationRequest) (*Application, error) {
+	var application *Application
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName
+	req, err := e3dbClients.CreateRequest("PUT", path, params.ApplicationSettings)
+	if err != nil {
+		return application, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &application)
+	return application, err
+}
+
 // UpdateApplicationRole updates the specified client role, returning the updated role and error (if any).
 func (c *E3dbIdentityClient) UpdateApplicationRole(ctx context.Context, params UpdateApplicationRoleRequest) (*Role, error) {
 	var role *Role

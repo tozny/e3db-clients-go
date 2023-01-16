@@ -505,6 +505,22 @@ type CreateRealmApplicationRequest struct {
 	Application Application
 }
 
+// UpdateApplicationSettings wraps API level values for a (client) application of a TozID realm.
+type UpdateApplicationSettings struct {
+	// Keycloak UUID
+	ID string `json:"id"`
+	// What protocol (e.g. OpenIDConnect or SAML) is used to authenticate with the application
+	Protocol     string                  `json:"protocol"`
+	OIDCSettings ApplicationOIDCSettings `json:"application_oidc_settings"`
+	SAMLSettings ApplicationSAMLSettings `json:"application_saml_settings"`
+}
+
+// UpdateRealmApplicationRequest wraps parameters for updating a realm application
+type UpdateRealmApplicationRequest struct {
+	RealmName           string
+	ApplicationSettings UpdateApplicationSettings
+}
+
 // DeleteRealmApplicationRequest wraps parameters for deleting a realm application
 type DeleteRealmApplicationRequest struct {
 	RealmName     string
