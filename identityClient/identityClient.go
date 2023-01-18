@@ -1068,6 +1068,7 @@ func (c *E3dbIdentityClient) RealmSettingsUpdate(ctx context.Context, realmName 
 	return err
 }
 
+// InternalRealmSettingsUpdate makes an internal call to identity service to update realm settings
 func (c *E3dbIdentityClient) InternalRealmSettingsUpdate(ctx context.Context, realmName string, params RealmSettingsUpdateRequest) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmResourceName + "/info" + fmt.Sprintf("/%s", realmName)
 	req, err := e3dbClients.CreateRequest("PUT", path, params)
@@ -1078,6 +1079,7 @@ func (c *E3dbIdentityClient) InternalRealmSettingsUpdate(ctx context.Context, re
 	return err
 }
 
+// InternalPublicRealmInfo makes an internal call to identity service to get realm info
 func (c *E3dbIdentityClient) InternalPublicRealmInfo(ctx context.Context, realmName string) (*PublicRealm, error) {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmResourceName + "/info" + fmt.Sprintf("/%s", realmName)
 	req, err := e3dbClients.CreateRequest("GET", path, nil)

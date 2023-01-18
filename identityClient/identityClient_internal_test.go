@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"github.com/tozny/e3db-clients-go/accountClient"
 	"github.com/tozny/e3db-clients-go/test"
+	"github.com/tozny/utils-go"
 )
 
 var (
@@ -26,6 +28,7 @@ var (
 	InternalInternalBootstrapPublicSigningKey = os.Getenv("BOOTSTRAP_CLIENT_PUBLIC_SIGNING_KEY")
 	InternalBootstrapPrivateSigningKey        = os.Getenv("BOOTSTRAP_CLIENT_PRIVATE_SIGNING_KEY")
 	InternalIdentityLoginRetries              = os.Getenv("IDENTITY_LOGIN_RETRIES")
+	defaultForgotPasswordCustomLink           = os.Getenv("IDENTITY_PORTAL_DEFAULT_FORGOT_PASSWORD_ROUTE")
 	InternalValidAccountClientConfig          = e3dbClients.ClientConfig{
 		APIKey:    internalE3dbAPIKey,
 		APISecret: internalE3dbAPISecret,
@@ -53,6 +56,7 @@ var (
 	internalTestContext          = context.TODO()
 	internalAccountServiceClient = accountClient.New(InternalValidAccountClientConfig)
 	InternalBootstrapClient      = New(InternalBootIdentityClientConfig)
+	autoEnableMPCForNewRealms    = utils.MustGetenvBool("PAM_AUTO_ENABLE_MPC_FOR_NEW_REALMS")
 )
 
 func internalUniqueString(prefix string) string {
@@ -976,5 +980,249 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 	err = InternalBootstrapClient.InternalDeleteLDAPCache(internalTestContext, realmName, expectedLDAPData.ID)
 	if err != nil {
 		t.Fatalf("%+v when trying to remove LDAP cache for user %q", err, expectedLDAPData.ID)
+	}
+}
+
+// TestInternalUpdateRealmSettings ensures that an internal client can update a realm's info, given a valid realm and valid params.
+func TestInternalUpdateRealmSettings(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = internalE3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("InternalUpdateRealm%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	// Check Current Setttings
+	privRealmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for private realm info for %+v", err, realmName)
+	}
+	pubRealmInfo, err := InternalBootstrapClient.InternalPublicRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for public realm info for %+v", err, realmName)
+	}
+	if privRealmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, privRealmInfo.Name)
+	}
+	if privRealmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, privRealmInfo.Name)
+	}
+	if privRealmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", privRealmInfo.TozIDFederationEnabled)
+	}
+	if privRealmInfo.MPCEnabled != autoEnableMPCForNewRealms {
+		t.Fatalf("Error Expected (%v), Received (%v)", autoEnableMPCForNewRealms, privRealmInfo.MPCEnabled)
+	}
+	if pubRealmInfo.ForgotPasswordCustomLink != defaultForgotPasswordCustomLink {
+		t.Fatalf("Error Expected %+v, Received %+v", defaultForgotPasswordCustomLink, pubRealmInfo.ForgotPasswordCustomLink)
+	}
+	if pubRealmInfo.ForgotPasswordCustomText != "" {
+		t.Fatalf("Error Expected empty string, Received (%v)", pubRealmInfo.ForgotPasswordCustomText)
+	}
+
+	t.Logf("priv realmInfo = %+v", privRealmInfo)
+
+	// Update Realm Setting
+	secretsEnabled := true
+	emailEnabled := true
+	tozIDFederationEnabled := true
+	mpcEnabled := !autoEnableMPCForNewRealms
+	forgotPasswordCustomLink := "link"
+	forgotPasswordCustomText := "text"
+	settingRequest := RealmSettingsUpdateRequest{
+		MFAAvailable:             &([]string{"None"}),
+		SecretsEnabled:           &(secretsEnabled),
+		EmailLookupsEnabled:      &(emailEnabled),
+		TozIDFederationEnabled:   &(tozIDFederationEnabled),
+		MPCEnabled:               &(mpcEnabled),
+		ForgotPasswordCustomLink: &forgotPasswordCustomLink,
+		ForgotPasswordCustomText: &forgotPasswordCustomText,
+	}
+
+	err = InternalBootstrapClient.InternalRealmSettingsUpdate(testContext, realmName, settingRequest)
+	if err != nil {
+		t.Fatalf("Error [%+v] updating realm %+v", err, realmName)
+	}
+	privRealmInfo, err = identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for private realm info for %+v", err, realmName)
+	}
+	pubRealmInfo, err = InternalBootstrapClient.InternalPublicRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for public realm info for %+v", err, realmName)
+	}
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for Realm %+v", err, realmName)
+	}
+	if privRealmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, privRealmInfo.Name)
+	}
+	if privRealmInfo.SecretsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", privRealmInfo.SecretsEnabled, privRealmInfo)
+	}
+
+	if privRealmInfo.MFAAvailable[0] != "None" {
+		t.Fatalf("Error Expected %+v, Received %+v", settingRequest.MFAAvailable, privRealmInfo)
+	}
+
+	if privRealmInfo.EmailLookupsEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v %+v", privRealmInfo.EmailLookupsEnabled, privRealmInfo)
+	}
+	if privRealmInfo.TozIDFederationEnabled != true {
+		t.Fatalf("Error Expected true, Received %+v", privRealmInfo.TozIDFederationEnabled)
+	}
+	if privRealmInfo.MPCEnabled == autoEnableMPCForNewRealms {
+		t.Fatalf("Expected MPCEnabled to be updated but was not (%v)", privRealmInfo.MPCEnabled)
+	}
+	if pubRealmInfo.ForgotPasswordCustomLink != forgotPasswordCustomLink {
+		t.Fatalf("Error Expected %+v, Received %+v", forgotPasswordCustomLink, pubRealmInfo.ForgotPasswordCustomLink)
+	}
+	if pubRealmInfo.ForgotPasswordCustomText != forgotPasswordCustomText {
+		t.Fatalf("Error Expected %+v, Received (%v)", forgotPasswordCustomLink, pubRealmInfo.ForgotPasswordCustomText)
+	}
+}
+
+// TestInternalUpdateRealmSettingsReturnsErrorWithBadRealmName ensures that an error is returned when attempting to make an internal call to update a realm that does not exist.
+func TestInternalUpdateRealmSettingsReturnsErrorWithBadRealmName(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("InternalUpdateRealm%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	// Check Current Setttings
+	privRealmInfo, err := identityServiceClient.PrivateRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for private realm info for %+v", err, realmName)
+	}
+	pubRealmInfo, err := InternalBootstrapClient.InternalPublicRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for public realm info for %+v", err, realmName)
+	}
+	if privRealmInfo.Name != realmName {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, privRealmInfo.Name)
+	}
+	if privRealmInfo.SecretsEnabled != false {
+		t.Fatalf("Error Expected %+v, Received %+v", realmName, privRealmInfo.Name)
+	}
+	if privRealmInfo.TozIDFederationEnabled != false {
+		t.Fatalf("Error Expected false, Received %+v", privRealmInfo.TozIDFederationEnabled)
+	}
+	if privRealmInfo.MPCEnabled != autoEnableMPCForNewRealms {
+		t.Fatalf("Error Expected (%v), Received (%v)", autoEnableMPCForNewRealms, privRealmInfo.MPCEnabled)
+	}
+	if pubRealmInfo.ForgotPasswordCustomLink != defaultForgotPasswordCustomLink {
+		t.Fatalf("Error Expected %+v, Received %+v", defaultForgotPasswordCustomLink, pubRealmInfo.ForgotPasswordCustomLink)
+	}
+	if pubRealmInfo.ForgotPasswordCustomText != "" {
+		t.Fatalf("Error Expected empty string, Received (%v)", pubRealmInfo.ForgotPasswordCustomText)
+	}
+
+	t.Logf("priv realmInfo = %+v", privRealmInfo)
+
+	// Update Realm Setting
+	secretsEnabled := true
+	emailEnabled := true
+	tozIDFederationEnabled := true
+	mpcEnabled := !autoEnableMPCForNewRealms
+	forgotPasswordCustomLink := "link"
+	forgotPasswordCustomText := "text"
+	settingRequest := RealmSettingsUpdateRequest{
+		MFAAvailable:             &([]string{"None"}),
+		SecretsEnabled:           &(secretsEnabled),
+		EmailLookupsEnabled:      &(emailEnabled),
+		TozIDFederationEnabled:   &(tozIDFederationEnabled),
+		MPCEnabled:               &(mpcEnabled),
+		ForgotPasswordCustomLink: &forgotPasswordCustomLink,
+		ForgotPasswordCustomText: &forgotPasswordCustomText,
+	}
+	badRealmName := fmt.Sprintf("BadInternalUpdateRealm%d", time.Now().Unix())
+	err = InternalBootstrapClient.InternalRealmSettingsUpdate(testContext, badRealmName, settingRequest)
+	if err == nil {
+		t.Fatalf("Expected error trying to update realm that does not exist.")
+	}
+}
+
+// TestInternalPublicRealmInfo ensures that an internal client get public information about a realm.
+func TestInternalPublicRealmInfo(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("InternalPublicRealmInfo%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+
+	pubRealmInfo, err := InternalBootstrapClient.InternalPublicRealmInfo(testContext, realmName)
+	if err != nil {
+		t.Fatalf("Error [%+v] Searching for public realm info for %+v", err, realmName)
+	}
+	t.Logf("%+v", pubRealmInfo)
+
+	if pubRealmInfo.Name != realmName {
+		t.Fatalf("Error, expected %+v, received %+v", realmName, pubRealmInfo.Name)
+	}
+	if pubRealmInfo.Domain != strings.ToLower(realmName) {
+		t.Fatalf("Error, expected %+v, received %+v", strings.ToLower(realmName), pubRealmInfo.Domain)
+	}
+	if pubRealmInfo.BrokerIdentityToznyID != uuid.Nil {
+		t.Fatalf("Error, expected %+v, received %+v", uuid.Nil, pubRealmInfo.BrokerIdentityToznyID)
+	}
+	if pubRealmInfo.ForgotPasswordCustomLink != defaultForgotPasswordCustomLink {
+		t.Fatalf("Error, expected %+v, received %+v", defaultForgotPasswordCustomLink, pubRealmInfo.ForgotPasswordCustomLink)
+	}
+	if pubRealmInfo.ForgotPasswordCustomText != "" {
+		t.Fatalf("Error, expected empty string received %+v", pubRealmInfo.ForgotPasswordCustomText)
+	}
+}
+
+// TestInternalPublicRealmInfoReturnsErrorWithBadRealmName ensures that an error is returned when an internal client attemps to get public realm information for a realm that does not exist.
+func TestInternalPublicRealmInfoReturnsErrorWithBadRealmName(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := fmt.Sprintf("InternalPublicRealmInfo%d", time.Now().Unix())
+	sovereignName := "Yassqueen"
+	params := CreateRealmRequest{
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	badRealmName := fmt.Sprintf("BadInternalPublicRealmInfo%d", time.Now().Unix())
+	pubRealmInfo, err := InternalBootstrapClient.InternalPublicRealmInfo(testContext, badRealmName)
+	if err == nil {
+		t.Fatalf("Expected error, but found realm %+v", pubRealmInfo)
 	}
 }
