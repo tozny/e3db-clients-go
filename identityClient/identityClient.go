@@ -1081,6 +1081,29 @@ func (c *E3dbIdentityClient) RealmSettingsUpdate(ctx context.Context, realmName 
 	return err
 }
 
+// InternalRealmSettingsUpdate makes an internal call to identity service to update realm settings
+func (c *E3dbIdentityClient) InternalRealmSettingsUpdate(ctx context.Context, realmName string, params RealmSettingsUpdateRequest) error {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmResourceName + "/info" + fmt.Sprintf("/%s", realmName)
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// InternalPublicRealmInfo makes an internal call to identity service to get realm info
+func (c *E3dbIdentityClient) InternalPublicRealmInfo(ctx context.Context, realmName string) (*PublicRealm, error) {
+	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + realmResourceName + "/info" + fmt.Sprintf("/%s", realmName)
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	var publicRealm *PublicRealm
+	if err != nil {
+		return publicRealm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &publicRealm)
+	return publicRealm, err
+}
+
 // CreateAccessRequest creates a new AccessRequest in an 'open' state
 func (c *E3dbIdentityClient) CreateAccessRequest(ctx context.Context, params CreateAccessRequestRequest) (*AccessRequestResponse, error) {
 	var accessRequest *AccessRequestResponse
