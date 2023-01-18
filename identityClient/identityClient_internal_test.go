@@ -1029,8 +1029,6 @@ func TestInternalUpdateRealmSettings(t *testing.T) {
 		t.Fatalf("Error Expected empty string, Received (%v)", pubRealmInfo.ForgotPasswordCustomText)
 	}
 
-	t.Logf("priv realmInfo = %+v", privRealmInfo)
-
 	// Update Realm Setting
 	secretsEnabled := true
 	emailEnabled := true
@@ -1137,8 +1135,6 @@ func TestInternalUpdateRealmSettingsReturnsErrorWithBadRealmName(t *testing.T) {
 		t.Fatalf("Error Expected empty string, Received (%v)", pubRealmInfo.ForgotPasswordCustomText)
 	}
 
-	t.Logf("priv realmInfo = %+v", privRealmInfo)
-
 	// Update Realm Setting
 	secretsEnabled := true
 	emailEnabled := true
@@ -1184,7 +1180,6 @@ func TestInternalPublicRealmInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error [%+v] Searching for public realm info for %+v", err, realmName)
 	}
-	t.Logf("%+v", pubRealmInfo)
 
 	if pubRealmInfo.Name != realmName {
 		t.Fatalf("Error, expected %+v, received %+v", realmName, pubRealmInfo.Name)
