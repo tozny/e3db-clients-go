@@ -1599,8 +1599,8 @@ func (c *E3dbIdentityClient) InternalAdministratorAccountLockStatus(ctx context.
 // ListRealmIdentities in a given realm in a paginated way.
 func (c *E3dbIdentityClient) ListRealmIdentities(ctx context.Context, params ListIdentitiesRequest) (*IdentityInfoList, error) {
 	var identities *IdentityInfoList
-	path := c.Host + "/v1/identity/info/realm/identity"
-	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	path := c.Host + identityServiceBasePath + "/cake"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return identities, err
 	}
