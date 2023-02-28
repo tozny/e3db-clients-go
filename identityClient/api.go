@@ -1464,3 +1464,18 @@ type InternalAdministratorLockStatusRequest struct {
 	RealmDomain string    `json:"realm_domain"` // The domain name of the realm the Identity is a member of.
 	UserID      uuid.UUID `json:"user_id"`      // The ID of the Identity's keycloak user
 }
+
+// IdentityInfo wraps abbreviated identity information about member of a realm.
+type IdentityInfo struct {
+	Name      string    `json:"username"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	ToznyID   uuid.UUID `json:"tozny_id"`
+}
+
+// IdentityInfoList wraps a slice of identities and a next token for pagination.
+type IdentityInfoList struct {
+	Identities []IdentityInfo `json:"identities"`
+	Next       int            `json:"next"`
+}

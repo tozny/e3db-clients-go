@@ -1595,3 +1595,19 @@ func (c *E3dbIdentityClient) InternalAdministratorAccountLockStatus(ctx context.
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
 	return response, err
 }
+
+// ListRealmIdentities in a given realm in a paginated way.
+func (c *E3dbIdentityClient) ListRealmIdentities(ctx context.Context, params ListIdentitiesRequest) (*IdentityInfoList, error) {
+	var identities *IdentityInfoList
+	path := c.Host + identityServiceBasePath + "/realm/info/" + strings.ToLower(params.RealmName) + "/identity/list"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return identities, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("first", strconv.Itoa(int(params.First)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identities)
+	return identities, err
+}
