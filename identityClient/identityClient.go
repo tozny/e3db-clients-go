@@ -1607,6 +1607,17 @@ func (c *E3dbIdentityClient) ListRealmIdentities(ctx context.Context, params Lis
 	urlParams := req.URL.Query()
 	urlParams.Set("first", strconv.Itoa(int(params.First)))
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+
+	for _, username := range params.Usernames {
+		urlParams.Add("username", username)
+	}
+	for _, email := range params.Emails {
+		urlParams.Add("email", email)
+	}
+	for _, clientID := range params.ToznyClientIDs {
+		urlParams.Add("client_id", clientID.String())
+	}
+
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identities)
 	return identities, err

@@ -682,9 +682,12 @@ type BasicIdentity struct {
 
 // ListIdentitiesRequest wraps the data to request a list of identities in a realm
 type ListIdentitiesRequest struct {
-	RealmName string
-	First     int
-	Max       int
+	RealmName      string
+	First          int
+	Max            int
+	Usernames      []string
+	Emails         []string
+	ToznyClientIDs []uuid.UUID
 }
 
 // ListIdentitiesResponse wraps the listing of realm identities and includes a next token
@@ -1472,6 +1475,7 @@ type IdentityInfo struct {
 	LastName  string    `json:"last_name"`
 	Email     string    `json:"email"`
 	ToznyID   uuid.UUID `json:"tozny_id"`
+	UserID    string    `json:"user_id"`
 }
 
 // IdentityInfoList wraps a slice of identities and a next token for pagination.
