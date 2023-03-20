@@ -150,6 +150,13 @@ type ListGroupRecordsRequest struct {
 	Max       int
 }
 
+// ListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
+type BulkListGroupRecordsRequest struct {
+	GroupIDs  []string `json:"group_id"`
+	NextToken string
+	Max       int
+}
+
 // ListGroupRecordsResponse returns all the records shared with a group and the values needed to unwrap.
 type ListGroupRecordsResponse struct {
 	ResultList []pdsClient.ListedRecord `json:"results"`
