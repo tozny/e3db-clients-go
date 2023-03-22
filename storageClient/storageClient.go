@@ -352,8 +352,8 @@ func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroup
 }
 
 // GetSharedWithGroup returns a list of all records shared with a group
-func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, params BulkListGroupRecordsRequest) (*ListGroupRecordsResponse, error) {
-	var result *ListGroupRecordsResponse
+func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, params BulkListGroupRecordsRequest) (*BulkListGroupRecordsResponse, error) {
+	var result *BulkListGroupRecordsResponse
 	path := c.Host + storageServiceBasePath + "/groups/bulk/share"
 	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {

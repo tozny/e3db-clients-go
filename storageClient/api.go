@@ -163,6 +163,12 @@ type ListGroupRecordsResponse struct {
 	NextToken  string                   `json:"next_token"`
 }
 
+// BulkListGroupRecordsResponse returns all the records shared with a list of groups and the values needed to unwrap.
+type BulkListGroupRecordsResponse struct {
+	ResultList map[string][]pdsClient.ListedRecord `json:"results"`
+	NextToken  string                              `json:"next_token"`
+}
+
 // AccessKeyWrapper holds the information needed to unwrap each layer of access keys
 type AccessKeyWrapper struct {
 	MembershipKey string    `json:"membership_key"`
