@@ -351,7 +351,7 @@ func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroup
 	return result, err
 }
 
-// GetSharedWithGroup returns a list of all records shared with a group
+// GetBulkRecordsSharedWithGroups returns a map of all records shared with a group and the corresponding group ID
 func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, params BulkListGroupRecordsRequest) (*BulkListGroupRecordsResponse, error) {
 	var result *BulkListGroupRecordsResponse
 	path := c.Host + storageServiceBasePath + "/groups/bulk/share"

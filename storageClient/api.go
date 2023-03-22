@@ -150,7 +150,7 @@ type ListGroupRecordsRequest struct {
 	Max       int
 }
 
-// ListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
+// BulkListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
 type BulkListGroupRecordsRequest struct {
 	GroupIDs  []string `json:"group_id"`
 	NextToken string

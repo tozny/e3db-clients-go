@@ -282,7 +282,7 @@ type ListRecordsResult struct {
 	LastIndex int            `json:"last_index"`
 }
 
-// ListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
+// BulkListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
 type BulkListGroupRecordsRequest struct {
 	GroupIDs  []string `json:"group_id"`
 	NextToken string
