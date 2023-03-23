@@ -351,6 +351,27 @@ func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroup
 	return result, err
 }
 
+// GetBulkRecordsSharedWithGroups returns a map of all records shared with a group and the corresponding group ID
+func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, params BulkListGroupRecordsRequest) (*BulkListGroupRecordsResponse, error) {
+	var result *BulkListGroupRecordsResponse
+	path := c.Host + storageServiceBasePath + "/groups/bulk/share"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("next_token", params.NextToken)
+	if params.Max != 0 {
+		urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	}
+	for _, group := range params.GroupIDs {
+		urlParams.Add("group_ids", group)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // ReadNote retrieves a note by noteID
 func (c *StorageClient) ReadNote(ctx context.Context, noteID string, eacpParams map[string]string) (*Note, error) {
 	return c.readNote(ctx, "", noteID, eacpParams)

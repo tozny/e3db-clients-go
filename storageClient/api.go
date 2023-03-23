@@ -150,10 +150,23 @@ type ListGroupRecordsRequest struct {
 	Max       int
 }
 
+// BulkListGroupRecordsRequest wraps values needed for the request to list all records shared with a list of groups
+type BulkListGroupRecordsRequest struct {
+	GroupIDs  []string `json:"group_ids"`
+	NextToken string
+	Max       int
+}
+
 // ListGroupRecordsResponse returns all the records shared with a group and the values needed to unwrap.
 type ListGroupRecordsResponse struct {
 	ResultList []pdsClient.ListedRecord `json:"results"`
 	NextToken  string                   `json:"next_token"`
+}
+
+// BulkListGroupRecordsResponse returns all the records shared with a list of groups and the values needed to unwrap.
+type BulkListGroupRecordsResponse struct {
+	ResultList map[string][]pdsClient.ListedRecord `json:"results"`
+	NextToken  string                              `json:"next_token"`
 }
 
 // AccessKeyWrapper holds the information needed to unwrap each layer of access keys
