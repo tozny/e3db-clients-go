@@ -201,6 +201,24 @@ func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMe
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// GetBulkRecordsSharedWithGroups returns a map of all records shared with a group and the corresponding group ID
+func (c *StorageClient) BulkListGroupMembers(ctx context.Context, params BulkListGroupMembersRequest) (*BulkListGroupMembersResponse, error) {
+	var result *BulkListGroupMembersResponse
+	path := c.Host + storageServiceBasePath + "/groups/bulk/members"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	for _, group := range params.GroupIDs {
+		urlParams.Add("group_ids", group)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) UpsertNoteByIDString(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
 	path := c.Host + storageServiceBasePath + "/notes"
