@@ -102,7 +102,6 @@ type BulkListGroupMembersRequest struct {
 // BulkListGroupMembersResponse returns all the members of a particular list of groups and the group they are part of.
 type BulkListGroupMembersResponse struct {
 	ResultList map[string][]GroupMember `json:"results"`
-	// NextToken  string                   `json:"next_token"`
 }
 
 // ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
