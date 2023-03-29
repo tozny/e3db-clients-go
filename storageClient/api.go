@@ -94,6 +94,16 @@ type DescribeGroupRequest struct {
 // ListGroupMembersRequest wraps the group id needed to look up group members
 type ListGroupMembersRequest DescribeGroupRequest
 
+// BulkListGroupMembersRequest wraps values used to look up group membership for a list of groups
+type BulkListGroupMembersRequest struct {
+	GroupIDs []string `json:"group_ids"`
+}
+
+// BulkListGroupMembersResponse returns all the members of a particular list of groups and the group they are part of.
+type BulkListGroupMembersResponse struct {
+	ResultList map[string][]GroupMember `json:"results"`
+}
+
 // ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
 type ListGroupsRequest struct {
 	ClientID   uuid.UUID
