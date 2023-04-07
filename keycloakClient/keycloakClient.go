@@ -363,6 +363,30 @@ func (c *Client) postFormDataWithToznySessionToken(url, accessToken, sessionToke
 	return nil
 }
 
+func (c *Client) postJSONWithAccessToken(accessToken string, data interface{}, url string) (*http.Response, error) {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", path, buf)
+	if err != nil {
+		return nil, err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return nil, e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return response, nil
+
+}
+
 func (c *Client) postFormDataWithAccessToken(url string, accessToken string, data url.Values, result interface{}) error {
 	path := c.apiURL.String() + url
 	req, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
@@ -1228,30 +1252,28 @@ func (c *Client) InitiateWebAuthnChallengeForUser(accessToken, keycloakUserID, r
 	return result, err
 }
 
-func (c *Client) CompleteWebAuthnRegisterForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnRequest) error {
+func (c *Client) CompleteWebAuthnRegisterForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnRequest) (*http.Response, error) {
 	path := fmt.Sprintf("/auth/realms/%s/user/%s/direct/webauthn/register", realmDomain, keycloakUserID)
-	formData := url.Values{
-		"clientDataJSON":        {webauthn.ClientDataJSON},
-		"attestationObject":     {webauthn.AttestationObject},
-		"publicKeyCredentialId": {webauthn.PublicKeyCredentialID},
-		"authenticatorLabel":    {webauthn.AuthenticatorLabel},
+	formData := map[string]string{
+		"clientDataJSON":        webauthn.ClientDataJSON,
+		"attestationObject":     webauthn.AttestationObject,
+		"publicKeyCredentialId": webauthn.PublicKeyCredentialID,
+		"authenticatorLabel":    webauthn.AuthenticatorLabel,
 	}
-	err := c.postFormDataWithAccessToken(path, accessToken, formData, url.Values{})
-	return err
+	return c.postJSONWithAccessToken(accessToken, formData, path)
 }
 
-func (c *Client) ValidateWebAuthnForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnValidateRequest) error {
+func (c *Client) ValidateWebAuthnForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnValidateRequest) (*http.Response, error) {
 	path := fmt.Sprintf("/auth/realms/%s/user/%s/direct/webauthn/validate", realmDomain, keycloakUserID)
-	formData := url.Values{
-		"clientDataJSON":    {webauthn.ClientDataJSON},
-		"credentialId":      {webauthn.CredentialID},
-		"authenticatorData": {webauthn.AuthenticatorData},
-		"challenge":         {webauthn.Challenge},
-		"signature":         {webauthn.Signature},
-		"userHandle":        {webauthn.UserHandle},
+	formData := map[string]string{
+		"clientDataJSON":    webauthn.ClientDataJSON,
+		"credentialId":      webauthn.CredentialID,
+		"authenticatorData": webauthn.AuthenticatorData,
+		"challenge":         webauthn.Challenge,
+		"signature":         webauthn.Signature,
+		"userHandle":        webauthn.UserHandle,
 	}
-	err := c.postFormDataWithAccessToken(path, accessToken, formData, url.Values{})
-	return err
+	return c.postJSONWithAccessToken(accessToken, formData, path)
 }
 
 // RegisterWebAuthnDevice registers & persists the WebAuthn MFA device
