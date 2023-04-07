@@ -1240,6 +1240,20 @@ func (c *Client) CompleteWebAuthnRegisterForUser(accessToken, keycloakUserID, re
 	return err
 }
 
+func (c *Client) ValidateWebAuthnForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnValidateRequest) error {
+	path := fmt.Sprintf("/auth/realms/%s/user/%s/direct/webauthn/validate", realmDomain, keycloakUserID)
+	formData := url.Values{
+		"clientDataJSON":    {webauthn.ClientDataJSON},
+		"credentialId":      {webauthn.CredentialID},
+		"authenticatorData": {webauthn.AuthenticatorData},
+		"challenge":         {webauthn.Challenge},
+		"signature":         {webauthn.Signature},
+		"userHandle":        {webauthn.UserHandle},
+	}
+	err := c.postFormDataWithAccessToken(path, accessToken, formData, url.Values{})
+	return err
+}
+
 // RegisterWebAuthnDevice registers & persists the WebAuthn MFA device
 func (c *Client) RegisterWebAuthnDevice(accessToken, sessionToken, realmDomain string, data RegisterWebAuthnDeviceRequest) error {
 	query := url.Values{}

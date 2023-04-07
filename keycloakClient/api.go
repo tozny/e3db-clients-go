@@ -713,6 +713,15 @@ type DirectWebauthnRequest struct {
 	Challenge             string `json:"challenge"`
 }
 
+type DirectWebauthnValidateRequest struct {
+	ClientDataJSON    string `json:"client_data_json"`
+	CredentialID      string `json:"credential_id"`
+	AuthenticatorData string `json:"authenticator_data"`
+	Signature         string `json:"signature"`
+	Challenge         string `json:"challenge"`
+	UserHandle        string `json:"user_handle"`
+}
+
 // InitiateWebAuthnChallengeContext contains the actual challenge data & WebAuthn policy info
 // required for registering a WebAuthn hardware MFA device.
 type InitiateWebAuthnChallengeContext struct {
