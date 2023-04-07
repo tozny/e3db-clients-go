@@ -362,6 +362,27 @@ func (c *Client) postFormDataWithToznySessionToken(url, accessToken, sessionToke
 	}
 	return nil
 }
+
+func (c *Client) postFormDataWithAccessToken(url string, accessToken string, data url.Values, result interface{}) error {
+	path := c.apiURL.String() + url
+	req, err := http.NewRequest("POST", path, strings.NewReader(data.Encode()))
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, result)
+	if err != nil {
+		if response == nil {
+			return err
+		}
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
+}
 func (c *Client) delete(accessToken string, data interface{}, url string) error {
 	path := c.apiURL.String() + url
 	req, err := http.NewRequest("DELETE", path, nil)
@@ -1197,6 +1218,26 @@ func (c *Client) InitiateWebAuthnChallenge(accessToken, sessionToken, realmDomai
 	path := fmt.Sprintf("/auth/realms/%s/%s/webauthn-challenge", realmDomain, mfaResourceName)
 	err := c.postFormDataWithToznySessionToken(path, accessToken, sessionToken, url.Values{}, &result)
 	return result, err
+}
+
+// InitiateWebAuthnChallenge initiates the flow for registering a WebAuthn device
+func (c *Client) InitiateWebAuthnChallengeForUser(accessToken, keycloakUserID, realmDomain string) (DirectWebAuthnChallengeResponse, error) {
+	var result DirectWebAuthnChallengeResponse
+	path := fmt.Sprintf("/auth/realms/%s/user/%s/direct/webauthn/initiate", realmDomain, keycloakUserID)
+	err := c.postFormDataWithAccessToken(path, accessToken, url.Values{}, &result)
+	return result, err
+}
+
+func (c *Client) CompleteWebAuthnRegisterForUser(accessToken, keycloakUserID, realmDomain string, webauthn DirectWebauthnRequest) error {
+	path := fmt.Sprintf("/auth/realms/%s/user/%s/direct/webauthn/register", realmDomain, keycloakUserID)
+	formData := url.Values{
+		"clientDataJSON":        {webauthn.ClientDataJSON},
+		"attestationObject":     {webauthn.AttestationObject},
+		"publicKeyCredentialId": {webauthn.PublicKeyCredentialID},
+		"authenticatorLabel":    {webauthn.AuthenticatorLabel},
+	}
+	err := c.postFormDataWithAccessToken(path, accessToken, formData, url.Values{})
+	return err
 }
 
 // RegisterWebAuthnDevice registers & persists the WebAuthn MFA device
