@@ -1259,6 +1259,7 @@ func (c *Client) CompleteWebAuthnRegisterForUser(accessToken, keycloakUserID, re
 		"attestationObject":     webauthn.AttestationObject,
 		"publicKeyCredentialId": webauthn.PublicKeyCredentialID,
 		"authenticatorLabel":    webauthn.AuthenticatorLabel,
+		"challenge":             webauthn.Challenge,
 	}
 	return c.postJSONWithAccessToken(accessToken, formData, path)
 }
