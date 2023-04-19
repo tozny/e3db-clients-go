@@ -870,6 +870,16 @@ func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params Regist
 	return identity, err
 }
 
+// UpdateIdentityAttributes updates requested identity's attributes
+func (c *E3dbIdentityClient) UpdateIdentityAttributes(ctx context.Context, params UpdateIdentityAttributesRequest) error {
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.ToznyID.String() + "/attributes"
+	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
 // DeleteIdentity removes an identity in the given realm.
 func (c *E3dbIdentityClient) DeleteIdentity(ctx context.Context, params RealmIdentityRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID
