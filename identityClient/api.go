@@ -1478,12 +1478,13 @@ type InternalAdministratorLockStatusRequest struct {
 
 // IdentityInfo wraps abbreviated identity information about member of a realm.
 type IdentityInfo struct {
-	Name      string    `json:"username"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	ToznyID   uuid.UUID `json:"tozny_id"`
-	UserID    string    `json:"user_id"`
+	Name       string              `json:"username"`
+	FirstName  string              `json:"first_name"`
+	LastName   string              `json:"last_name"`
+	Email      string              `json:"email"`
+	ToznyID    uuid.UUID           `json:"tozny_id"`
+	UserID     string              `json:"user_id"`
+	Attributes map[string][]string `json:"attributes"`
 }
 
 // IdentityInfoList wraps a slice of identities and a next token for pagination.
