@@ -872,7 +872,7 @@ func (c *E3dbIdentityClient) RegisterIdentity(ctx context.Context, params Regist
 
 // UpdateIdentityAttributes updates requested identity's attributes
 func (c *E3dbIdentityClient) UpdateIdentityAttributes(ctx context.Context, params UpdateIdentityAttributesRequest) error {
-	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.ToznyID.String() + "/attributes"
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + strings.ToLower(params.RealmName) + "/" + identityResourceName + "/" + params.ToznyID.String() + "/attributes"
 	req, err := e3dbClients.CreateRequest(http.MethodPut, path, params)
 	if err != nil {
 		return err
