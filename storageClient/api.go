@@ -545,3 +545,15 @@ type InternalSearchModifiedGroupAllowedReadsRequest struct {
 	Limit     int                    `json:"limit,omitempty"`
 	Range     *InternalModifiedRange `json:"range,omitempty"`
 }
+
+type BulkRecordDeleteRequest struct {
+	RecordIDs []uuid.UUID `json:"record_ids"`
+}
+type BulkRecordDeleteResponseErrors struct {
+	RecordDeleteError map[string][]RecordError `json:"record_delete_error"`
+}
+
+type RecordError struct {
+	RecordID uuid.UUID `json:"record_id"`
+	Error    string    `json:"error"`
+}
