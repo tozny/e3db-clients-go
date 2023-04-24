@@ -546,13 +546,17 @@ type InternalSearchModifiedGroupAllowedReadsRequest struct {
 	Range     *InternalModifiedRange `json:"range,omitempty"`
 }
 
+// BulkRecordDeleteRequest wraps the request to delete records
 type BulkRecordDeleteRequest struct {
 	RecordIDs []uuid.UUID `json:"record_ids"`
 }
+
+// BulkRecordDeleteResponseErrors wraps the response for errors during record deletion
 type BulkRecordDeleteResponseErrors struct {
 	RecordDeleteError map[string][]RecordError `json:"record_delete_error"`
 }
 
+// RecordError wraps the error of the record requested to be deleted
 type RecordError struct {
 	RecordID uuid.UUID `json:"record_id"`
 	Error    string    `json:"error"`

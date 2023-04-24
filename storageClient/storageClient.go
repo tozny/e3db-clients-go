@@ -747,7 +747,7 @@ func (c *StorageClient) GetGroupRecordsByRecordID(ctx context.Context, params Ge
 	return result, err
 }
 
-// BulkDeleteRecords
+// BulkDeleteRecords removes all records passed in
 func (c *StorageClient) BulkDeleteRecords(ctx context.Context, params BulkRecordDeleteRequest) (*BulkRecordDeleteResponseErrors, error) {
 	var result *BulkRecordDeleteResponseErrors
 	path := c.Host + storageServiceBasePath + "/records/bulk/delete"
