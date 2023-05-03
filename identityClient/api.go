@@ -23,6 +23,7 @@ const (
 	SAMLKeycloakSubsystemDescriptionFormat                  = "keycloak-saml-subsystem"
 	UserSessionNoteOIDCApplicationMapperType                = "oidc-user-session-note-mapper"
 	UserAttributeOIDCApplicationMapperType                  = "oidc-user-attribute-mapper"
+	UserPropertyOIDCApplicationMapperType                   = "oidc-user-property-mapper"
 	UserModelRealmRoleOIDCApplicationMapperType             = "oidc-usermodel-realm-role-mapper"
 	UserModelClientRoleOIDCApplicationMapperType            = "oidc-usermodel-client-role-mapper"
 	UserModelAttributeOIDCApplicationMapperType             = "oidc-usermodel-attribute-mapper"

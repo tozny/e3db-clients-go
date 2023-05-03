@@ -46,6 +46,7 @@ const (
 	initiateLoginPath                            = "/auth/realms/%s/protocol/openid-connect/auth"
 	UserSessionNoteOIDCApplicationMapperType     = "oidc-usersessionmodel-note-mapper"
 	UserAttributeOIDCApplicationMapperType       = "oidc-usermodel-attribute-mapper"
+	UserPropertyOIDCApplicationMapperType        = "oidc-usermodel-property-mapper"
 	GroupMembershipOIDCApplicationMapperType     = "oidc-group-membership-mapper"
 	RoleListSAMLApplicationMapperType            = "saml-role-list-mapper"
 	UserPropertySAMLApplicationMapperType        = "saml-user-property-mapper"
