@@ -895,6 +895,11 @@ func (c *Client) CreateProtocolMapper(accessToken string, realmName string, clie
 	return c.post(accessToken, protocolMapper, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName))
 }
 
+// UpdateProtocolMapper updates an existing protocol mapper
+func (c *Client) UpdateProtocolMapper(accessToken string, realmName string, clientId string, mapperId string, protocolMapper ProtocolMapperRepresentation) error {
+	return c.put(accessToken, protocolMapper, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName, mapperId))
+}
+
 // DeleteProtocolMapper deletes a protocol mapper from the client
 func (c *Client) DeleteProtocolMapper(accessToken string, realmName string, clientId string, protocolMapperID string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", realmRootPath, realmName, clientResourceName, clientId, protocolMapperResourceName, modelsResourceName, protocolMapperID))
