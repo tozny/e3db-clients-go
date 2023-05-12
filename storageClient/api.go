@@ -57,6 +57,12 @@ type Group struct {
 	MemberCount       int       `json:"member_count"`
 }
 
+// CreateGroupRequest wraps parameters needed to update a group description
+type UpdateGroupRequest struct {
+	GroupID          uuid.UUID `json:"group_id"`
+	GroupDescription string    `json:"group_description"`
+}
+
 // GroupAccessKeyRequest wraps the values to get or create an access key
 type GroupAccessKeyRequest struct {
 	GroupID            uuid.UUID `json:"group_id"`
