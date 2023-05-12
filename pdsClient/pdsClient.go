@@ -19,7 +19,7 @@ const (
 	PDSServiceBasePath = "v1/storage" //HTTP PATH prefix for calls to the Personal Data Storage service
 )
 
-//E3dbPDSClient implements an http client for communication with an e3db PDS service.
+// E3dbPDSClient implements an http client for communication with an e3db PDS service.
 type E3dbPDSClient struct {
 	ClientID       string
 	APIKey         string
@@ -400,6 +400,18 @@ func (c *E3dbPDSClient) WriteRecord(ctx context.Context, params WriteRecordReque
 	var result *WriteRecordResponse
 	path := c.Host + "/" + PDSServiceBasePath + "/records"
 	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
+// WriteRecord locally encrypts and stores a record in e3db, returning stored record and error (if any).
+func (c *E3dbPDSClient) UpdateRecord(ctx context.Context, params WriteRecordRequest, recordId string) (*WriteRecordResponse, error) {
+	var result *WriteRecordResponse
+	path := c.Host + "/" + PDSServiceBasePath + "/records" + "/" + recordId
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
 	if err != nil {
 		return result, err
 	}
