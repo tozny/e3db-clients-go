@@ -418,7 +418,29 @@ func (c *Client) delete(accessToken string, data interface{}, url string) error 
 	if err != nil {
 		return err
 	}
-	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, data)
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
+
+}
+func (c *Client) deleteWithBody(accessToken string, data interface{}, url string) error {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", path, buf)
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
 	if err != nil {
 		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
 	}
@@ -1077,7 +1099,7 @@ func (c *Client) AddRealmRolesToUserRoleMapping(accessToken string, realmName, u
 
 // RemoveRealmRolesFromUserRoleMapping removes realm role mappings from a user, returning error (if any)
 func (c *Client) RemoveRealmRolesFromUserRoleMapping(accessToken string, realmName, userID string, roles []RoleRepresentation) error {
-	err := c.delete(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
+	err := c.deleteWithBody(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
 	return err
 }
 
