@@ -425,6 +425,28 @@ func (c *Client) delete(accessToken string, data interface{}, url string) error 
 	return nil
 
 }
+func (c *Client) deleteWithBody(accessToken string, data interface{}, url string) error {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", path, buf)
+	if err != nil {
+		return err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return e3dbClients.NewError(err.Error(), path, response.StatusCode)
+	}
+	return nil
+
+}
 func (c *Client) get(accessToken string, data interface{}, url string) error {
 	path := c.apiURL.String() + url
 	req, err := http.NewRequest("GET", path, nil)
@@ -617,21 +639,23 @@ func (c *Client) GetRealm(accessToken string, realmName string) (RealmRepresenta
 
 // GetRealmRoles gets all roles for the realm
 // GET /auth/admin/realms/demorealm/roles HTTP/1.1
-// [{
-//     "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122"
-// }, {
-//     "id": "1776d0d5-5ed6-49fa-83fc-f589b9c43eed",
-//     "name": "uma_authorization",
-//     "description": "${role_uma_authorization}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122"
-// }]
+//
+//	[{
+//	    "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
+//	    "name": "offline_access",
+//	    "description": "${role_offline-access}",
+//	    "composite": false,
+//	    "clientRole": false,
+//	    "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122"
+//	}, {
+//
+//	    "id": "1776d0d5-5ed6-49fa-83fc-f589b9c43eed",
+//	    "name": "uma_authorization",
+//	    "description": "${role_uma_authorization}",
+//	    "composite": false,
+//	    "clientRole": false,
+//	    "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122"
+//	}]
 func (c *Client) GetRealmRoles(accessToken string, realmName string) ([]RoleRepresentation, error) {
 	var resp = []RoleRepresentation{}
 	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, roleResourceName))
@@ -640,15 +664,16 @@ func (c *Client) GetRealmRoles(accessToken string, realmName string) ([]RoleRepr
 
 // GetRealmRole gets a specific realm role’s representation
 // GET /auth/admin/realms/demorealm/roles/Admin HTTP/1.1
-// {
-//     "id": "c4d3c739-ad50-421e-a9af-63b04ae4105d",
-//     "name": "Admin",
-//     "description": "Allow all.",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
-//     "attributes": {}
-// }
+//
+//	{
+//	    "id": "c4d3c739-ad50-421e-a9af-63b04ae4105d",
+//	    "name": "Admin",
+//	    "description": "Allow all.",
+//	    "composite": false,
+//	    "clientRole": false,
+//	    "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
+//	    "attributes": {}
+//	}
 func (c *Client) GetRealmRoleByName(accessToken string, realmName string, roleName string) (RoleRepresentation, error) {
 	var resp = RoleRepresentation{}
 	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, roleResourceName, roleName))
@@ -657,15 +682,16 @@ func (c *Client) GetRealmRoleByName(accessToken string, realmName string, roleNa
 
 // GetRealmRole gets a specific realm role’s representation
 // GET /auth/admin/realms/demorealm/roles-by-id/f19e86ad-ddf2-4397-9a36-63bf02119fe8
-// {
-//     "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
-//     "attributes": {}
-// }
+//
+//	{
+//	    "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
+//	    "name": "offline_access",
+//	    "description": "${role_offline-access}",
+//	    "composite": false,
+//	    "clientRole": false,
+//	    "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
+//	    "attributes": {}
+//	}
 func (c *Client) GetRealmRoleByID(accessToken string, realmName string, roleId string) (RoleRepresentation, error) {
 	var resp = RoleRepresentation{}
 	var err = c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, roleByIDResourceName, roleId))
@@ -674,15 +700,16 @@ func (c *Client) GetRealmRoleByID(accessToken string, realmName string, roleId s
 
 // UpdateRealmRole updates a specific realm role’s representation
 // PUT /auth/admin/realms/demorealm/roles-by-id/f19e86ad-ddf2-4397-9a36-63bf02119fe8
-// {
-//     "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
-//     "attributes": {}
-// }
+//
+//	{
+//	    "id": "f19e86ad-ddf2-4397-9a36-63bf02119fe8",
+//	    "name": "offline_access",
+//	    "description": "${role_offline-access}",
+//	    "composite": false,
+//	    "clientRole": false,
+//	    "containerId": "b0b76f0e-3405-4d43-97da-4556d4cff122",
+//	    "attributes": {}
+//	}
 func (c *Client) UpdateRealmRoleByID(accessToken string, realmName string, roleId string, role RoleRepresentation) error {
 	return c.put(accessToken, role, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, roleByIDResourceName, roleId))
 }
@@ -707,14 +734,16 @@ func (c *Client) DeleteRealmRole(accessToken string, realmName string, roleId st
 // > GET http://localhost:8000/auth/admin/realms/demo/groups/80206962-5dcb-4252-8cbb-2e828c1d010b/role-mappings/realm
 // ```json
 // [
-//   {
-//     "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
-//   }
+//
+//	{
+//	  "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
+//	  "name": "offline_access",
+//	  "description": "${role_offline-access}",
+//	  "composite": false,
+//	  "clientRole": false,
+//	  "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
+//	}
+//
 // ]
 // ```
 func (c *Client) GetGroupRealmRoleMappings(accessToken, realmName, groupId string) ([]RoleRepresentation, error) {
@@ -727,14 +756,16 @@ func (c *Client) GetGroupRealmRoleMappings(accessToken, realmName, groupId strin
 // > POST http://localhost:8000/auth/admin/realms/demo/groups/80206962-5dcb-4252-8cbb-2e828c1d010b/role-mappings/realm
 // ```json
 // [
-//   {
-//     "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
-//   }
+//
+//	{
+//	  "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
+//	  "name": "offline_access",
+//	  "description": "${role_offline-access}",
+//	  "composite": false,
+//	  "clientRole": false,
+//	  "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
+//	}
+//
 // ]
 // ```
 func (c *Client) AddGroupRealmRoleMappings(accessToken, realmName, groupId string, roleMappings []RoleRepresentation) error {
@@ -746,14 +777,16 @@ func (c *Client) AddGroupRealmRoleMappings(accessToken, realmName, groupId strin
 // > DELETE http://localhost:8000/auth/admin/realms/demo/groups/80206962-5dcb-4252-8cbb-2e828c1d010b/role-mappings/realm
 // ```json
 // [
-//   {
-//     "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
-//     "name": "offline_access",
-//     "description": "${role_offline-access}",
-//     "composite": false,
-//     "clientRole": false,
-//     "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
-//   }
+//
+//	{
+//	  "id": "f815fc8a-5eb6-46c1-a454-5fbc8e1c6492",
+//	  "name": "offline_access",
+//	  "description": "${role_offline-access}",
+//	  "composite": false,
+//	  "clientRole": false,
+//	  "containerId": "4f0f8206-0ec4-4fd6-99eb-4e8c4b986c43"
+//	}
+//
 // ]
 // ```
 func (c *Client) RemoveGroupRealmRoleMappings(accessToken, realmName, groupId string, roleMappings []RoleRepresentation) error {
@@ -922,18 +955,20 @@ func (c *Client) GetProtocolMapper(accessToken string, realmName string, clientI
 // GetRealmDefaultClientScopes gets realm configuration for scopes which are added as client default scopes when a new client is created
 // GET /auth/admin/realms/demorealm/default-default-client-scopes HTTP/1.1
 // [
-//     {
-//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
-//         "name":"profile"
-//     },
-//     {
-//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
-//         "name":"email"
-//     },
-//     {
-//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
-//         "name":"web-origins"
-//     }
+//
+//	{
+//	    "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//	    "name":"profile"
+//	},
+//	{
+//	    "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//	    "name":"email"
+//	},
+//	{
+//	    "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//	    "name":"web-origins"
+//	}
+//
 // ]
 func (c *Client) GetRealmDefaultClientScopes(accessToken string, realmName string) ([]ClientScopeRepresentation, error) {
 	var resp = []ClientScopeRepresentation{}
@@ -952,18 +987,20 @@ func (c *Client) RemoveRealmDefaultClientScope(accessToken string, realmName, sc
 // GetDefaultClientScopes gets realm configuration for scopes which are added as client default scopes when a new client is created
 // GET /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/default-client-scopes HTTP/1.1
 // [
-//     {
-//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
-//         "name":"profile"
-//     },
-//     {
-//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
-//         "name":"email"
-//     },
-//     {
-//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
-//         "name":"web-origins"
-//     }
+//
+//	{
+//	    "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//	    "name":"profile"
+//	},
+//	{
+//	    "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//	    "name":"email"
+//	},
+//	{
+//	    "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//	    "name":"web-origins"
+//	}
+//
 // ]
 func (c *Client) GetDefaultClientScopes(accessToken string, realmName, client string) ([]ClientScopeRepresentation, error) {
 	var resp = []ClientScopeRepresentation{}
@@ -982,18 +1019,20 @@ func (c *Client) RemoveDefaultClientScope(accessToken string, realmName, client,
 // GetOptionalClientScopes gets realm configuration for scopes which are added as client optional scopes when a new client is created
 // GET /auth/admin/realms/demorealm/clients/0d55d933-09f4-427d-a385-13f5ceb1656e/optional-client-scopes HTTP/1.1
 // [
-//     {
-//         "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
-//         "name":"profile"
-//     },
-//     {
-//         "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
-//         "name":"email"
-//     },
-//     {
-//         "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
-//         "name":"web-origins"
-//     }
+//
+//	{
+//	    "id":"3f4f9602-f843-48a6-9d24-0f9563eed5b0",
+//	    "name":"profile"
+//	},
+//	{
+//	    "id":"7efa02d9-0a1e-496d-abf7-d9edb80e47b3",
+//	    "name":"email"
+//	},
+//	{
+//	    "id":"2c683450-ae2d-48ef-ace3-bc9101b2c4d1",
+//	    "name":"web-origins"
+//	}
+//
 // ]
 func (c *Client) GetOptionalClientScopes(accessToken string, realmName, client string) ([]ClientScopeRepresentation, error) {
 	var resp = []ClientScopeRepresentation{}
@@ -1060,7 +1099,7 @@ func (c *Client) AddRealmRolesToUserRoleMapping(accessToken string, realmName, u
 
 // RemoveRealmRolesFromUserRoleMapping removes realm role mappings from a user, returning error (if any)
 func (c *Client) RemoveRealmRolesFromUserRoleMapping(accessToken string, realmName, userID string, roles []RoleRepresentation) error {
-	err := c.delete(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
+	err := c.deleteWithBody(accessToken, roles, fmt.Sprintf("%s/%s/%s/%s/%s/%s", realmRootPath, realmName, userResourceName, userID, roleMappingResourceName, realmResourceName))
 	return err
 }
 
@@ -1353,26 +1392,26 @@ func (c *Client) DeleteIdentityProvider(accessToken string, realmName string, al
 	return c.delete(accessToken, nil, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s", realmName, alias))
 }
 
-//Add Mapper to Identity Provider
+// Add Mapper to Identity Provider
 func (c *Client) CreateIdentityProviderMapper(accessToken string, realmName string, alias string, mapper IdentityProviderMapperRequestRepresentation) (string, error) {
 	return c.post(accessToken, mapper, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers", realmName, alias))
 }
 
-//Get all Identity Provider role mappers
+// Get all Identity Provider role mappers
 func (c *Client) GetIdentityProviderMappers(accessToken string, realmName string, alias string) ([]IdentityProviderMapperRequestRepresentation, error) {
 	var response []IdentityProviderMapperRequestRepresentation
 	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers", realmName, alias))
 	return response, err
 }
 
-//Get individual Identity Provider role mapper
+// Get individual Identity Provider role mapper
 func (c *Client) GetIdentityProviderMapper(accessToken string, realmName string, alias string, id string) (IdentityProviderMapperResponse, error) {
 	var response IdentityProviderMapperResponse
 	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 	return response, err
 }
 
-//Delete Identity Provider role mapper
+// Delete Identity Provider role mapper
 func (c *Client) DeleteIdentityProviderMapper(accessToken string, realmName string, alias string, id string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 }
