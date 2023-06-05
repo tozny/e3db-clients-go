@@ -591,11 +591,11 @@ func (c *E3dbIdentityClient) BrokerIdentityChallenge(ctx context.Context, params
 	return e3dbClients.MakeRawServiceCall(c.requester, req, nil)
 }
 
-// RegisterIdentity completes a broker based login flow by giving the broker the needed authentication
+// BrokerIdentityLogin completes a broker based login flow by giving the broker the needed authentication
 // information returning the recovery note and error (if any).
-func (c *E3dbIdentityClient) BrokerIdentityLogin(ctx context.Context, params BrokerLoginRequest) (*BrokerLoginResponse, error) {
+func (c *E3dbIdentityClient) BrokerIdentityLogin(ctx context.Context, params BrokerLoginRequest, realmName string) (*BrokerLoginResponse, error) {
 	var identity *BrokerLoginResponse
-	path := c.Host + identityServiceBasePath + fmt.Sprintf("/broker/%s/%s/login", realmResourceName, params.RealmName)
+	path := c.Host + identityServiceBasePath + fmt.Sprintf("/broker/%s/%s/login", realmResourceName, realmName)
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return identity, err

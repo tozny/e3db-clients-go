@@ -326,12 +326,24 @@ type EmailOTP struct {
 // BrokerLoginRequest proof that the Identity has completed the broker challenge
 // along with key material to encrypt the login response.
 type BrokerLoginRequest struct {
-	RealmName    string    // The name of the realm the Identity is a member of.
-	Action       string    `json:"action"`        // The requested broker flow action to perform. Currently only login is supported
-	NoteID       uuid.UUID `json:"note_id"`       // The ID of the recovery Note the email challenge was for.
-	PublicKey    string    `json:"public_key"`    // The public key to use to encrypt the recovery note.
-	SigningKey   string    `json:"signing_key"`   // The signing key to use to verify the integrity of the recovery note.
-	AuthResponse EmailOTP  `json:"auth_response"` // The authentication material to allow the broker to access the seed material for the Identities recovery Note.
+	Action       string       `json:"action"`              // The requested broker flow action to perform. Currently only login is supported
+	NoteID       uuid.UUID    `json:"note_id,omitempty"`   // The ID of the recovery Note. Required if no note_name
+	NoteName     string       `json:"note_name,omitempty"` // The name of the recovery note. Required if no NoteID
+	PublicKey    string       `json:"public_key"`          // The public key to use to encrypt the recovery note.
+	SigningKey   string       `json:"signing_key"`         // The signing key to use to verify the integrity of the recovery note.
+	AuthResponse AuthResponse `json:"auth_response"`       // The authentication material to allow the broker to access the seed material for the Identities recovery Note.
+	AuthHeaders  AuthHeaders  `json:"auth_headers"`
+}
+
+// AuthResponse wraps a one time password provided via a prime or challenge challenge.
+type AuthResponse struct {
+	EmailOTP string `json:"email_otp,omitempty"` // The one-time password from the email challenge issued.
+	ToznyOTP string `json:"tozny_otp,omitempty"`
+}
+
+// AuthHeaders wraps whitelisted authentication headers for broker authentication
+type AuthHeaders struct {
+	TozIDToken string `json:"X-TOZID-LOGIN-TOKEN"`
 }
 
 //  BrokerLoginResponse wraps the Note ID of the broker login recovery note.
