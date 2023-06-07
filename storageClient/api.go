@@ -253,6 +253,7 @@ type ToznyOTPEACP struct {
 // embedded as the nonce claim for a valid & signed TozID realm auth JWT token
 type TozIDEACP struct {
 	RealmName string `json:"realm_name"`
+	Basic     bool   `json:"basic,omitempty"`
 }
 
 type BulkDeleteResponse struct {
