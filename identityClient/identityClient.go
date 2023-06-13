@@ -1641,6 +1641,6 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	if err != nil {
 		return resp, err
 	}
-	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	err = e3dbClients.MakeRawServiceCall(c.requester, req, &resp)
 	return resp, err
 }
