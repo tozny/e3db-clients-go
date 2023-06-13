@@ -1632,3 +1632,15 @@ func (c *E3dbIdentityClient) ListRealmIdentities(ctx context.Context, params Lis
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &identities)
 	return identities, err
 }
+
+// InitiateIdentityProviderLogin handles the begining of the login proccess for external identity providers
+func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, params InitiateIdentityProviderLoginRequest) (*InitiatePKCELoginResponse, error) {
+	var resp *InitiatePKCELoginResponse
+	path := c.Host + identityServiceBasePath + "/idp-login"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}

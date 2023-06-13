@@ -93,6 +93,18 @@ func (c *StorageClient) DecryptNote(note *Note) error {
 	return nil
 }
 
+// WriteNote writes the specified note to the server using PUT, returning the written note and error (if any)
+func (c *StorageClient) PutNote(ctx context.Context, params Note) (*Note, error) {
+	var result *Note
+	path := c.Host + storageServiceBasePath + "/notes"
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // WriteNote writes the specified note to the server, returning the written note and error (if any)
 func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
