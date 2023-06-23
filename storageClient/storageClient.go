@@ -31,7 +31,7 @@ var (
 	EACPHeaders = []string{TozIDLoginTokenHeader}
 )
 
-//StorageClient implements an http client for communication with the storage service.
+// StorageClient implements an http client for communication with the storage service.
 type StorageClient struct {
 	ClientID       string
 	SigningKeys    e3dbClients.SigningKeys
@@ -186,6 +186,17 @@ func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGro
 		return err
 	}
 
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// InternalDeleteGroupMembers removes member from tozstore group.
+func (c *StorageClient) InternalDeleteGroupMembers(ctx context.Context, groupId string, params SSInternalDeleteGroupMember) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/" + groupId + "/members"
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
+	if err != nil {
+		return err
+	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
@@ -692,7 +703,7 @@ func (c *StorageClient) InternalGetNoteInfo(ctx context.Context, noteName string
 	return result, err
 }
 
-//InternalClientGroupMembershipFetch is an internal endpoint used to fetch a clients membership within a group for given capabilities
+// InternalClientGroupMembershipFetch is an internal endpoint used to fetch a clients membership within a group for given capabilities
 func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, params InternalFetchClientMembership) (*InternalFetchClientMembershipResponse, error) {
 	var result *InternalFetchClientMembershipResponse
 	path := c.Host + "/internal" + storageServiceBasePath + "/groups"
