@@ -144,6 +144,11 @@ type GroupMember struct {
 	CapabilityNames []string  `json:"capability_names"`
 }
 
+// StorageService Internal Delete Group Members.
+type SSInternalDeleteGroupMember struct {
+	GroupMembers []uuid.UUID `json:"group_members"`
+}
+
 // DeleteGroupMembersRequest  wraps the information of all members being removed from group provided.
 type DeleteGroupMembersRequest AddGroupMembersRequest
 
@@ -493,7 +498,7 @@ type OutgoingSharePolicy struct {
 	RecordType string `json:"record_type"`
 }
 
-//InternalFetchGroupInfo wraps the Capability for the Client with the Groups they are authorized for
+// InternalFetchGroupInfo wraps the Capability for the Client with the Groups they are authorized for
 type InternalFetchGroupInfo struct {
 	GroupIDs   []uuid.UUID `json:"group_ids"`
 	Capability string      `json:"capability"`
@@ -504,7 +509,7 @@ type InternalFetchClientMembershipResponse struct {
 	Groups []InternalFetchGroupInfo `json:"groups"`
 }
 
-//InternalFetchClientMembership wraps all values needed for fetching a client's group membership for a given capability
+// InternalFetchClientMembership wraps all values needed for fetching a client's group membership for a given capability
 type InternalFetchClientMembership struct {
 	ClientID     uuid.UUID `json:"client_id"`
 	Capabilities []string  `json:"capabilities"`
