@@ -256,6 +256,37 @@ type InternalIdentityLoginRequest struct {
 	RealmName         string // The realm the authenticated Identity is trying to log in to.
 }
 
+// InitiateIdentityProviderLoginRequest wraps the parameters needed for the begining of the login proccess for external identity providers
+type InitiateIdentityProviderLoginRequest struct {
+	RealmName     string `json:"realm_name"`
+	AppName       string `json:"app_name"`
+	LoginStyle    string `json:"login_style"`
+	CodeChallenge string `json:"code_challenge"`
+	CodeVerifier  string `json:"code_verifier"`
+	RedirectURL   string `json:"redirect_url"`
+	Scope         string `json:"scope"`
+}
+
+// InitiatePKCELoginResponse the response from a PKCE login initialization
+type InitiatePKCELoginResponse struct {
+	ActionURL   string `json:"action_url"`
+	ContentType string `json:"content_type"`
+	// Context contains values needed for this step of the flow. They are created in keycloak by the
+	// particular login step being performed.
+	Context interface{} `json:"context"`
+	// Fields are used by keycloak login/required actions to indicate what values the flow expects to
+	// be POSTed back in response to the login step encoded in this response.
+	Fields                                 map[string]string `json:"fields"`
+	LoginActions                           bool              `json:"login_action"`
+	Type                                   string            `json:"type"`
+	TozIDFederationRegistrationRequired    bool              `json:"tozid_federation_registration"`
+	Email                                  string            `json:"email"`
+	TozIDFederationPasswordUpdatedRequired bool              `json:"tozid_federation_password_update"`
+	PasswordUpdateOTP                      string            `json:"tozid_otp"`
+	NoteID                                 string            `json:"note_id"`
+	Cookie                                 map[string]string `json:"cookies"`
+}
+
 // InternalIdentityLoginResponse wraps an internal
 // authentication context for realm identities.
 type InternalIdentityLoginResponse struct {
