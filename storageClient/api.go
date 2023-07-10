@@ -144,6 +144,12 @@ type GroupMember struct {
 	CapabilityNames []string  `json:"capability_names"`
 }
 
+// GroupMemberMembershipUpdate wraps values needed to add a client to a Group.
+type GroupMemberMembershipUpdate struct {
+	ClientID       uuid.UUID `json:"client_id"`
+	CapabilityName []string  `json:"capability_names"`
+}
+
 // StorageService Internal Delete Group Members.
 type SSInternalDeleteGroupMember struct {
 	GroupMembers []uuid.UUID `json:"group_members"`
@@ -195,6 +201,12 @@ type AccessKeyWrapper struct {
 type AddGroupMembersRequest struct {
 	GroupID      uuid.UUID     `json:"group_id"`
 	GroupMembers []GroupMember `json:"group_members"`
+}
+
+// UpdateGroupMembersRequest  wraps the information of all members being updated for group.
+type UpdateGroupMembersRequest struct {
+	GroupID      uuid.UUID
+	GroupMembers []GroupMemberMembershipUpdate `json:"group_members"`
 }
 
 // CreateMembershipKeyRequest wraps the values needed to create a membership key for clients.

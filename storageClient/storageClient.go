@@ -190,6 +190,18 @@ func (c *StorageClient) AddGroupMembers(ctx context.Context, params AddGroupMemb
 	return result, err
 }
 
+// UpdateGroupMembersMembership updates clients group membership capabilties
+func (c *StorageClient) UpdateGroupMembersMembership(ctx context.Context, params UpdateGroupMembersRequest) (*[]GroupMemberMembershipUpdate, error) {
+	var result *[]GroupMemberMembershipUpdate
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // DeleteGroupMembers removed clients form a group and returns success.
 func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGroupMembersRequest) error {
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
