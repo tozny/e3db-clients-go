@@ -202,6 +202,19 @@ func (c *StorageClient) UpdateGroupMembersMembership(ctx context.Context, params
 	return result, err
 }
 
+// UpdateGroupDescription updates a TozStore group's description and returns the updated group.
+func (c *StorageClient) UpdateGroupDescription(ctx context.Context, params UpdateGroupRequest) (*Group, error) {
+	var result *Group
+	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String()
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return result, err
+	}
+
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // DeleteGroupMembers removed clients form a group and returns success.
 func (c *StorageClient) DeleteGroupMembers(ctx context.Context, params DeleteGroupMembersRequest) error {
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
