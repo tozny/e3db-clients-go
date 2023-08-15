@@ -6179,5 +6179,4 @@ func TestUpdateGroupDescriptionSucceedsWithValidGroup(t *testing.T) {
 	if groupUpdated.Description != groupDescription {
 		t.Fatalf("Expected description to be %+v, but instead it is %+v", groupDescription, updateGroupResponse.Description)
 	}
-	t.Logf("groupUpdated %+v", groupUpdated)
 }
