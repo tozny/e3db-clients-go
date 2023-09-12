@@ -533,6 +533,17 @@ type InternalFetchClientMembership struct {
 	Capabilities []string  `json:"capabilities"`
 }
 
+// AllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group
+type AllowedGroupsForPolicyRequest struct {
+	WriterID    string `json:"writer_id"`
+	ContentType string `json:"content_type"`
+}
+
+// AllowedGroupsForPolicyResponse wraps the response object for the group ids in allowed reads
+type AllowedGroupsForPolicyResponse struct {
+	GroupIDs []uuid.UUID `json:"group_ids"`
+}
+
 // InternalAllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group
 type InternalAllowedGroupsForPolicyRequest struct {
 	WriterID    string `json:"writer_id"`
