@@ -71,7 +71,7 @@ test-federation-identity:
 
 # Run all Storage Integration tests
 test-storage:
-	go test -count=1 -v storageClient/storageClient_test.go
+	go test -count=1 -v storageClient/storageClient_test.go storageClient/api.go
 test-storage-internal:
 	go test -count=1 -v storageClient/storageClient_internal_test.go
 
@@ -95,6 +95,6 @@ test-internal-pds:
 test-keycloak:
 	go test -count=1 -v KeycloakClient/keycloakClient_test.go KeycloakClient/KeycloakClient.go KeycloakClient/api.go
 
-# Run all SecureCompute integration test 
+# Run all SecureCompute integration test
 test-secure:
 	go test -count=1 -v secureComputeClient/secureComputeClient_test.go secureComputeClient/secureComputeClient.go secureComputeClient/api.go

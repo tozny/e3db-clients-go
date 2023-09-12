@@ -39,6 +39,39 @@ var (
 	accountServiceHost   = os.Getenv("E3DB_ACCOUNT_SERVICE_HOST")
 )
 
+func makeWriterForContentType(ctx context.Context, recordTypes []string, t *testing.T) (storageClient.StorageClient, pdsClient.E3dbPDSClient, string) {
+	sc, pdsStorageClient, clientID := getPDSStorageClientIDAndStorageClient(t)
+	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
+		WriterID: clientID.String(),
+		UserID:   clientID.String(),
+		ReaderID: clientID.String(),
+	}
+	for _, recordType := range recordTypes {
+		keyReq.RecordType = recordType
+		_, err := pdsStorageClient.GetOrCreateAccessKey(ctx, keyReq)
+		if err != nil {
+			t.Fatalf("Failed to create shared AK req: %+verr: %s", keyReq, err)
+		}
+	}
+	return sc, pdsStorageClient, clientID.String()
+}
+
+func getPDSStorageClientIDAndStorageClient(t *testing.T) (storageClient.StorageClient, pdsClient.E3dbPDSClient, uuid.UUID) {
+	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
+	queenClientConfig, _, err := test.MakeE3DBAccount(t, &registrationClient, uuid.New().String(), cyclopsServiceHost)
+
+	if err != nil {
+		t.Fatalf("Could not register account %s\n", err)
+	}
+	pdsStorageClient := pdsClient.New(queenClientConfig)
+	sc := storageClient.New(queenClientConfig)
+	queenClientID, err := uuid.Parse(queenClientConfig.ClientID)
+	if err != nil {
+		t.Fatalf("Returned queen client ID could not be parsed to a UUID")
+	}
+	return sc, pdsStorageClient, queenClientID
+}
+
 func TestFullSignatureAuthenticationFlowSucceedsNoUID(t *testing.T) {
 	// Make request through cyclops to test tozny header is parsed properly
 	registrationClient := accountClient.New(e3dbClients.ClientConfig{Host: cyclopsServiceHost}) // empty account host to make registration request
@@ -6260,7 +6293,7 @@ func TestGetGroupsAllowedReadsReturnsSuccess(t *testing.T) {
 	// Create an access key to allow for decrypting
 	// records of this type
 	recordType := "test"
-	_, pdsStorageClient, clientID := makeWriterForRecordType(testCtx, []string{recordType}, t)
+	_, pdsStorageClient, clientID := makeWriterForContentType(testCtx, []string{recordType}, t)
 	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
 		WriterID:   clientID,
 		UserID:     clientID,
@@ -6353,7 +6386,7 @@ func TestGetGroupsAllowedReadsReturnsSuccess(t *testing.T) {
 	}
 	// Create an access key to allow for decrypting
 	// records of this type
-	_, pdsStorageClient, clientID = makeWriterForRecordType(testCtx, []string{recordType}, t)
+	_, pdsStorageClient, clientID = makeWriterForContentType(testCtx, []string{recordType}, t)
 	keyReq = pdsClient.GetOrCreateAccessKeyRequest{
 		WriterID:   clientID,
 		UserID:     clientID,
@@ -6501,7 +6534,7 @@ func TestGetGroupsAllowedReadsReturnsEmptyResponseForInvalidContentType(t *testi
 	// Create an access key to allow for decrypting
 	// records of this type
 	recordType := "test"
-	_, pdsStorageClient, clientID := makeWriterForRecordType(testCtx, []string{recordType}, t)
+	_, pdsStorageClient, clientID := makeWriterForContentType(testCtx, []string{recordType}, t)
 	keyReq := pdsClient.GetOrCreateAccessKeyRequest{
 		WriterID:   clientID,
 		UserID:     clientID,
