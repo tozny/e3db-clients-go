@@ -533,15 +533,14 @@ type InternalFetchClientMembership struct {
 	Capabilities []string  `json:"capabilities"`
 }
 
-// AllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group
+// AllowedGroupsForPolicyRequest wraps the request object for finding the allowed group reads for a list of content types
 type AllowedGroupsForPolicyRequest struct {
-	WriterID    string `json:"writer_id"`
-	ContentType string `json:"content_type"`
+	ContentTypes []string `json:"content_types"`
 }
 
-// AllowedGroupsForPolicyResponse wraps the response object for the group ids in allowed reads
+// AllowedGroupsForPolicyResponse wraps the response object for the allowed group reads for a list of content types
 type AllowedGroupsForPolicyResponse struct {
-	GroupIDs []uuid.UUID `json:"group_ids"`
+	GroupsSharedWith map[string][]uuid.UUID `json:"groups_shared_with"` // A map of content type to list of groups that content type is shared with.
 }
 
 // InternalAllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group
