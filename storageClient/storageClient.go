@@ -767,6 +767,11 @@ func (c *StorageClient) GroupAllowedReads(ctx context.Context, params AllowedGro
 	if err != nil {
 		return result, err
 	}
+	urlParams := req.URL.Query()
+	for _, contentType := range params.ContentTypes {
+		urlParams.Add("content_types", contentType)
+	}
+	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
