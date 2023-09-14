@@ -759,6 +759,24 @@ func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, 
 	return result, err
 }
 
+// BulkListGroupInfo fetches a group using the specified parameters,
+// returning the group and error (if any).
+func (c *StorageClient) BulkListGroupInfo(ctx context.Context, params BulkListGroupInfoRequest) (*BulkListGroupInfoResponse, error) {
+	var result *BulkListGroupInfoResponse
+	path := c.Host + storageServiceBasePath + "/groups/bulk"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	for _, group := range params.GroupIDs {
+		urlParams.Add("group_ids", group)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // GroupAllowedReads fetches the allowed group reads for a writer id and content type
 func (c *StorageClient) GroupAllowedReads(ctx context.Context, params AllowedGroupsForPolicyRequest) (*AllowedGroupsForPolicyResponse, error) {
 	var result *AllowedGroupsForPolicyResponse

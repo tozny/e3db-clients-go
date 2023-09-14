@@ -6818,3 +6818,73 @@ func TestGetGroupsAllowedReadsReturnEmptyWhenRequestingClientIDDoesNotOwnRecords
 		t.Fatalf("Expected no groups shared with, got %+v groups: %+v", len(fetchResponse.GroupsSharedWith[recordType]), fetchResponse)
 	}
 }
+
+func TestBulkListGroupInfoReturnsSuccess(t *testing.T) {
+	queenClient, _, _ := getClientIDAndStorageClient(t)
+	//Insert two Group To List
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		t.Errorf("Failed generating encryption key pair %s", err)
+		return
+	}
+	eak, err := e3dbClients.EncryptPrivateKey(encryptionKeyPair.Private, queenClient.EncryptionKeys)
+	if err != nil {
+		t.Errorf("Failed generating encrypted group key  %s", err)
+	}
+	group1Name := "TestGroup1" + uuid.New().String()
+	newGroup := storageClient.CreateGroupRequest{
+		Name:              group1Name,
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	group2Name := "TestGroup2" + uuid.New().String()
+	newGroup2 := storageClient.CreateGroupRequest{
+		Name:              group2Name,
+		PublicKey:         encryptionKeyPair.Public.Material,
+		EncryptedGroupKey: eak,
+	}
+	response, err := queenClient.CreateGroup(testCtx, newGroup)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup, err)
+	}
+	if response.Name != newGroup.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup.Name, response.Name, newGroup)
+	}
+	groupCreatedID1 := response.GroupID.String()
+	response, err = queenClient.CreateGroup(testCtx, newGroup2)
+	if err != nil {
+		t.Fatalf("Failed to create group \n Group( %+v) \n error %+v", newGroup2, err)
+	}
+	if response.Name != newGroup2.Name {
+		t.Fatalf("Group name (%+v) passed in, does not match Group name (%+v) inserted for Group( %+v) \n", newGroup2.Name, response.Name, newGroup2)
+	}
+	groupCreatedID2 := response.GroupID.String()
+	listRequest := storageClient.BulkListGroupInfoRequest{
+		GroupIDs: []string{groupCreatedID1, groupCreatedID2},
+	}
+	responseList, err := queenClient.BulkListGroupInfo(testCtx, listRequest)
+	if err != nil {
+		t.Fatalf("Failed to list groups: Response( %+v) \n error %+v", responseList, err)
+	}
+	group1Info, group1Exists := responseList.ResultList[groupCreatedID1]
+	group2Info, group2Exists := responseList.ResultList[groupCreatedID2]
+
+	if !group1Exists {
+		t.Fatalf("Failed to list group: %+v. Response( %+v) \n error %+v", groupCreatedID1, responseList, err)
+	}
+	if !group2Exists {
+		t.Fatalf("Failed to list group: %+v. Response( %+v) \n error %+v", groupCreatedID2, responseList, err)
+	}
+	if group1Info.GroupID.String() != groupCreatedID1 {
+		t.Fatalf("Expected group ID to be %+v, but got %+v. Response( %+v) \n error %+v", groupCreatedID1, group1Info.GroupID.String(), responseList, err)
+	}
+	if group2Info.GroupID.String() != groupCreatedID2 {
+		t.Fatalf("Expected group ID to be %+v, but got %+v. Response( %+v) \n error %+v", groupCreatedID2, group2Info.GroupID.String(), responseList, err)
+	}
+	if group1Info.Name != group1Name {
+		t.Fatalf("Expected group name to be %+v, but got %+v. Response( %+v) \n error %+v", group1Name, group1Info.Name, responseList, err)
+	}
+	if group2Info.Name != group2Name {
+		t.Fatalf("Expected group name to be %+v, but got %+v. Response( %+v) \n error %+v", group2Name, group2Info.Name, responseList, err)
+	}
+}
