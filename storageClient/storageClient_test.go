@@ -6968,7 +6968,7 @@ func TestGetGroupsAllowedReadsReturnEmptyWhenRequestingClientIDDoesNotOwnRecords
 }
 
 func TestBulkListGroupInfoReturnsSuccess(t *testing.T) {
-	queenClient, _, _ := getClientIDAndStorageClient(t)
+	queenClient, _, _ := getPDSStorageClientIDAndStorageClient(t)
 	//Insert two Group To List
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
@@ -7038,7 +7038,7 @@ func TestBulkListGroupInfoReturnsSuccess(t *testing.T) {
 }
 
 func TestBulkListGroupSkipsInvalidGroupIDWhenRequestIncludesValidGroupID(t *testing.T) {
-	queenClient, _, _ := getClientIDAndStorageClient(t)
+	queenClient, _, _ := getPDSStorageClientIDAndStorageClient(t)
 	//Insert two Group To List
 	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
