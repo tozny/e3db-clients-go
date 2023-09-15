@@ -858,3 +858,27 @@ func (c *StorageClient) BulkDeleteRecords(ctx context.Context, params BulkRecord
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// InternalDeleteRecords deletes all records of given clientID
+func (c *StorageClient) InternalDeleteRecords(ctx context.Context, writerID string) (*BulkRecordDeleteResponseErrors, error) {
+	var result *BulkRecordDeleteResponseErrors
+	path := c.Host + "/internal" + storageServiceBasePath + "/records/writer/" + writerID
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// InternalDeleteClientGroups deletes all groups of given clientID
+func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, clientID string) (*BulkDeleteResponse, error) {
+	var result *BulkDeleteResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/client/" + clientID
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
