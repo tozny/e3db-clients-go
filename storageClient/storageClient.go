@@ -872,8 +872,8 @@ func (c *StorageClient) InternalDeleteRecords(ctx context.Context, writerID stri
 }
 
 // InternalDeleteClientGroups deletes all groups of given clientID
-func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, clientID string) (*BulkDeleteResponse, error) {
-	var result *BulkDeleteResponse
+func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, clientID string) ([]RecordError, error) {
+	var result []RecordError
 	path := c.Host + "/internal" + storageServiceBasePath + "/groups/client/" + clientID
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
