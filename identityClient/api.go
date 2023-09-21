@@ -78,7 +78,7 @@ type RealmInfo struct {
 	IdentityServiceProviderBaseURL string    `json:"identity_service_provider_base_url,omitempty"` // Keycloak's base URL
 }
 
-//InternalDeleteRealmsRequest wraps the values needed for the internal delete realms endpoint
+// InternalDeleteRealmsRequest wraps the values needed for the internal delete realms endpoint
 type InternalDeleteRealmsRequest struct {
 	AccountID string `json:"account_id"`
 }
@@ -377,7 +377,7 @@ type AuthHeaders struct {
 	TozIDToken string `json:"X-TOZID-LOGIN-TOKEN"`
 }
 
-//  BrokerLoginResponse wraps the Note ID of the broker login recovery note.
+// BrokerLoginResponse wraps the Note ID of the broker login recovery note.
 type BrokerLoginResponse struct {
 	RecoveryNoteID uuid.UUID `json:"transferId"`
 }
@@ -1106,7 +1106,8 @@ type DescribeAccessRequestRequest struct {
 }
 
 // DeleteAccessRequestRequest wraps parameters needed for deleting
-//  a single access request
+//
+//	a single access request
 type DeleteAccessRequestRequest = DescribeAccessRequestRequest
 
 // AccessPolicy defines a set of rules required to access a particular resource.
@@ -1300,6 +1301,18 @@ type FederatedIdentityKeyCheckRequest struct {
 	RealmName                       string    `json:"realm_name"`
 	ClientID                        uuid.UUID `json:"client_id"`
 	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
+}
+
+type RealmAdminCheckRequest struct {
+	RealmName  string `json:"realm_name"`
+	ClientID   string `json:"client_id"`
+	AccountID  string
+	ClientUUID uuid.UUID
+	ClientType string
+}
+
+type RealmAdminCheckResponse struct {
+	AdminEnabled bool `json:"active"`
 }
 
 // AccessControlPolicyRequest wraps the values required to enable or disable an Access Control Policy for an application.
