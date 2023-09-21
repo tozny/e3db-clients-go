@@ -1351,6 +1351,18 @@ func (c *E3dbIdentityClient) FederatedIdentityKeyCheck(ctx context.Context, para
 	return err
 }
 
+func (c *E3dbIdentityClient) IsRealmAdmin(ctx context.Context, params RealmAdminCheckRequest) (*RealmAdminCheckResponse, error) {
+	var resp *RealmAdminCheckResponse
+
+	path := c.Host + internalIdentityServiceBasePath + "/isRealmAdmin"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
 // EnableAccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
 func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName
