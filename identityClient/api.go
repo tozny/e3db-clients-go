@@ -1303,18 +1303,6 @@ type FederatedIdentityKeyCheckRequest struct {
 	PasswordDerivedPublicSigningKey string    `json:"password_derived_public_signing_key"`
 }
 
-type RealmAdminCheckRequest struct {
-	RealmName  string `json:"realm_name"`
-	ClientID   string `json:"client_id"`
-	AccountID  string
-	ClientUUID uuid.UUID
-	ClientType string
-}
-
-type RealmAdminCheckResponse struct {
-	AdminEnabled bool `json:"active"`
-}
-
 // AccessControlPolicyRequest wraps the values required to enable or disable an Access Control Policy for an application.
 type AccessControlPolicyRequest struct {
 	RealmName     string
@@ -1566,4 +1554,17 @@ type IdentityInfo struct {
 type IdentityInfoList struct {
 	Identities []IdentityInfo `json:"identities"`
 	Next       int            `json:"next"`
+}
+
+// RealmAdmin Validation
+type RealmAdminCheckRequest struct {
+	RealmName  string `json:"realm_name"`
+	ClientID   string `json:"client_id"`
+	AccountID  string
+	ClientUUID uuid.UUID
+	ClientType string
+}
+
+type RealmAdminCheckResponse struct {
+	AdminEnabled bool `json:"active"`
 }
