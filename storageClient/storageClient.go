@@ -860,9 +860,9 @@ func (c *StorageClient) BulkDeleteRecords(ctx context.Context, params BulkRecord
 }
 
 // InternalDeleteRecords deletes all records of given clientID
-func (c *StorageClient) InternalDeleteRecords(ctx context.Context, writerID string) (*BulkRecordDeleteResponseErrors, error) {
+func (c *StorageClient) InternalDeleteClientRecords(ctx context.Context, clientID string) (*BulkRecordDeleteResponseErrors, error) {
 	var result *BulkRecordDeleteResponseErrors
-	path := c.Host + "/internal" + storageServiceBasePath + "/records/writer/" + writerID
+	path := c.Host + "/internal" + storageServiceBasePath + "/records/client/" + clientID
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return result, err
