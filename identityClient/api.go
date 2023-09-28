@@ -1309,6 +1309,24 @@ type AccessControlPolicyRequest struct {
 	Enable        bool `json:"enable"`
 }
 
+// AccessControlPolicyGetRequest wraps the values required to fetch an Access Control Policy for an application.
+type AccessControlGetPolicyRequest struct {
+	RealmName     string
+	ApplicationID string
+}
+
+// AccessControlPolicyStatusResponse wraps the return values from fetch
+type AccessControlPolicyStatusResponse struct {
+	Enabled bool                 `json:"enabled"`
+	Groups  []AccessControlGroup `json:"groups"`
+}
+
+// AccessControlPolicyGroup the information required to add a group to Access Control Policy for a Application.
+type AccessControlGroup struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // AddAccessControlPolicyGroupRequest wraps the values needed to Add a group to an Application's Access Control Policy.
 type AddAccessControlPolicyGroupRequest struct {
 	RealmName     string
