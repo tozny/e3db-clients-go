@@ -1362,6 +1362,18 @@ func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, para
 	return err
 }
 
+// GetAccessControlPolicy Get Access Control for an Application Client, returning error (if any).
+func (c *E3dbIdentityClient) GetAccessControlPolicy(ctx context.Context, params AccessControlGetPolicyRequest) (AccessControlPolicyStatusResponse, error) {
+	var response AccessControlPolicyStatusResponse
+	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
+
 // RemoveAccessControlGroupsPolicy unenrolls groups to Access Control Policy, returning error (if any).
 func (c *E3dbIdentityClient) RemoveAccessControlGroupsPolicy(ctx context.Context, params RemoveAccessControlPolicyGroupRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlGroupPolicyResourceName
