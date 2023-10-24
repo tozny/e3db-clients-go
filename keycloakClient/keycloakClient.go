@@ -1415,3 +1415,10 @@ func (c *Client) GetIdentityProviderMapper(accessToken string, realmName string,
 func (c *Client) DeleteIdentityProviderMapper(accessToken string, realmName string, alias string, id string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 }
+
+// Delete Identity Provider role mapper
+func (c *Client) OidcUserInfo(accessToken string, realmName string) (OidcUserInfoResponse, error) {
+	var response OidcUserInfoResponse
+	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/realms/%s/protocol/openid-connect/userinfo", realmName))
+	return response, err
+}
