@@ -1416,7 +1416,7 @@ func (c *Client) DeleteIdentityProviderMapper(accessToken string, realmName stri
 	return c.delete(accessToken, nil, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances/%s/mappers/%s", realmName, alias, id))
 }
 
-// Delete Identity Provider role mapper
+// Oidc User Info validates given Keycloak token and returns userinfo.
 func (c *Client) OidcUserInfo(accessToken string, realmName string) (OidcUserInfoResponse, error) {
 	var response OidcUserInfoResponse
 	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/realms/%s/protocol/openid-connect/userinfo", realmName))
