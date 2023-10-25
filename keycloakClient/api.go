@@ -760,3 +760,7 @@ type IdentityProviderMapperResponse struct {
 	IdentityProviderMapper string                 `json:"identityProviderMapper,omitempty"`
 	Name                   string                 `json:"name,omitempty"`
 }
+
+type OidcUserInfoResponse struct {
+	SubjectId string `json:"sub"`
+}
