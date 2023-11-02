@@ -517,6 +517,23 @@ func (c *StorageClient) ProxyChallengeByName(ctx context.Context, headers http.H
 	return challenges, err
 }
 
+// InternalProxyChallengeByName allows a service to send an internal request
+// to the Storage service to save a note challenge by name.
+func (c *StorageClient) InternalChallengeByName(ctx context.Context, headers http.Header, noteName string, params ChallengeRequest) (ChallengeResponse, error) {
+	var challenges ChallengeResponse
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes/challenge"
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return challenges, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("id_string", noteName)
+	req.URL.RawQuery = urlParams.Encode()
+	// err = e3dbClients.MakeProxiedSignedCall(ctx, c.requester, headers, req, &challenges)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &challenges)
+	return challenges, err
+}
+
 func (c *StorageClient) Prime(ctx context.Context, noteID string, body PrimeRequestBody) (PrimeResponseBody, error) {
 	path := c.Host + storageServiceBasePath + "/notes/prime"
 	req, err := e3dbClients.CreateRequest("PATCH", path, body)
