@@ -142,7 +142,7 @@ type GetGroupRecordsRequest struct {
 
 // GetGroupRecordsResponse wraps values for a search response for group records
 type GetGroupRecordsResponse struct {
-	ResultList []pdsClient.ListedRecord `json:"results"`
+	ResultList map[string][]pdsClient.ListedRecord `json:"results"`
 }
 
 // AddingCapabilityRequest wraps values used to add a capability for Groups.

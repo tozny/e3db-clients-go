@@ -295,7 +295,8 @@ type BatchGetRecordsRequest struct {
 }
 
 type BatchGetRecordsResult struct {
-	Records []ListedRecord `json:"records"`
+	Records      []ListedRecord            `json:"records"`
+	GroupRecords map[string][]ListedRecord `json:"group_records"`
 }
 
 type GetOrCreateAccessKeyRequest struct {
