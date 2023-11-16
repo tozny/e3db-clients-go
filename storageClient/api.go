@@ -327,7 +327,8 @@ type EmailEACPChallengeRequest struct {
 
 // TozIDEACPChallengeRequest wraps parameters needed to activate a TozID EACP on a note.
 type TozIDEACPChallengeRequest struct {
-	ExpirySeconds int64 `json:"expiry_seconds"`
+	ExpirySeconds        int64  `json:"expiry_seconds"`
+	TozIDLoginTokenNonce string `json:"nonce,omitempty"`
 }
 
 // ChallengeResponse wraps parameters for all activated challenges on a note.
