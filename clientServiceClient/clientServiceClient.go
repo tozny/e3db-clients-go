@@ -14,7 +14,7 @@ var (
 	ClientServiceBasePath = "v1/client/"
 )
 
-//ClientServiceClient implements an http client for communication with the client service.
+// ClientServiceClient implements an http client for communication with the client service.
 type ClientServiceClient struct {
 	APIKey    string
 	APISecret string
@@ -66,6 +66,17 @@ func (c *ClientServiceClient) AdminDelete(ctx context.Context, clientID string) 
 func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, params AdminToggleClientEnabledRequest) error {
 	path := c.Host + "/" + ClientServiceBasePath + "admin/" + params.ClientID + "/enable"
 	req, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
+	return err
+}
+
+// InternalDeleteClient makes authenticated call to the /internal endpoint for client service.
+func (c *ClientServiceClient) InternalDeleteClient(ctx context.Context, clientID string) error {
+	path := c.Host + "/internal/" + ClientServiceBasePath + clientID + "/delete"
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
