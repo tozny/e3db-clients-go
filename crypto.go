@@ -663,6 +663,19 @@ func DeriveIdentityCredentials(username string, password string, realmName strin
 	return noteName, cryptoKeyPair, signingKeyPair, nil
 }
 
+// DeriveBrokerKeyNoteName derives a broker otp note name for the given parameters
+func DeriveBrokerKeyNoteName(username string, realmName string) (string, error) {
+	nameSeed := fmt.Sprintf("brokerKey:%s@realm:%s", username, realmName)
+	hashedMessageAccumlator, err := blake2b.New(Blake2BBytes, nil)
+	if err != nil {
+		return "", err
+	}
+	hashedMessageAccumlator.Write([]byte(nameSeed))
+	hashedMessageBytes := hashedMessageAccumlator.Sum(nil)
+	noteName := Base64Encode(hashedMessageBytes)
+	return noteName, err
+}
+
 type EncryptedFileInfo struct {
 	EncryptedFileName string
 	Size              int
