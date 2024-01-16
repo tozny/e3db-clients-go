@@ -882,3 +882,22 @@ func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, clientID
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// AdminListAllGroups fetches group using the specified parameters,
+// returning the groups and error (if any).
+func (c *StorageClient) AdminListAllGroups(ctx context.Context, params AdminListAllGroups) (*AdminListGroupsResponse, error) {
+	var result *AdminListGroupsResponse
+	path := c.Host + storageServiceBasePath + "/groups/realm/" + params.RealmID.String()
+
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+
+}

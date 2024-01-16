@@ -606,3 +606,21 @@ type RecordError struct {
 	RecordID uuid.UUID `json:"record_id"`
 	Error    string    `json:"error"`
 }
+
+// AdminListAllGroups wraps values used to look up Groups
+type AdminListAllGroups struct {
+	RealmID   uuid.UUID `json:"realm_id"`
+	NextToken int64
+	Max       int
+}
+
+type GroupsWithMembers struct {
+	Groups       Group
+	GroupMembers []GroupMember
+}
+
+// AdminListGroupsResponse wraps a collection of groups
+type AdminListGroupsResponse struct {
+	Groups    []GroupsWithMembers `json:"groups"`
+	NextToken int64               `json:"next_token"`
+}
