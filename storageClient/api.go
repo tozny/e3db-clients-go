@@ -615,8 +615,8 @@ type AdminListAllGroups struct {
 }
 
 type GroupsWithMembers struct {
-	Groups       Group
-	GroupMembers []GroupMember
+	Group        Group         `json:"group"`
+	GroupMembers []GroupMember `json:"group_members"`
 }
 
 // AdminListGroupsResponse wraps a collection of groups
