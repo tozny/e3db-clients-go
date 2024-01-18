@@ -104,6 +104,7 @@ type ListGroupMembersRequest struct {
 	Max       int
 }
 
+// ListGroupMembersResponse returns all the members of the requested group
 type ListGroupMembersResponse struct {
 	ResultList []GroupMember `json:"group_members"`
 	NextToken  int64         `json:"next_token"`
