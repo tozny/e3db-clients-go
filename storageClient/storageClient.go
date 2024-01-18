@@ -239,8 +239,8 @@ func (c *StorageClient) InternalDeleteGroupMembers(ctx context.Context, groupId 
 }
 
 // ListGroupMembers returns the group members and capabilities based on the groupID
-func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*[]GroupMember, error) {
-	var result *[]GroupMember
+func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
+	var result *ListGroupMembersResponse
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {

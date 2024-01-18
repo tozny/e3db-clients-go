@@ -2065,7 +2065,7 @@ func TestListGroupMembersReturnsSuccess(t *testing.T) {
 	}
 	for _, member := range *addToGroupResponse {
 		var foundMember bool
-		for _, responseMember := range *listMemberResponse {
+		for _, responseMember := range listMemberResponse.ResultList {
 			if member.ClientID == responseMember.ClientID {
 				foundMember = true
 			}
@@ -4104,14 +4104,14 @@ func TestCreateGroupWithClientCapabilitiesSucceeds(t *testing.T) {
 		expectedCapabilities[capability] = true
 	}
 	// Check if the expected capabilities are the same as the actual capabilities added
-	for _, capability := range (*listMemberResponse)[0].CapabilityNames {
+	for _, capability := range (listMemberResponse.ResultList)[0].CapabilityNames {
 		if expectedCapabilities[capability] {
 			delete(expectedCapabilities, capability)
 		}
 	}
 	if len(expectedCapabilities) != 0 {
 		queenCapabilities = append(queenCapabilities, storageClient.ManageMembershipGroupCapability)
-		t.Fatalf("Failed to create Queen Client with expected capabilities: %+v. Instead created Queen Client with actual capabilities: %+v", queenCapabilities, (*listMemberResponse)[0].CapabilityNames)
+		t.Fatalf("Failed to create Queen Client with expected capabilities: %+v. Instead created Queen Client with actual capabilities: %+v", queenCapabilities, listMemberResponse.ResultList[0].CapabilityNames)
 	}
 }
 
@@ -4162,10 +4162,10 @@ func TestCreateGroupWithoutClientCapabilitiesSucceeds(t *testing.T) {
 	listMemberRequest := storageClient.ListGroupMembersRequest{GroupID: response.GroupID}
 	listMemberResponse, err := queenClient.ListGroupMembers(testCtx, listMemberRequest)
 	// Check that only manage membership capability was added for queenClient
-	if len((*listMemberResponse)[0].CapabilityNames) != 1 {
-		t.Fatalf("Queen should only have management capability but instead has %+v", (*listMemberResponse)[0].CapabilityNames)
+	if len(listMemberResponse.ResultList[0].CapabilityNames) != 1 {
+		t.Fatalf("Queen should only have management capability but instead has %+v", listMemberResponse.ResultList[0].CapabilityNames)
 	}
-	if (*listMemberResponse)[0].CapabilityNames[0] != storageClient.ManageMembershipGroupCapability {
+	if listMemberResponse.ResultList[0].CapabilityNames[0] != storageClient.ManageMembershipGroupCapability {
 		t.Fatalf("Manage membership was not added to queenClient.")
 	}
 }
