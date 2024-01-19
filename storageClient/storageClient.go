@@ -901,3 +901,14 @@ func (c *StorageClient) AdminListAllGroups(ctx context.Context, params AdminList
 	return result, err
 
 }
+
+// InternalUpdateEACPEmail updates eacp email.
+func (c *StorageClient) InternalUpdateEACPEmail(ctx context.Context, params map[string]interface{}) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/notes/eacp/email"
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
