@@ -113,14 +113,14 @@ type ListGroupMembersResponse struct {
 // BulkListGroupMembersRequest wraps values used to look up group membership for a list of groups
 type BulkListGroupMembersRequest struct {
 	GroupIDs  []string `json:"group_ids"`
-	NextToken int64
+	NextToken string
 	Max       int
 }
 
 // BulkListGroupMembersResponse returns all the members of a particular list of groups and the group they are part of.
 type BulkListGroupMembersResponse struct {
 	ResultList map[string][]GroupMember `json:"results"`
-	NextToken  int64                    `json:"next_token"`
+	NextToken  string                   `json:"next_token"`
 }
 
 // BulkListGroupInfoRequest wraps values used to look up group info for a list of groups
