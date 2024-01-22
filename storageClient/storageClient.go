@@ -239,13 +239,17 @@ func (c *StorageClient) InternalDeleteGroupMembers(ctx context.Context, groupId 
 }
 
 // ListGroupMembers returns the group members and capabilities based on the groupID
-func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*[]GroupMember, error) {
-	var result *[]GroupMember
+func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
+	var result *ListGroupMembersResponse
 	path := c.Host + storageServiceBasePath + "/groups/" + params.GroupID.String() + "/members"
 	request, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
 	}
+	urlParams := request.URL.Query()
+	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	request.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
@@ -262,6 +266,8 @@ func (c *StorageClient) BulkListGroupMembers(ctx context.Context, params BulkLis
 	for _, group := range params.GroupIDs {
 		urlParams.Add("group_ids", group)
 	}
+	urlParams.Set("nextToken", params.NextToken)
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err

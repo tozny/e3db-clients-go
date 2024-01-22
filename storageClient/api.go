@@ -98,16 +98,29 @@ type DescribeGroupRequest struct {
 }
 
 // ListGroupMembersRequest wraps the group id needed to look up group members
-type ListGroupMembersRequest DescribeGroupRequest
+type ListGroupMembersRequest struct {
+	GroupID   uuid.UUID `json:"group_id"`
+	NextToken int64
+	Max       int
+}
+
+// ListGroupMembersResponse returns all the members of the requested group
+type ListGroupMembersResponse struct {
+	ResultList []GroupMember `json:"group_members"`
+	NextToken  int64         `json:"next_token"`
+}
 
 // BulkListGroupMembersRequest wraps values used to look up group membership for a list of groups
 type BulkListGroupMembersRequest struct {
-	GroupIDs []string `json:"group_ids"`
+	GroupIDs  []string `json:"group_ids"`
+	NextToken string
+	Max       int
 }
 
 // BulkListGroupMembersResponse returns all the members of a particular list of groups and the group they are part of.
 type BulkListGroupMembersResponse struct {
 	ResultList map[string][]GroupMember `json:"results"`
+	NextToken  string                   `json:"next_token"`
 }
 
 // BulkListGroupInfoRequest wraps values used to look up group info for a list of groups
