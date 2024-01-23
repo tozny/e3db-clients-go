@@ -6977,7 +6977,7 @@ func TestBulkListGroupMembersReturnsSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to Add Group Member to Group: Request:  %+v Err: %+v", addMemberRequest, err)
 	}
-	listMemberRequest := storageClient.BulkListGroupMembersRequest{GroupIDs: []string{response.GroupID.String(), response2.GroupID.String()}}
+	listMemberRequest := storageClient.BulkListGroupMembersRequest{Max: 100, GroupIDs: []string{response.GroupID.String(), response2.GroupID.String()}}
 	listMemberResponse, err := queenClient.BulkListGroupMembers(testCtx, listMemberRequest)
 
 	if err != nil {
