@@ -125,12 +125,15 @@ type BulkListGroupMembersResponse struct {
 
 // BulkListGroupInfoRequest wraps values used to look up group info for a list of groups
 type BulkListGroupInfoRequest struct {
-	GroupIDs []string `json:"group_ids"`
+	GroupIDs  []string `json:"group_ids"`
+	NextToken int64
+	Max       int
 }
 
 // BulkListGroupInfoResponse returns a map of group ID to group info.
 type BulkListGroupInfoResponse struct {
 	ResultList map[string]Group `json:"results"`
+	NextToken  int64            `json:"next_token"`
 }
 
 // ListGroupsRequest look up groups for the client's account by default or optionally filter by parameters such as client ID
