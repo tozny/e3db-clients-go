@@ -795,6 +795,8 @@ func (c *StorageClient) BulkListGroupInfo(ctx context.Context, params BulkListGr
 	for _, group := range params.GroupIDs {
 		urlParams.Add("group_ids", group)
 	}
+	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
