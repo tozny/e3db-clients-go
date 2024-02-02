@@ -258,14 +258,12 @@ func (c *StorageClient) ListGroupMembers(ctx context.Context, params ListGroupMe
 func (c *StorageClient) BulkListGroupMembers(ctx context.Context, params BulkListGroupMembersRequest) (*BulkListGroupMembersResponse, error) {
 	var result *BulkListGroupMembersResponse
 	path := c.Host + storageServiceBasePath + "/groups/bulk/members"
-	req, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
 	urlParams := req.URL.Query()
-	for _, group := range params.GroupIDs {
-		urlParams.Add("group_ids", group)
-	}
+
 	urlParams.Set("nextToken", params.NextToken)
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
@@ -427,7 +425,7 @@ func (c *StorageClient) GetSharedWithGroup(ctx context.Context, params ListGroup
 func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, params BulkListGroupRecordsRequest) (*BulkListGroupRecordsResponse, error) {
 	var result *BulkListGroupRecordsResponse
 	path := c.Host + storageServiceBasePath + "/groups/bulk/share"
-	req, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
@@ -435,9 +433,6 @@ func (c *StorageClient) GetBulkRecordsSharedWithGroups(ctx context.Context, para
 	urlParams.Set("next_token", params.NextToken)
 	if params.Max != 0 {
 		urlParams.Set("max", strconv.Itoa(int(params.Max)))
-	}
-	for _, group := range params.GroupIDs {
-		urlParams.Add("group_ids", group)
 	}
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
@@ -787,14 +782,11 @@ func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, 
 func (c *StorageClient) BulkListGroupInfo(ctx context.Context, params BulkListGroupInfoRequest) (*BulkListGroupInfoResponse, error) {
 	var result *BulkListGroupInfoResponse
 	path := c.Host + storageServiceBasePath + "/groups/bulk"
-	req, err := e3dbClients.CreateRequest("GET", path, params)
+	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
 	}
 	urlParams := req.URL.Query()
-	for _, group := range params.GroupIDs {
-		urlParams.Add("group_ids", group)
-	}
 	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
