@@ -640,3 +640,20 @@ type AdminListGroupsResponse struct {
 	Groups    []GroupsWithMembers `json:"groups"`
 	NextToken int64               `json:"next_token"`
 }
+
+
+// ***** FetchGroupsByCapabilities *****
+type FetchGroupsByCapabilitiesParams struct {
+	ClientID     uuid.UUID `json:"client_id"`
+	Capabilities []string  `json:"capabilities"`
+	NextToken    int64     `json:"next_token"`
+	Max          int       `json:"max"`
+}
+
+type CapabilityGroups struct {
+	Capability string      `json:"capability"`
+	GroupIds   []uuid.UUID `json:"group_ids"`
+}
+type FetchGroupsByCapabilitiesResponse struct {
+	CapabilityGroups []CapabilityGroups `json:"groups"`
+}

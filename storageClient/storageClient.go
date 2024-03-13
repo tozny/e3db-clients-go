@@ -912,3 +912,23 @@ func (c *StorageClient) InternalUpdateEACPEmail(ctx context.Context, params map[
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+// FetchGroupsWithCapabilities is a method used to call the /groups/client/{client_id} endpoint with capabilities query parameter
+func (c *StorageClient) FetchGroupsByCapabilities(ctx context.Context, params FetchGroupsByCapabilitiesParams) (*FetchGroupsByCapabilitiesResponse, error) {
+	var result *FetchGroupsByCapabilitiesResponse
+	path := c.Host + storageServiceBasePath + "/groups/client/" + params.ClientID.String()
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	// Set Query Parameters
+	urlParams := req.URL.Query()
+	for _, capability := range params.Capabilities {
+		urlParams.Add("capabilities", capability)
+	}
+	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
