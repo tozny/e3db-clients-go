@@ -641,9 +641,8 @@ type AdminListGroupsResponse struct {
 	NextToken int64               `json:"next_token"`
 }
 
-
-// ***** FetchGroupsByCapabilities *****
-type FetchGroupsByCapabilitiesParams struct {
+// ***** FetchGroupIDsByCapabilities *****
+type FetchGroupIDsByCapabilitiesParams struct {
 	ClientID     uuid.UUID `json:"client_id"`
 	Capabilities []string  `json:"capabilities"`
 	NextToken    int64     `json:"next_token"`
@@ -652,8 +651,8 @@ type FetchGroupsByCapabilitiesParams struct {
 
 type CapabilityGroups struct {
 	Capability string      `json:"capability"`
-	GroupIds   []uuid.UUID `json:"group_ids"`
+	GroupIDs   []uuid.UUID `json:"group_ids"`
 }
-type FetchGroupsByCapabilitiesResponse struct {
+type FetchGroupIDsByCapabilitiesResponse struct {
 	CapabilityGroups []CapabilityGroups `json:"groups"`
 }
