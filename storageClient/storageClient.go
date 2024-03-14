@@ -914,8 +914,8 @@ func (c *StorageClient) InternalUpdateEACPEmail(ctx context.Context, params map[
 }
 
 // FetchGroupsWithCapabilities is a method used to call the /groups/client/{client_id} endpoint with capabilities query parameter
-func (c *StorageClient) FetchGroupsByCapabilities(ctx context.Context, params FetchGroupsByCapabilitiesParams) (*FetchGroupsByCapabilitiesResponse, error) {
-	var result *FetchGroupsByCapabilitiesResponse
+func (c *StorageClient) FetchGroupIDsByCapabilities(ctx context.Context, params FetchGroupIDsByCapabilitiesParams) (*FetchGroupIDsByCapabilitiesResponse, error) {
+	var result *FetchGroupIDsByCapabilitiesResponse
 	path := c.Host + storageServiceBasePath + "/groups/client/" + params.ClientID.String()
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
