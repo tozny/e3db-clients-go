@@ -641,7 +641,7 @@ type AdminListGroupsResponse struct {
 	NextToken int64               `json:"next_token"`
 }
 
-// ***** FetchGroupsByCapabilities *****
+// ***** FetchGroupIDsByCapabilities *****
 type FetchGroupIDsByCapabilitiesParams struct {
 	ClientID     uuid.UUID `json:"client_id"`
 	Capabilities []string  `json:"capabilities"`
