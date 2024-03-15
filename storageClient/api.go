@@ -645,7 +645,7 @@ type AdminListGroupsResponse struct {
 type FetchGroupIDsByCapabilitiesParams struct {
 	ClientID     uuid.UUID `json:"client_id"`
 	Capabilities []string  `json:"capabilities"`
-	NextToken    int64     `json:"next_token"`
+	NextToken    int       `json:"next_token"`
 	Max          int       `json:"max"`
 }
 
@@ -655,4 +655,5 @@ type CapabilityGroups struct {
 }
 type FetchGroupIDsByCapabilitiesResponse struct {
 	CapabilityGroups []CapabilityGroups `json:"groups"`
+	NextToken        int                `json:"next_token"`
 }
