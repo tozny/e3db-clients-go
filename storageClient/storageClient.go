@@ -926,7 +926,7 @@ func (c *StorageClient) FetchGroupIDsByCapabilities(ctx context.Context, params 
 	for _, capability := range params.Capabilities {
 		urlParams.Add("capabilities", capability)
 	}
-	urlParams.Set("nextToken", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("nextToken", strconv.FormatInt(params.NextToken, 10))
 	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
