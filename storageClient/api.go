@@ -657,3 +657,16 @@ type FetchGroupIDsByCapabilitiesResponse struct {
 	CapabilityGroups []CapabilityGroups `json:"groups"`
 	NextToken        int64              `json:"next_token"`
 }
+
+// ***** FetchUserGroupCapabilities *****
+type FetchUserGroupCapabilitiesParams struct {
+	ClientID  uuid.UUID   `json:"client_id"`
+	GroupIDs  []uuid.UUID `json:"group_ids"`
+	NextToken int64       `json:"next_token"`
+	Max       int         `json:"max"`
+}
+
+type FetchUserGroupCapabilitiesResponse struct {
+	Results   map[uuid.UUID][]string `json:"results"`
+	NextToken int64                  `json:"next_token"`
+}
