@@ -935,7 +935,7 @@ func (c *StorageClient) FetchGroupIDsByCapabilities(ctx context.Context, params 
 
 func (c *StorageClient) FetchUserGroupCapabilities(ctx context.Context, params FetchUserGroupCapabilitiesParams) (*FetchUserGroupCapabilitiesResponse, error) {
 	var result *FetchUserGroupCapabilitiesResponse
-	path := c.Host + storageServiceBasePath + "/groups/capabilities/" + params.UserID.String()
+	path := c.Host + storageServiceBasePath + "/groups/capabilities/" + params.ClientID.String()
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
@@ -945,6 +945,8 @@ func (c *StorageClient) FetchUserGroupCapabilities(ctx context.Context, params F
 	for _, groupID := range params.GroupIDs {
 		urlParams.Add("group_ids", groupID.String())
 	}
+	urlParams.Set("nextToken", strconv.FormatInt(params.NextToken, 10))
+	urlParams.Set("max", strconv.Itoa(int(params.Max)))
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
