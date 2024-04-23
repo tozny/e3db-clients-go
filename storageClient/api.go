@@ -667,6 +667,6 @@ type FetchUserGroupCapabilitiesParams struct {
 }
 
 type FetchUserGroupCapabilitiesResponse struct {
-	Results   map[uuid.UUID][]string `json:"results"`
+	Results   map[uuid.UUID][]string `json:"results"` // GroupID to list of capabilities
 	NextToken int64                  `json:"next_token"`
 }
