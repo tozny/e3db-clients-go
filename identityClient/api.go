@@ -1568,3 +1568,12 @@ type RealmAdminCheckRequest struct {
 type RealmAdminCheckResponse struct {
 	AdminEnabled bool `json:"active"`
 }
+
+// InternalFetchClientsRealms
+type InternalFetchClientsRealmsRequest struct {
+	ClientIDs []uuid.UUID `json:"client_ids"`
+}
+
+type InternalFetchClientsRealmsResponse struct {
+	Results map[uuid.UUID]string `json:"results"` // map of client id to realm name
+}

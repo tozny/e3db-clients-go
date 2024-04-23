@@ -1363,6 +1363,18 @@ func (c *E3dbIdentityClient) IsRealmAdmin(ctx context.Context, params RealmAdmin
 	return resp, err
 }
 
+func (c *E3dbIdentityClient) InternalFetchClientsRealms(ctx context.Context, params InternalFetchClientsRealmsRequest) (*InternalFetchClientsRealmsResponse, error) {
+	var resp *InternalFetchClientsRealmsResponse
+
+	path := c.Host + internalIdentityServiceBasePath + "/clientsRealms"
+	request, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return resp, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
 // EnableAccessControlPolicy Enables Access Control for an Application Client, returning error (if any).
 func (c *E3dbIdentityClient) EnableAccessControlPolicy(ctx context.Context, params AccessControlPolicyRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + applicationResourceName + "/" + params.ApplicationID + "/" + accessControlPolicyResourceName

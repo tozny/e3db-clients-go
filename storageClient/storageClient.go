@@ -933,6 +933,8 @@ func (c *StorageClient) FetchGroupIDsByCapabilities(ctx context.Context, params 
 	return result, err
 }
 
+// FetchUserGroupCapabilities is a method used to call the /groups/capabilities/{client_id} endpoint with group_ids query parameter
+// to fetch all the capabilities of a user for a list of groupIDs
 func (c *StorageClient) FetchUserGroupCapabilities(ctx context.Context, params FetchUserGroupCapabilitiesParams) (*FetchUserGroupCapabilitiesResponse, error) {
 	var result *FetchUserGroupCapabilitiesResponse
 	path := c.Host + storageServiceBasePath + "/groups/capabilities/" + params.ClientID.String()
