@@ -487,6 +487,16 @@ func (c *E3dbIdentityClient) DeleteRealmGroup(ctx context.Context, params Delete
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
+// InternalDeleteRealmGroup deletes the specified realm group, returning error (if any).
+func (c *E3dbIdentityClient) InternalDeleteRealmGroup(ctx context.Context, realmName string, groupID string) error {
+	path := c.Host + internalIdentityServiceBasePath + "/realm/" + realmName + "/groups/" + groupID
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+}
+
 // DescribeRealmGroup describes the realm group with the specified id, returning the realm group or error (if any).
 func (c *E3dbIdentityClient) DescribeRealmGroup(ctx context.Context, params DescribeRealmGroupRequest) (*Group, error) {
 	var group *Group

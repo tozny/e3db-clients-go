@@ -670,3 +670,8 @@ type FetchUserGroupCapabilitiesResponse struct {
 	Results   map[uuid.UUID][]string `json:"results"` // GroupID to list of capabilities
 	NextToken int64                  `json:"next_token"`
 }
+
+type DeleteClientDataRequest struct {
+	ClientID  string `json:"client_id"`
+	RealmName string `json:"realm_name"`
+}

@@ -860,10 +860,10 @@ func (c *StorageClient) BulkDeleteRecords(ctx context.Context, params BulkRecord
 }
 
 // InternalDeleteRecords deletes all records of given clientID
-func (c *StorageClient) InternalDeleteClientRecords(ctx context.Context, clientID string) (*BulkRecordDeleteResponseErrors, error) {
+func (c *StorageClient) InternalDeleteClientRecords(ctx context.Context, params DeleteClientDataRequest) (*BulkRecordDeleteResponseErrors, error) {
 	var result *BulkRecordDeleteResponseErrors
-	path := c.Host + "/internal" + storageServiceBasePath + "/records/client/" + clientID
-	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	path := c.Host + "/internal" + storageServiceBasePath + "/records/delete"
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
 	if err != nil {
 		return result, err
 	}
@@ -872,10 +872,10 @@ func (c *StorageClient) InternalDeleteClientRecords(ctx context.Context, clientI
 }
 
 // InternalDeleteClientGroups deletes all groups of given clientID
-func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, clientID string) ([]RecordError, error) {
+func (c *StorageClient) InternalDeleteClientGroups(ctx context.Context, params DeleteClientDataRequest) ([]RecordError, error) {
 	var result []RecordError
-	path := c.Host + "/internal" + storageServiceBasePath + "/groups/client/" + clientID
-	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/delete"
+	req, err := e3dbClients.CreateRequest("DELETE", path, params)
 	if err != nil {
 		return result, err
 	}
