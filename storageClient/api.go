@@ -658,15 +658,15 @@ type FetchGroupIDsByCapabilitiesResponse struct {
 	NextToken        int64              `json:"next_token"`
 }
 
-// ***** FetchUserGroupCapabilities *****
-type FetchUserGroupCapabilitiesParams struct {
+// ***** FetchClientGroupCapabilities *****
+type FetchClientGroupCapabilitiesParams struct {
 	ClientID  uuid.UUID   `json:"client_id"`
 	GroupIDs  []uuid.UUID `json:"group_ids"`
 	NextToken int64       `json:"next_token"`
 	Max       int         `json:"max"`
 }
 
-type FetchUserGroupCapabilitiesResponse struct {
+type FetchClientGroupCapabilitiesResponse struct {
 	Results   map[uuid.UUID][]string `json:"results"` // GroupID to list of capabilities
 	NextToken int64                  `json:"next_token"`
 }
