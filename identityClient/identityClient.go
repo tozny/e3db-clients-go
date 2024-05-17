@@ -1149,6 +1149,45 @@ func (c *E3dbIdentityClient) SearchAccessRequests(ctx context.Context, params Ac
 	return searchResponse, err
 }
 
+// SearchAccessRequests searches for all or specific (e.g. based off requestor) access requests associated with or authorizable by the searcher
+// returning paginated lists of matching access requests and error (if any)
+func (c *E3dbIdentityClient) OpenAccessRequest(ctx context.Context, params AccessRequestSearchRequest) (*AccessRequestSearchResponse, error) {
+	var searchResponse *AccessRequestSearchResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/items/open"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return searchResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &searchResponse)
+	return searchResponse, err
+}
+
+// SearchAccessRequests searches for all or specific (e.g. based off requestor) access requests associated with or authorizable by the searcher
+// returning paginated lists of matching access requests and error (if any)
+func (c *E3dbIdentityClient) AccessRequestAction(ctx context.Context, params AccessRequestSearchRequest) (*AccessRequestSearchResponse, error) {
+	var searchResponse *AccessRequestSearchResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/items/pending"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return searchResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &searchResponse)
+	return searchResponse, err
+}
+
+// SearchAccessRequests searches for all or specific (e.g. based off requestor) access requests associated with or authorizable by the searcher
+// returning paginated lists of matching access requests and error (if any)
+func (c *E3dbIdentityClient) AccessHistoryHistory(ctx context.Context, params AccessRequestSearchRequest) (*AccessRequestSearchResponse, error) {
+	var searchResponse *AccessRequestSearchResponse
+	path := c.Host + identityServiceBasePath + pamAccessPathPrefix + "/history"
+	request, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return searchResponse, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, &searchResponse)
+	return searchResponse, err
+}
+
 // DescribeAccessRequest gets the current state of a single access request, returning the access request and error (if any)
 func (c *E3dbIdentityClient) DescribeAccessRequest(ctx context.Context, params DescribeAccessRequestRequest) (*AccessRequestResponse, error) {
 	var accessRequest *AccessRequestResponse
