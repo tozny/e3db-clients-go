@@ -953,3 +953,15 @@ func (c *StorageClient) FetchClientGroupCapabilities(ctx context.Context, params
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+// GetClientOnlyAdminGroups endpoint returns group names that the client is the only admin.
+func (c *StorageClient) GetClientOnlyAdminGroups(ctx context.Context, clientId string) ([]string, error) {
+	result := []string{}
+	path := c.Host + storageServiceBasePath + "/groups/client/" + clientId + "/owned"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
