@@ -19,7 +19,7 @@ type Note struct {
 	EncryptedAccessKey  string            `json:"encrypted_access_key"`
 	Type                string            `json:"type"`
 	Data                map[string]string `json:"data"`
-	Plain               map[string]string `json:"plain"`
+	Plain               map[string]string `json:"plain,omitempty"`
 	FileMeta            map[string]string `json:"file_meta,omitempty"`
 	EACPS               *EACP             `json:"eacp,omitempty"`
 	Signature           string            `json:"signature"`
