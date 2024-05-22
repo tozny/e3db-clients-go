@@ -666,9 +666,24 @@ type FetchClientGroupCapabilitiesParams struct {
 	Max       int         `json:"max"`
 }
 
+// GetClientOnlyAdminGroupsParams wraps the values required for getting all groups that a
+// storage client is the sole manager of
+type GetClientOnlyAdminGroupsParams struct {
+	ClientID  uuid.UUID `json:"client_id"`
+	NextToken int64     `json:"next_token"`
+	Max       int       `json:"max"`
+}
+
 type FetchClientGroupCapabilitiesResponse struct {
 	Results   map[uuid.UUID][]string `json:"results"` // GroupID to list of capabilities
 	NextToken int64                  `json:"next_token"`
+}
+
+// GetClientOnlyAdminGroupsResponse wraps the return response for a request to get all
+// groups a client is the sole admin for
+type GetClientOnlyAdminGroupsResponse struct {
+	Results   []string `json:"results"`
+	NextToken int64    `json:"next_token"`
 }
 
 type DeleteClientDataRequest struct {
