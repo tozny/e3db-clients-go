@@ -224,6 +224,23 @@ func (c *ClientServiceClient) InternalClientList(ctx context.Context, params Int
 	return result, err
 }
 
+// InternalClientInfoList calls internal endpoint to return all clients with status. This endpoint is paginated.
+// The last page will containe a next token equal to 0
+func (c *ClientServiceClient) InternalClientInfoList(ctx context.Context, params InternalClientListRequest) (*InternalClientInfoListResponse, error) {
+	var result *InternalClientInfoListResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + "clients"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("next", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("limit", strconv.Itoa(int(params.Limit)))
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 // AdminToggleClientEnabled enables/disables clients with account auth.
 func (c *ClientServiceClient) InternalToggleClientEnabled(ctx context.Context, params InternalToggleEnabledRequest) error {
 	path := c.Host + "/internal/" + ClientServiceBasePath + params.ClientID + "/enable"
