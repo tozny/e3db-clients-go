@@ -228,7 +228,7 @@ func (c *ClientServiceClient) InternalClientList(ctx context.Context, params Int
 // The last page will containe a next token equal to 0
 func (c *ClientServiceClient) InternalClientInfoList(ctx context.Context, params InternalClientListRequest) (*InternalClientInfoListResponse, error) {
 	var result *InternalClientInfoListResponse
-	path := c.Host + "/internal/" + ClientServiceBasePath + "clients"
+	path := c.Host + "/internal/" + ClientServiceBasePath + "clients/info"
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
