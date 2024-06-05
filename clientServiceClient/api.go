@@ -155,8 +155,8 @@ type InternalClientListResponse struct {
 }
 
 type ClientInfo struct {
-	ClientID string `json:"client_id"`
-	Status   bool   `json:"status"`
+	ClientID  string `json:"client_id"`
+	IsDeleted bool   `json:"status"`
 }
 type InternalClientInfoListResponse struct {
 	Clients   []ClientInfo `json:"client_ids"`
