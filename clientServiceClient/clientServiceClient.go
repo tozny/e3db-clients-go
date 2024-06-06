@@ -86,7 +86,7 @@ func (c *ClientServiceClient) InternalDeleteClient(ctx context.Context, realmNam
 
 // InternalUpdateClientDelete makes authenticated call to the /internal endpoint for client service.
 func (c *ClientServiceClient) InternalUpdateClientDelete(ctx context.Context, clientID string) error {
-	path := c.Host + "/internal/" + ClientServiceBasePath + clientID + "/delete"
+	path := c.Host + "/internal/" + ClientServiceBasePath + "clients/" + clientID + "/delete"
 	req, err := e3dbClients.CreateRequest("PUT", path, nil)
 	if err != nil {
 		return err
