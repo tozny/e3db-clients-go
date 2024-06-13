@@ -153,3 +153,12 @@ type InternalClientListResponse struct {
 	ClientIDs []string `json:"client_ids"`
 	NextToken int64    `json:"next_token"`
 }
+
+type ClientInfo struct {
+	ClientID  string `json:"client_id"`
+	IsDeleted bool   `json:"status"`
+}
+type InternalClientInfoListResponse struct {
+	Clients   []ClientInfo `json:"client_ids"`
+	NextToken int64        `json:"next_token"`
+}

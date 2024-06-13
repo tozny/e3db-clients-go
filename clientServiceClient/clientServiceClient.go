@@ -84,6 +84,17 @@ func (c *ClientServiceClient) InternalDeleteClient(ctx context.Context, realmNam
 	return err
 }
 
+// InternalUpdateClientDelete makes authenticated call to the /internal endpoint for client service.
+func (c *ClientServiceClient) InternalUpdateClientDelete(ctx context.Context, clientID string) error {
+	path := c.Host + "/internal/" + ClientServiceBasePath + "clients/" + clientID + "/delete"
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
+	return err
+}
+
 // Register registers a client.
 func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
 	var result *ClientRegisterResponse
@@ -212,6 +223,23 @@ func (c *ClientServiceClient) InternalAccountIDForClientID(ctx context.Context, 
 func (c *ClientServiceClient) InternalClientList(ctx context.Context, params InternalClientListRequest) (*InternalClientListResponse, error) {
 	var result *InternalClientListResponse
 	path := c.Host + "/internal/" + ClientServiceBasePath + "clients"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("next", strconv.Itoa(int(params.NextToken)))
+	urlParams.Set("limit", strconv.Itoa(int(params.Limit)))
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
+// InternalClientInfoList calls internal endpoint to return all clients with status. This endpoint is paginated.
+// The last page will containe a next token equal to 0
+func (c *ClientServiceClient) InternalClientInfoList(ctx context.Context, params InternalClientListRequest) (*InternalClientInfoListResponse, error) {
+	var result *InternalClientInfoListResponse
+	path := c.Host + "/internal/" + ClientServiceBasePath + "clients/info"
 	req, err := e3dbClients.CreateRequest("GET", path, nil)
 	if err != nil {
 		return result, err
