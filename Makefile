@@ -98,3 +98,7 @@ test-keycloak:
 # Run all SecureCompute integration test
 test-secure:
 	go test -count=1 -v secureComputeClient/secureComputeClient_test.go secureComputeClient/secureComputeClient.go secureComputeClient/api.go
+
+# Run all Activity integration test
+test-activity:
+	go test -count=1 -v activityClient/activityClient.go activityClient/activityClient_test.go 
