@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ActivityServiceBasePath = "/v1/activity-service"
+	ActivityServiceBasePath = "/v1/activity"
 )
 
 // E3dbActivityClient implements an http client for communication with an e3db activity service.
