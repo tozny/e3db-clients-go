@@ -488,6 +488,47 @@ func (c *StorageClient) readNote(ctx context.Context, noteName string, noteID st
 	return result, err
 }
 
+func (c *StorageClient) GetNoteViews(ctx context.Context, noteName string, noteID string, eacpParams map[string]string) (*Note, error) {
+	var result *Note
+	path := c.Host + storageServiceBasePath + "/notes/views"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	// Set appropriate request query params & headers for satisfying
+	// a note's required EACPs
+	urlParams := req.URL.Query()
+	for key, val := range eacpParams {
+		var isHeaderEACP bool
+		for _, eacpHeader := range EACPHeaders {
+			if key == eacpHeader {
+				isHeaderEACP = true
+				break
+			}
+		}
+		if isHeaderEACP {
+			req.Header.Add(key, val)
+		} else {
+			urlParams.Set(key, val)
+		}
+	}
+
+	if noteName != "" && noteID != "" {
+		return result, errors.New("readNote: noteName and noteID may not be set at the same time")
+	}
+	if noteName != "" {
+		urlParams.Set("id_string", noteName)
+	}
+	if noteID != "" {
+		urlParams.Set("note_id", noteID)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+
+
 func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) (ChallengeResponse, error) {
 	var challenges ChallengeResponse
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
