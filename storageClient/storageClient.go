@@ -527,8 +527,6 @@ func (c *StorageClient) GetNoteViews(ctx context.Context, noteName string, noteI
 	return result, err
 }
 
-
-
 func (c *StorageClient) Challenge(ctx context.Context, noteID string, params ChallengeRequest) (ChallengeResponse, error) {
 	var challenges ChallengeResponse
 	path := c.Host + storageServiceBasePath + "/notes/challenge"
@@ -1009,4 +1007,68 @@ func (c *StorageClient) GetClientOnlyAdminGroups(ctx context.Context, params Get
 	req.URL.RawQuery = urlParams.Encode()
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
+}
+
+func (c *StorageClient) CreateFlowGroupFolder(ctx context.Context, groupID string, params GroupFolder) (*GroupFolderResponse, error) {
+	var result *GroupFolderResponse
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) GetFlowGroupHomeFolder(ctx context.Context, groupID string) (*GroupFolderResponse, error) {
+	var result *GroupFolderResponse
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders/home"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) GetFlowGroupFolder(ctx context.Context, groupID string, folderID string) (*GroupFolderResponse, error) {
+	var result *GroupFolderResponse
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders/" + folderID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) UpdateFlowGroupFolder(ctx context.Context, groupID string, folderID string, params GroupFolder) (*GroupFolderResponse, error) {
+	var result *GroupFolderResponse
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders/" + folderID
+	req, err := e3dbClients.CreateRequest("PUT", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) DeleteFlowGroupFolder(ctx context.Context, groupID string, folderID string) error {
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders/" + folderID
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *StorageClient) ReconcileFlowGroupFolders(ctx context.Context, groupID string) error {
+	path := c.Host + storageServiceBasePath + "/flow/groups/" + groupID + "/folders/records/reconcile"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
 }

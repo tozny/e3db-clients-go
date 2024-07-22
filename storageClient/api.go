@@ -690,3 +690,33 @@ type DeleteClientDataRequest struct {
 	ClientID  string `json:"client_id"`
 	RealmName string `json:"realm_name"`
 }
+
+type GroupFolder struct {
+	FolderID       string              `json:"folder_id,omitempty"`
+	ParentID       string              `json:"parent_id"`
+	GroupID        string              `json:"group_id"`
+	FolderName     string              `json:"folder_name"`
+	Records        map[string][]string `json:"records"`
+	LastModified   time.Time           `json:"last_modified,omitempty"`
+	LastModifiedBy uuid.UUID           `json:"last_modified_by,omitempty"`
+}
+
+type GroupFolderResponse struct {
+	FolderID       uuid.UUID           `json:"folder_id"`
+	ParentID       uuid.UUID           `json:"parent_id"`
+	GroupID        uuid.UUID           `json:"group_id"`
+	FolderName     string              `json:"folder_name"`
+	Records        map[string][]string `json:"records"`
+	SubFolders     []GroupSubFolder    `json:"sub_folders"`
+	LastModified   time.Time           `json:"last_modified"`
+	LastModifiedBy uuid.UUID           `json:"last_modified_by"`
+}
+
+type GroupSubFolder struct {
+	FolderID       uuid.UUID `json:"folder_id"`
+	ParentID       uuid.UUID `json:"parent_id"`
+	GroupID        uuid.UUID `json:"group_id"`
+	FolderName     string    `json:"folder_name"`
+	LastModified   time.Time `json:"last_modified"`
+	LastModifiedBy uuid.UUID `json:"last_modified_by"`
+}
