@@ -79,6 +79,7 @@ type ShareGroupRecordRequest struct {
 	RecordID           string    `json:"record_id"`
 	EncryptedAccessKey string    `json:"encrypted_access_key"`
 	PublicKey          string    `json:"public_key"`
+	CanEdit            bool      `json:"can_edit"`
 }
 
 // RemoveRecordSharedWithGroupRequest wraps the values for revoking record access to a group
@@ -568,6 +569,11 @@ type AllowedGroupsForPolicyRequest struct {
 // AllowedGroupsForPolicyResponse wraps the response object for the allowed group reads for a list of content types
 type AllowedGroupsForPolicyResponse struct {
 	GroupsSharedWith map[string][]uuid.UUID `json:"groups_shared_with"` // A map of content type to list of groups that content type is shared with.
+}
+
+type AllowedGroupsForShared struct {
+	GroupID string `json:"group_id"`
+	CanEdit bool   `json:"can_edit"`
 }
 
 // InternalAllowedGroupsForPolicyRequest wraps the request object for finding the allowed reads from a group

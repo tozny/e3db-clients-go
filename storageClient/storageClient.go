@@ -850,6 +850,23 @@ func (c *StorageClient) GroupAllowedReads(ctx context.Context, params AllowedGro
 	return result, err
 }
 
+// GroupAllowedReads fetches the allowed groups and boolean for edit priviledge for a writer id and content type
+func (c *StorageClient) GroupAllowedEdits(ctx context.Context, params AllowedGroupsForPolicyRequest) ([]AllowedGroupsForShared, error) {
+	var result []AllowedGroupsForShared
+	path := c.Host + storageServiceBasePath + "/groups/allowed_edit"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	for _, contentType := range params.ContentTypes {
+		urlParams.Add("content_types", contentType)
+	}
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // InternalGroupAllowedReads is an internal endpoint used to fetch the allowed group reads for a writer id and content type
 func (c *StorageClient) InternalGroupAllowedReads(ctx context.Context, params InternalAllowedGroupsForPolicyRequest) (*InternalAllowedGroupsForPolicyResponse, error) {
 	var result *InternalAllowedGroupsForPolicyResponse
