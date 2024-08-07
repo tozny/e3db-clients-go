@@ -851,8 +851,8 @@ func (c *StorageClient) GroupAllowedReads(ctx context.Context, params AllowedGro
 }
 
 // GroupAllowedReads fetches the allowed groups and boolean for edit priviledge for a writer id and content type
-func (c *StorageClient) GroupAllowedEdits(ctx context.Context, params AllowedGroupsForPolicyRequest) ([]AllowedGroupsForShared, error) {
-	var result []AllowedGroupsForShared
+func (c *StorageClient) GroupAllowedEdits(ctx context.Context, params AllowedGroupsForPolicyRequest) ([]*AllowedGroupsForShared, error) {
+	var result []*AllowedGroupsForShared
 	path := c.Host + storageServiceBasePath + "/groups/allowed_edit"
 	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
