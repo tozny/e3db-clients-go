@@ -1072,3 +1072,25 @@ func (c *StorageClient) ReconcileFlowGroupFolders(ctx context.Context, groupID s
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+func (c *StorageClient) WriteNoteFile(ctx context.Context, params Note) (*PendingFileResponse, error) {
+	var result *PendingFileResponse
+	path := c.Host + storageServiceBasePath + "/notes/files"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) CommitNoteFile(ctx context.Context, pendingFileID uuid.UUID) (*Note, error) {
+	var result *Note
+	path := c.Host + storageServiceBasePath + "/notes/files/" + pendingFileID.String()
+	req, err := e3dbClients.CreateRequest("PATCH", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
