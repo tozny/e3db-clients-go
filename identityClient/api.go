@@ -640,6 +640,7 @@ type Provider struct {
 type ProviderConnectionSettings struct {
 	Type                  string   `json:"type"`
 	IdentityNameAttribute string   `json:"identity_name_attribute"`
+	EditMode              string   `json:"edit_mode"`
 	RDNAttribute          string   `json:"rdn_attribute"`
 	UUIDAttribute         string   `json:"uuid_attribute"`
 	IdentityObjectClasses []string `json:"identity_object_classes"`
