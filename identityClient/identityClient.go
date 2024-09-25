@@ -1730,7 +1730,7 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	return resp, err
 }
 
-// InternalAdministratorAccountLockRemoval removes a lock for an identity account with auditing
+// GetAllowedReads gets a list of all users that a specific user is allowed to share with, based on realm sharing settings
 func (c *E3dbIdentityClient) GetAllowedReads(ctx context.Context, params AllowedSharesRequest) (*AllowedSharesResponse, error) {
 	var resp *AllowedSharesResponse
 	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/allowed_shares"
