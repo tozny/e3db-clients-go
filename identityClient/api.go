@@ -1589,5 +1589,6 @@ type AllowedSharesRequest struct {
 
 // AllowedSharesResponse returns a list of users that a user is allowed to share with
 type AllowedSharesResponse struct {
-	AllowedRecipients []string `json:"allowed_recipients"`
+	ValidRecipients   []string `json:"valid_recipients"`
+	InvalidRecipients []string `json:"invalid_recipients"`
 }
