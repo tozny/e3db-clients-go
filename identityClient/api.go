@@ -1580,3 +1580,14 @@ type InternalFetchClientsRealmsRequest struct {
 type InternalFetchClientsRealmsResponse struct {
 	Results map[uuid.UUID]string `json:"results"` // map of client id to realm name
 }
+
+// AllowedSharesRequest wraps a request to get a list of users that a user is allowed to share with
+type AllowedSharesRequest struct {
+	Sharer     string   `json:"sharer"`
+	Recipients []string `json:"recipients"`
+}
+
+// AllowedSharesResponse returns a list of users that a user is allowed to share with
+type AllowedSharesResponse struct {
+	AllowedRecipients []string `json:"allowed_recipients"`
+}

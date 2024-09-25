@@ -1729,3 +1729,15 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &resp)
 	return resp, err
 }
+
+// InternalAdministratorAccountLockRemoval removes a lock for an identity account with auditing
+func (c *E3dbIdentityClient) GetAllowedReads(ctx context.Context, params AllowedSharesRequest) (*AllowedSharesResponse, error) {
+	var resp *AllowedSharesResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/allowed_shares"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
