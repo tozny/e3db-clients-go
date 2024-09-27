@@ -94,7 +94,7 @@ type PrivateRealmInfo struct {
 	TozIDFederationEnabled         bool      `json:"tozid_federation_enabled"`
 	MPCEnabled                     bool      `json:"mpc_enabled"`
 	DisableAccountTabForIdentities bool      `json:"disable_account_tab_for_identities"`
-	AllowCrossRealmCommunication   bool      `json:"allow_cross_realm_communication,omitempty"`
+	BlockCrossRealmCommunication   bool      `json:"block_cross_realm_communication,omitempty"`
 }
 
 // PublicRealm represents the public information about a realm resource
@@ -1001,7 +1001,7 @@ type RealmSettingsUpdateRequest struct {
 	MPCEnabled                   *bool     `json:"mpc_enabled,omitempty"`
 	ForgotPasswordCustomLink     *string   `json:"forgot_password_custom_link,omitempty"`
 	ForgotPasswordCustomText     *string   `json:"forgot_password_custom_text,omitempty"`
-	AllowCrossRealmCommunication *bool     `json:"allow_cross_realm_communication,omitempty"`
+	BlockCrossRealmCommunication *bool     `json:"block_cross_realm_communication,omitempty"`
 }
 
 // CreateAccessRequestRequest wraps parameters for creating a new open Access Request
