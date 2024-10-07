@@ -1741,3 +1741,25 @@ func (c *E3dbIdentityClient) GetAllowedReads(ctx context.Context, params Allowed
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
 	return resp, err
 }
+
+func (c *E3dbIdentityClient) AddTrustedRealm(ctx context.Context, requestingRealm string, params AddTrustedRealmRequest) (*AddTrustedRealmResponse, error) {
+	var resp *AddTrustedRealmResponse
+	path := c.Host + identityServiceBasePath + "/admin/realm/" + requestingRealm + "/trusted"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+func (c *E3dbIdentityClient) GetTrustedRealms(ctx context.Context, requestingRealm string) (*GetTrustedRealmsResponse, error) {
+	var resp *GetTrustedRealmsResponse
+	path := c.Host + identityServiceBasePath + "/admin/realm/" + requestingRealm + "/trusted"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}

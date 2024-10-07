@@ -1592,3 +1592,18 @@ type AllowedSharesResponse struct {
 	ValidRecipients   []string `json:"valid_recipients"`
 	InvalidRecipients []string `json:"invalid_recipients"`
 }
+
+type AddTrustedRealmRequest struct {
+	RequestedRealm string `json:"requested_realm"`
+}
+
+type AddTrustedRealmResponse struct {
+	RequestingRealmStatus string `json:"requesting_realm_status"`
+	RequestedRealmStatus  string `json:"requested_realm_status"`
+}
+
+type GetTrustedRealmsResponse struct {
+	MutuallyTrusted  []string `json:"mutually_trusted"`
+	OutgoingRequests []string `json:"outgoing_requests"`
+	IncomingRequests []string `json:"incoming_requests"`
+}
