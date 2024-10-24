@@ -693,8 +693,9 @@ type GetClientOnlyAdminGroupsResponse struct {
 }
 
 type DeleteClientDataRequest struct {
-	ClientID  string `json:"client_id"`
-	RealmName string `json:"realm_name"`
+	ClientID     string `json:"client_id"`
+	RealmName    string `json:"realm_name"`
+	DeleteShared bool   `json:"delete_shared_records,omitempty"`
 }
 
 type GroupFolder struct {

@@ -162,3 +162,9 @@ type InternalClientInfoListResponse struct {
 	Clients   []ClientInfo `json:"client_ids"`
 	NextToken int64        `json:"next_token"`
 }
+
+type InternalClientDeleteRequest struct {
+	RealmName    string `json:"realm_name"`
+	ClientID     string `json:"client_id"`
+	DeleteShared string `json:"delete_shared"`
+}
