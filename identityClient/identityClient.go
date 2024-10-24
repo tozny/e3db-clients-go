@@ -1729,3 +1729,15 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &resp)
 	return resp, err
 }
+
+// InternalGetClientInfo gets client information from identity service
+func (c *E3dbIdentityClient) InternalGetClientInfo(ctx context.Context, clientID string) (IdentityInfo, error) {
+	var response IdentityInfo
+	path := c.Host + internalIdentityServiceBasePath + "/clients/" + clientID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
