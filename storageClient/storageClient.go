@@ -1111,3 +1111,25 @@ func (c *StorageClient) CommitNoteFile(ctx context.Context, pendingFileID uuid.U
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
+
+func (c *StorageClient) InternalGetRecordsByType(ctx context.Context, recordType string) ([]*Meta, error) {
+	var result []*Meta
+	path := c.Host + "/internal" + storageServiceBasePath + "/records/type/" + recordType
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) InternalGetGroupInfo(ctx context.Context, groupID string) (*GroupsWithMembers, error) {
+	var result *GroupsWithMembers
+	path := c.Host + "/internal" + storageServiceBasePath + "/groups/" + groupID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
