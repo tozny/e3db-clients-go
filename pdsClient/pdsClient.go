@@ -284,6 +284,7 @@ func (c *E3dbPDSClient) InternalAllowedReadsForAccessPolicy(ctx context.Context,
 	path := c.Host + "/internal/" + PDSServiceBasePath + "/allowed_readers"
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
+		fmt.Printf("Internal Allowed Readers For Policy Response : %+v\n", result)
 		return result, err
 	}
 	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
