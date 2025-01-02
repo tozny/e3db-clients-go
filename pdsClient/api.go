@@ -77,10 +77,10 @@ type InternalAllowedReadersForPolicyRequest struct {
 
 // InternalAllowedReadersForPolicyResponse represents a response to allowed readers for policy endpoint, returning allowed clientIDs that can read the specified records.
 type InternalAllowedReadersForPolicyResponse struct {
-	AllowedReader []AllowedReaderByDate `json:"allowed_readers_by_date"`
+	AllowedReaders []AllowedReader `json:"allowed_readers_by_date"`
 }
 
-type AllowedReaderByDate struct {
+type AllowedReader struct {
 	ReaderID string    `json:"reader_id"`
 	Created  time.Time `json:"created"`
 }
