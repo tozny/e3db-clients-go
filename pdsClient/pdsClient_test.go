@@ -50,7 +50,7 @@ var (
 	testContext               = context.Background()
 )
 
-//TestMain gives all tests access to a client "validPDSUser" who is authorized to write to a default record type.
+// TestMain gives all tests access to a client "validPDSUser" who is authorized to write to a default record type.
 func TestMain(m *testing.M) {
 	err := setup()
 	if err != nil {
@@ -761,8 +761,8 @@ func TestInternalSharedReadersFoundAfterSharingRecords(t *testing.T) {
 		t.Fatalf("Error trying to call PDS for allowed readers %s\n", err)
 	}
 	var foundSharee bool
-	for _, readerID := range resp.ReaderIDs {
-		if readerID == shareeID {
+	for _, reader := range resp.AllowedReaders {
+		if reader.ReaderID == shareeID {
 			foundSharee = true
 			break
 		}
