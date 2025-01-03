@@ -105,6 +105,19 @@ func (c *StorageClient) PutNote(ctx context.Context, params Note) (*Note, error)
 	return result, err
 }
 
+func (c *StorageClient) DeleteRecordNotes(ctx context.Context, recordID uuid.UUID) error {
+	path := c.Host + storageServiceBasePath + "/notes/" + recordID.String() + "/record"
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("recordId", recordID.String())
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // WriteNote writes the specified note to the server, returning the written note and error (if any)
 func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, error) {
 	var result *Note
@@ -115,6 +128,22 @@ func (c *StorageClient) WriteNote(ctx context.Context, params Note) (*Note, erro
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
+}
+
+// WriteNote writes the specified note to the server, returning the written note and error (if any)
+func (c *StorageClient) RecordNotes(ctx context.Context, recordID uuid.UUID) (*BulkListRecordNoteResponse, error) {
+	var result *BulkListRecordNoteResponse
+	path := c.Host + storageServiceBasePath + "/notes/"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("recordId", recordID.String())
+	req.URL.RawQuery = urlParams.Encode()
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return result, err
+
 }
 
 // CreateGroup creates a group using the specified parameters,
