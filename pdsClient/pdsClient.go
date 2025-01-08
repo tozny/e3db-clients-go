@@ -553,6 +553,17 @@ func (c *E3dbPDSClient) ProxyBatchGetRecords(ctx context.Context, authToken stri
 	return result, err
 }
 
+func (c *E3dbPDSClient) ProxyBatchGetSharedRecords(ctx context.Context, authToken string, params BatchGetRecordsRequest) (*BatchGetRecordsResult, error) {
+	var result *BatchGetRecordsResult
+	path := c.Host + "/" + PDSServiceBasePath + "/records/shared"
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeProxiedUserCall(ctx, c.requester, authToken, req, &result)
+	return result, err
+}
+
 // InternalGetRecord attempts to get a record using an internal only e3db endpoint, returning fetched record and error (if any).
 func (c *E3dbPDSClient) InternalGetRecord(ctx context.Context, recordID string) (*InternalGetRecordResponse, error) {
 	var result *InternalGetRecordResponse
