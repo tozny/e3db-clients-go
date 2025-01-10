@@ -1729,3 +1729,39 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &resp)
 	return resp, err
 }
+
+// InternalGetClientInfo gets client information from identity service
+func (c *E3dbIdentityClient) InternalGetClientInfo(ctx context.Context, clientID string) (IdentityInfo, error) {
+	var response IdentityInfo
+	path := c.Host + internalIdentityServiceBasePath + "/clients/" + clientID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
+
+// InternalGetMPCGroupInfo gets MPC group information from identity service
+func (c *E3dbIdentityClient) InternalGetMPCGroupInfo(ctx context.Context, groupID string) (MPCGroupInfo, error) {
+	var response MPCGroupInfo
+	path := c.Host + internalIdentityServiceBasePath + "/pam/groups/" + groupID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
+
+// InternalGetAcessRequestInfo gets information by Access Request ID.
+func (c *E3dbIdentityClient) InternalGetAccessRequestInfo(ctx context.Context, accessRequestID string) (AccessRequestInfo, error) {
+	var response AccessRequestInfo
+	path := c.Host + internalIdentityServiceBasePath + "/pam/access_requests/" + accessRequestID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return response, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &response)
+	return response, err
+}
