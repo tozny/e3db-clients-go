@@ -28,11 +28,30 @@ type Note struct {
 	Views               int               `json:"views"`
 	Expiration          time.Time         `json:"expiration,omitempty"`
 	Expires             bool              `json:"expires,omitempty"`
+	RecordID            string            `json:"record_id,omitempty"`
+	IsSecret            bool              `json:"is_secret"`
 }
 
 // InternalNoteInfoResponse wraps a response from the internal NotesInfo endpoint
 type InternalNoteInfoResponse struct {
 	PublicRecipientSigningKey string `json:"public_recipient_signing_key"`
+}
+
+type RecordNote struct {
+	NoteID     uuid.UUID `json:"note_id,omitempty"`
+	ClientID   uuid.UUID `json:"client_id,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	MaxViews   int       `json:"max_views,omitempty"`
+	Views      int       `json:"views"`
+	Expiration time.Time `json:"expiration,omitempty"`
+	Expires    bool      `json:"expires,omitempty"`
+	RecordID   uuid.UUID `json:"record_id,omitempty"`
+	IsSecret   bool      `json:"is_secret"`
+}
+
+type BulkListRecordNoteResponse struct {
+	ResultList []RecordNote `json:"results"`
+	NextToken  int64        `json:"next_token"`
 }
 
 // CreateGroupRequest wraps parameters needed to request creation of a group
