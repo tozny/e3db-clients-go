@@ -76,7 +76,7 @@ func (c *ClientServiceClient) AdminToggleClientEnabled(ctx context.Context, para
 // InternalDeleteClient makes authenticated call to the /internal endpoint for client service.
 func (c *ClientServiceClient) InternalDeleteClient(ctx context.Context, realmName string, clientID string) error {
 	path := c.Host + "/internal/" + ClientServiceBasePath + "realm/" + realmName + "/client/" + clientID
-	req, err := e3dbClients.CreateRequest("POST", path, nil)
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
