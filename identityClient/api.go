@@ -1553,6 +1553,17 @@ type IdentityInfo struct {
 	Attributes map[string][]string `json:"attributes"`
 }
 
+type MPCGroupInfo struct {
+	Name              string   `json:"group_name"`
+	ApproverClientIDS []string `json:"approver_client_ids"`
+}
+
+type AccessRequestInfo struct {
+	RequestorID string `json:"requestor_id"`
+	GroupName   string `json:"group_name"`
+	GroupID     string `json:"group_id"`
+}
+
 // IdentityInfoList wraps a slice of identities and a next token for pagination.
 type IdentityInfoList struct {
 	Identities []IdentityInfo `json:"identities"`
