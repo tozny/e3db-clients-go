@@ -1589,6 +1589,11 @@ type RealmAdminCheckResponse struct {
 	AdminEnabled bool `json:"active"`
 }
 
+type RealmAccountValidateRequest struct {
+	RealmName string    `json:"realm_name"`
+	AccountID uuid.UUID `json:"account_id"`
+}
+
 // InternalFetchClientsRealms
 type InternalFetchClientsRealmsRequest struct {
 	ClientIDs []uuid.UUID `json:"client_ids"`

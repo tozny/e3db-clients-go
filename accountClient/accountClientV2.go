@@ -61,6 +61,18 @@ func (c *E3dbAccountClientV2) DeleteAccount(ctx context.Context, params DeleteAc
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 }
 
+// InternalRealmAccountPlanFeatures returns the plan and features for a realm and account
+func (c *E3dbAccountClientV2) InternalRealmAccountPlanFeatures(ctx context.Context, realmID string) (*InternalRealmAccountPlanResponse, error) {
+	var result *InternalRealmAccountPlanResponse
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/plan/features/" + realmID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 // NewV2 returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func NewV2(config e3dbClients.ClientConfig) E3dbAccountClientV2 {
 	authService := authClient.New(config)

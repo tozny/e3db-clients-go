@@ -220,3 +220,10 @@ type InternalSigClientInfoResponse struct {
 type DeleteAccountRequestData struct {
 	AccountID uuid.UUID
 }
+
+// InternalRealmAccountPlanResponse wraps the values returned from getting the plan and features for a realm
+type InternalRealmAccountPlanResponse struct {
+	PlanID   uuid.UUID `json:"plan_id"`
+	PlanName string    `json:"plan_name"`
+	Features []string  `json:"features"`
+}
