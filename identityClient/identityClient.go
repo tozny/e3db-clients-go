@@ -890,8 +890,8 @@ func (c *E3dbIdentityClient) UpdateIdentityAttributes(ctx context.Context, param
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
-// UpdateIdentityAttributes updates requested identity's attributes
-func (c *E3dbIdentityClient) GetRealmAttributeById(ctx context.Context, realmName string) (*RealmAttribute, error) {
+// Get Realm's storage limit based on the key "storage limit"
+func (c *E3dbIdentityClient) GetRealmAttributeStorageLimit(ctx context.Context, realmName string) (*RealmAttribute, error) {
 	var realmAttribute *RealmAttribute
 	path := c.Host + identityServiceBasePath + realmResourceName + "/" + "info" + "/" + realmName + "/" + "storage" + "/" + "limit"
 	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
