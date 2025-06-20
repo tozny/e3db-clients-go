@@ -769,7 +769,7 @@ func (c *E3dbIdentityClient) InternalDeleteRealms(ctx context.Context, params In
 
 func (c *E3dbIdentityClient) InternalRealmAccountValidation(ctx context.Context, params RealmAccountValidateRequest) (*Realm, error) {
 	var realm *Realm
-	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/validate"
+	path := c.Host + internalIdentityServiceBasePath + "/validate/" + realmResourceName
 	req, err := e3dbClients.CreateRequest("GET", path, params)
 	if err != nil {
 		return realm, err
