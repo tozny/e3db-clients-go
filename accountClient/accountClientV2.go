@@ -69,7 +69,7 @@ func (c *E3dbAccountClientV2) InternalRealmAccountPlanFeatures(ctx context.Conte
 	if err != nil {
 		return result, e3dbClients.NewError(err.Error(), path, 0)
 	}
-	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
 	return result, err
 }
 
