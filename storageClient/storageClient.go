@@ -838,8 +838,8 @@ func (c *StorageClient) WriteUserStorageLimit(ctx context.Context, realmId strin
 	return err
 }
 
-// PrimeByNoteName primes the note with the provided noteName
-func (c *StorageClient) DeleteRealmStorageLimit(ctx context.Context, realmId string) error {
+// DeleteAllUserStorageLimitsForRealm - delete all the user's storage limit when deleting the realm (clean up)
+func (c *StorageClient) DeleteAllUserStorageLimitsForRealm(ctx context.Context, realmId string) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/storage/limit"
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
@@ -851,7 +851,7 @@ func (c *StorageClient) DeleteRealmStorageLimit(ctx context.Context, realmId str
 	return err
 }
 
-// PrimeByNoteName primes the note with the provided noteName
+// DeleteUserStorageLimitForUser - delete the specified user's storage limit  when deleting the user(clean up)
 func (c *StorageClient) DeleteUserStorageLimitForUser(ctx context.Context, realmId string, userId uuid.UUID) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/" + userId.String() + "/storage/limit"
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
