@@ -223,7 +223,8 @@ type DeleteAccountRequestData struct {
 
 // InternalRealmAccountPlanResponse wraps the values returned from getting the plan and features for a realm
 type InternalRealmAccountPlanResponse struct {
-	PlanID   uuid.UUID `json:"plan_id"`
-	PlanName string    `json:"plan_name"`
-	Features []string  `json:"features"`
+	PlanID       uuid.UUID `json:"plan_id"`
+	PlanName     string    `json:"plan_name"`
+	StorageLimit string    `json:"storage_limit"`
+	Features     []string  `json:"features"`
 }
