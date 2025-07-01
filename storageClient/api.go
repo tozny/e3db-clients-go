@@ -32,6 +32,12 @@ type Note struct {
 	IsSecret            bool              `json:"is_secret"`
 }
 
+type RealmStorageRequest struct {
+	RealmID      string    `json:"realm_id"`
+	StorageLimit string    `json:"storage_limit"`
+	UserID       uuid.UUID `pg:"user_id"`
+}
+
 // InternalNoteInfoResponse wraps a response from the internal NotesInfo endpoint
 type InternalNoteInfoResponse struct {
 	PublicRecipientSigningKey string `json:"public_recipient_signing_key"`
@@ -340,6 +346,10 @@ type PrimeRequestBody struct {
 	OTP *OTPRequest `json:"otp"`
 }
 
+type UserStorage struct {
+	UserID       uuid.UUID `pg:"user_id"`
+	TotalStorage string    `pg:"total_storage"`
+}
 type OTPResponse struct {
 	Password string `json:"password"`
 }

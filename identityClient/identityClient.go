@@ -890,6 +890,18 @@ func (c *E3dbIdentityClient) UpdateIdentityAttributes(ctx context.Context, param
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 }
 
+// Get Realm's storage limit based on the key "storage limit"
+func (c *E3dbIdentityClient) GetRealmAttributeStorageLimit(ctx context.Context, realmName string) (*RealmAttribute, error) {
+	var realmAttribute *RealmAttribute
+	path := c.Host + identityServiceBasePath + realmResourceName + "/" + "info" + "/" + realmName + "/" + "storage" + "/" + "limit"
+	req, err := e3dbClients.CreateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return realmAttribute, err
+	}
+	err = e3dbClients.MakeRawServiceCall(c.requester, req, &realmAttribute)
+	return realmAttribute, err
+}
+
 // DeleteIdentity removes an identity in the given realm.
 func (c *E3dbIdentityClient) DeleteIdentity(ctx context.Context, params RealmIdentityRequest) error {
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName + "/" + params.RealmName + "/" + identityResourceName + "/" + params.IdentityID

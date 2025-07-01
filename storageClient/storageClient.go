@@ -826,6 +826,45 @@ func (c *StorageClient) InternalGetNoteInfo(ctx context.Context, noteName string
 	return result, err
 }
 
+func (c *StorageClient) WriteUserStorageLimit(ctx context.Context, realmId string, body UserStorage) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/storage/limit"
+	req, err := e3dbClients.CreateRequest("POST", path, body)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realmId", realmId)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// DeleteAllUserStorageLimitsForRealm - delete all the user's storage limit when deleting the realm (clean up)
+func (c *StorageClient) DeleteAllUserStorageLimitsForRealm(ctx context.Context, realmId string) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/storage/limit"
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realmId", realmId)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+// DeleteUserStorageLimitForUser - delete the specified user's storage limit  when deleting the user(clean up)
+func (c *StorageClient) DeleteUserStorageLimitForUser(ctx context.Context, realmId string, userId uuid.UUID) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/" + userId.String() + "/storage/limit"
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realmId", realmId)
+	urlParams.Set("userId", userId.String())
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
 // InternalClientGroupMembershipFetch is an internal endpoint used to fetch a clients membership within a group for given capabilities
 func (c *StorageClient) InternalClientGroupMembershipFetch(ctx context.Context, params InternalFetchClientMembership) (*InternalFetchClientMembershipResponse, error) {
 	var result *InternalFetchClientMembershipResponse

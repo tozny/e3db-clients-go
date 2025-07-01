@@ -168,6 +168,12 @@ type RegisterIdentityResponse struct {
 	RealmBrokerIdentityToznyID uuid.UUID `json:"realm_broker_identity_tozny_id,omitempty"`
 }
 
+type RealmAttribute struct {
+	Name  string `pg:"name"`
+	ID    string `pg:"realm_id"`
+	Value string `pg:"value"`
+}
+
 // IdentityLoginRequest wraps parameters needed to initiate an identity login session.
 type IdentityLoginRequest struct {
 	Username    string `json:"username"`
