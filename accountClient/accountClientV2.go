@@ -61,6 +61,31 @@ func (c *E3dbAccountClientV2) DeleteAccount(ctx context.Context, params DeleteAc
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 }
 
+// RegistrationToken validates a registration token with the account service and fetches its permissions
+func (c *E3dbAccountClientV2) InternalUpdateTotalUsesAllowed(ctx context.Context, accountID string, tokenInfo UpdateTokenInfo) (*RegTokenInfo, error) {
+	var result *RegTokenInfo
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/" + accountID + "/token"
+	req, err := e3dbClients.CreateRequest("PUT", path, tokenInfo)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// IncrementTokenUse increases the number of uses on a registration token. It does not disable tokens
+func (c *E3dbAccountClientV2) InternalDecrementTokenUse(ctx context.Context, token string) (*RegTokenInfo, error) {
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/" + token + "/decrement"
+	result := RegTokenInfo{}
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return &result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+
+	return &result, err
+}
+
 // InternalRealmAccountPlanFeatures returns the plan and features for a realm and account
 func (c *E3dbAccountClientV2) InternalRealmAccountPlanFeatures(ctx context.Context, realmID string) (*InternalRealmAccountPlanResponse, error) {
 	var result *InternalRealmAccountPlanResponse

@@ -175,6 +175,11 @@ type TokenPermissions struct {
 	AllowedTypes []string `json:"allowed_types"` // What client types can be registered using this token
 }
 
+type UpdateTokenInfo struct {
+	Token            string
+	TotalAllowedUses int `json:"total_uses_allowed"`
+}
+
 // RegTokenInfo is the return from the token endpoint on a valid request
 type RegTokenInfo struct {
 	Token            string
