@@ -74,10 +74,10 @@ func (c *E3dbAccountClientV2) InternalUpdateTotalUsesAllowed(ctx context.Context
 }
 
 // IncrementTokenUse increases the number of uses on a registration token. It does not disable tokens
-func (c *E3dbAccountClientV2) InternalDecrementTokenUse(ctx context.Context, token string) (*RegTokenInfo, error) {
-	path := c.Host + "/internal/" + AccountServiceBasePath + "/" + token + "/decrement"
+func (c *E3dbAccountClientV2) InternalDecrementTokenUse(ctx context.Context, realmName string, token TokenUpdateRequest) (*RegTokenInfo, error) {
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/" + realmName + "/decrement"
 	result := RegTokenInfo{}
-	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	req, err := e3dbClients.CreateRequest("PUT", path, token)
 	if err != nil {
 		return &result, e3dbClients.NewError(err.Error(), path, 0)
 	}

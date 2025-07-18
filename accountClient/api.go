@@ -190,6 +190,11 @@ type RegTokenInfo struct {
 	Uses             int                 `json:"uses"`
 }
 
+type TokenUpdateRequest struct {
+	Token     string
+	AccountID uuid.UUID `json:"account_id"`
+}
+
 // RegTokenPermissions decodes needed token permissions
 type RegTokenPermissions struct {
 	Enabled      bool
