@@ -214,6 +214,7 @@ type InternalAccountInfoResponse struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	AccountID string `json:"account_id"`
+	StripeID  string `json:"stripe_id"`
 }
 
 // InternalSigClientInfoResponse wraps the data returned from the
