@@ -1013,6 +1013,19 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 	return realm, err
 }
 
+// InternalCreateRealm creates a realm using the specified parameters,
+// returning the created realm (including it's associated sovereign) and error (if any).
+func (c *E3dbIdentityClient) InternalCreateRealm(ctx context.Context, params InternalCreateRealmRequest) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return realm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
+}
+
 // SearchRealmIdentities searches for and retrieves details about Identities in a realm based off criteria
 func (c *E3dbIdentityClient) SearchRealmIdentities(ctx context.Context, params SearchRealmIdentitiesRequest) (*SearchRealmIdentitiesResponse, error) {
 	var identitySearch *SearchRealmIdentitiesResponse
