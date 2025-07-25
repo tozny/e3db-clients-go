@@ -766,6 +766,18 @@ func (c *E3dbIdentityClient) InternalDeleteRealms(ctx context.Context, params In
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+func (c *E3dbIdentityClient) InternalRealmAccountValidation(ctx context.Context, params RealmAccountValidateRequest) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/validate/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return realm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
+}
+
 func (c *E3dbIdentityClient) InternalDeleteIdentitiesByProvider(ctx context.Context, params InternalDeleteIdentitiesByProviderRequest) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.RealmName + "/id-provider/" + params.ProviderID.String()
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
@@ -993,6 +1005,19 @@ func (c *E3dbIdentityClient) DescribeRealm(ctx context.Context, realmName string
 func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealmRequest) (*Realm, error) {
 	var realm *Realm
 	path := c.Host + identityServiceBasePath + "/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return realm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
+}
+
+// InternalCreateRealm creates a realm using the specified parameters,
+// returning the created realm (including it's associated sovereign) and error (if any).
+func (c *E3dbIdentityClient) InternalCreateRealm(ctx context.Context, params InternalCreateRealmRequest) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return realm, err

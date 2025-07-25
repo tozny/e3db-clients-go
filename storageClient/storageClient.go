@@ -826,8 +826,20 @@ func (c *StorageClient) InternalGetNoteInfo(ctx context.Context, noteName string
 	return result, err
 }
 
-func (c *StorageClient) WriteUserStorageLimit(ctx context.Context, realmId string, body UserStorage) error {
+func (c *StorageClient) UpdateStorageLimitForRealm(ctx context.Context, realmId string, totalStorage RealmStorage) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/storage/limit"
+	req, err := e3dbClients.CreateRequest("POST", path, totalStorage)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realmId", realmId)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
+
+func (c *StorageClient) InitialiseUserStorageLimit(ctx context.Context, realmId string, body UserStorage) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/" + "user/storage/limit"
 	req, err := e3dbClients.CreateRequest("POST", path, body)
 	if err != nil {
 		return err
@@ -839,7 +851,7 @@ func (c *StorageClient) WriteUserStorageLimit(ctx context.Context, realmId strin
 }
 
 // DeleteAllUserStorageLimitsForRealm - delete all the user's storage limit when deleting the realm (clean up)
-func (c *StorageClient) DeleteAllUserStorageLimitsForRealm(ctx context.Context, realmId string) error {
+func (c *StorageClient) DeleteRealmStorageLimit(ctx context.Context, realmId string) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/storage/limit"
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
@@ -852,7 +864,7 @@ func (c *StorageClient) DeleteAllUserStorageLimitsForRealm(ctx context.Context, 
 }
 
 // DeleteUserStorageLimitForUser - delete the specified user's storage limit  when deleting the user(clean up)
-func (c *StorageClient) DeleteUserStorageLimitForUser(ctx context.Context, realmId string, userId uuid.UUID) error {
+func (c *StorageClient) DeleteUserStorageLimit(ctx context.Context, realmId string, userId uuid.UUID) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/" + userId.String() + "/storage/limit"
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
 	if err != nil {
