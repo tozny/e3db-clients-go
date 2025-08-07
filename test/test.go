@@ -209,6 +209,55 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
+	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
+	if err != nil {
+		return registrationResponse, userClientConfig, err
+	}
+	userClientConfig.Host = ""                     // clear host, and force the user to define
+	userClientConfig.AuthNHost = clientServiceHost // client service is responsible for authenticating requests
+	userClientConfig.ClientID = registrationResponse.Client.ClientID.String()
+	userClientConfig.APIKey = registrationResponse.APIKeyID
+	userClientConfig.APISecret = registrationResponse.APISecret
+	userClientConfig.SigningKeys = signingKeys
+	userClientConfig.EncryptionKeys = e3dbClients.EncryptionKeys{
+		Private: e3dbClients.Key{
+			Material: encryptionKeyPair.Private.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+		Public: e3dbClients.Key{
+			Material: encryptionKeyPair.Public.Material,
+			Type:     e3dbClients.DefaultEncryptionKeyType},
+	}
+	return registrationResponse, userClientConfig, err
+}
+
+// RegisterClientForCyclops is a helper method to generate a client with the client service for the cyclops testing suite,
+// returns a registration response and a config for the created client without the Host field populated.
+func RegisterClientForCyclops(ctx context.Context, clientServiceHost string, registrationToken string, clientName string) (*clientServiceClient.ClientRegisterResponse, e3dbClients.ClientConfig, error) {
+	// init empty config to make registration requests
+	var registrationResponse *clientServiceClient.ClientRegisterResponse
+	userClientConfig := e3dbClients.ClientConfig{
+		Host: clientServiceHost,
+	}
+	encryptionKeyPair, err := e3dbClients.GenerateKeyPair()
+	if err != nil {
+		return registrationResponse, userClientConfig, err
+	}
+	signingKeys, err := e3dbClients.GenerateSigningKeys()
+	if err != nil {
+		return registrationResponse, userClientConfig, fmt.Errorf("error: %s generating signing key pair", err)
+	}
+	signingKey := signingKeys.Public.Material
+	unAuthedClientServiceClient := clientServiceClient.New(userClientConfig)
+	// Register user
+	userRegister := clientServiceClient.ClientRegisterRequest{
+		RegistrationToken: registrationToken,
+		Client: clientServiceClient.ClientRegisterInfo{
+			Name:        clientName,
+			Type:        "general",
+			PublicKeys:  map[string]string{e3dbClients.DefaultEncryptionKeyType: encryptionKeyPair.Public.Material},
+			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
+		},
+	}
 	registrationResponse, err = unAuthedClientServiceClient.InternalRegister(ctx, userRegister)
 	if err != nil {
 		return registrationResponse, userClientConfig, err
@@ -258,7 +307,7 @@ func RegisterClientWithAccountService(ctx context.Context, clientServiceHost str
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
-	registrationResponse, err = unAuthedClientServiceClient.InternalRegister(ctx, userRegister)
+	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}

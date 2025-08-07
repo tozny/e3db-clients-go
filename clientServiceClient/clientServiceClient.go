@@ -95,7 +95,6 @@ func (c *ClientServiceClient) InternalUpdateClientDelete(ctx context.Context, cl
 	return err
 }
 
-// TODO: This does not work properly because it is trying to reach an account v1 endpoint with the host for client service. We need to consider removing or amending this.
 // Register registers a client.
 func (c *ClientServiceClient) Register(ctx context.Context, params ClientRegisterRequest) (*ClientRegisterResponse, error) {
 	var result *ClientRegisterResponse
