@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -195,10 +196,17 @@ func ReturnRawServiceCall(client request.Requester, req *http.Request, result in
 	defer response.Body.Close()
 	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
 		requestURL := req.URL.String()
+		bodyBytes, readErr := io.ReadAll(response.Body)
+		message := fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode)
+
+		if readErr == nil && len(bodyBytes) > 0 {
+			message = string(bodyBytes)
+		}
+
 		return response, &RequestError{
 			StatusCode: response.StatusCode,
 			URL:        requestURL,
-			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
+			message:    message,
 		}
 	}
 	// If no result is expected, don't attempt to decode a potentially
