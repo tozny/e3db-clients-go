@@ -209,7 +209,7 @@ func RegisterClient(ctx context.Context, clientServiceHost string, registrationT
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
-	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
+	registrationResponse, err = unAuthedClientServiceClient.InternalRegister(ctx, userRegister)
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}
@@ -258,7 +258,7 @@ func RegisterClientWithAccountService(ctx context.Context, clientServiceHost str
 			SigningKeys: map[string]string{e3dbClients.DefaultSigningKeyType: signingKey},
 		},
 	}
-	registrationResponse, err = unAuthedClientServiceClient.Register(ctx, userRegister)
+	registrationResponse, err = unAuthedClientServiceClient.InternalRegister(ctx, userRegister)
 	if err != nil {
 		return registrationResponse, userClientConfig, err
 	}
