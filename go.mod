@@ -3,7 +3,7 @@ module github.com/tozny/e3db-clients-go
 require (
 	github.com/gbrlsnchs/jwt/v2 v2.0.0
 	github.com/google/uuid v1.1.0
-	github.com/gorilla/schema v1.2.0
+	github.com/gorilla/schema v1.4.1
 	github.com/tozny/utils-go v0.0.51
 	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 	golang.org/x/oauth2 v0.27.0
