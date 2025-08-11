@@ -913,7 +913,7 @@ func (c *Client) GetUsers(accessToken string, reqRealmName, targetRealmName stri
 
 // CreateUser creates the user from its UserRepresentation. The username must be unique.
 func (c *Client) CreateUser(accessToken string, reqRealmName, targetRealmName string, user UserRepresentation) (string, error) {
-	return c.post(accessToken, user, fmt.Sprintf("%s/%s/%s", realmRootPath, targetRealmName, userResourceName))
+	return c.postV2(accessToken, user, fmt.Sprintf("%s/%s/%s", realmRootPath, targetRealmName, userResourceName))
 
 }
 
