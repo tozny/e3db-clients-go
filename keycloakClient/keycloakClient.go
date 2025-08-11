@@ -319,6 +319,29 @@ func (c *Client) post(accessToken string, data interface{}, url string) (string,
 	return location, nil
 
 }
+func (c *Client) postV2(accessToken string, data interface{}, url string) (string, error) {
+	path := c.apiURL.String() + url
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("POST", path, buf)
+	if err != nil {
+		return "", err
+	}
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return "", err
+	}
+	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return "", err
+	}
+	location := response.Header.Get("Location")
+	return location, nil
+
+}
 func (c *Client) postJSONWithToznySessionToken(accessToken string, data interface{}, url string, sessionToken string) (string, error) {
 	path := c.apiURL.String() + url
 	buf := &bytes.Buffer{}
@@ -1058,7 +1081,7 @@ func (c *Client) GetUserFederationProviderMapper(accessToken string, realmName, 
 // CreateUserFederationProviderMapper creates a user federation provider mapper for a realm for mapping attributes from
 // synced users from an external source, returning the location of the created provider mapper or error (if any).
 func (c *Client) CreateUserFederationProviderMapper(accessToken string, realmName string, userFederationProviderMapper UserFederationProviderMapperRepresentation) (string, error) {
-	return c.post(accessToken, userFederationProviderMapper, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName))
+	return c.postV2(accessToken, userFederationProviderMapper, fmt.Sprintf("%s/%s/%s", realmRootPath, realmName, componentsResourceName))
 }
 
 // GetUserFederationProviderMappers returns a list of UserFederationProviderMappers belonging to the realm
