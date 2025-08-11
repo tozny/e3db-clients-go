@@ -61,6 +61,7 @@ type RequestError struct {
 	message    string
 	URL        string
 	StatusCode int
+	rawMessage string
 }
 
 // LoggingClient is used to log requests and timing based on configuration passed in
@@ -74,9 +75,17 @@ func (err *RequestError) Error() string {
 	return err.message
 }
 
+func (e *RequestError) RawMessage() string {
+	return e.rawMessage
+}
+
 // NewError creates a new RequestError
 func NewError(message, url string, statusCode int) error {
-	return &RequestError{message, url, statusCode}
+	return &RequestError{
+		message:    message,
+		URL:        url,
+		StatusCode: statusCode,
+	}
 }
 
 // MakeE3DBServiceCall attempts to call an e3db service by executing the provided request and deserializing the response into the provided result holder, returning error (if any).
@@ -197,16 +206,17 @@ func ReturnRawServiceCall(client request.Requester, req *http.Request, result in
 	if !(response.StatusCode >= 200 && response.StatusCode <= 299) {
 		requestURL := req.URL.String()
 		bodyBytes, readErr := io.ReadAll(response.Body)
-		message := fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode)
+		var rawMessage string
 
 		if readErr == nil && len(bodyBytes) > 0 {
-			message = string(bodyBytes)
+			rawMessage = string(bodyBytes)
 		}
 
 		return response, &RequestError{
 			StatusCode: response.StatusCode,
 			URL:        requestURL,
-			message:    message,
+			message:    fmt.Sprintf("e3db: %s: server http error %d", requestURL, response.StatusCode),
+			rawMessage: rawMessage,
 		}
 	}
 	// If no result is expected, don't attempt to decode a potentially
