@@ -313,7 +313,7 @@ func (c *Client) post(accessToken string, data interface{}, url string) (string,
 	}
 	response, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
 	if err != nil {
-		return "", e3dbClients.NewError(err.Error(), path, response.StatusCode)
+		return "", err
 	}
 	location := response.Header.Get("Location")
 	return location, nil
