@@ -132,6 +132,10 @@ type InternalCreateRealmRequest struct {
 	RegistrationToken string `json:"registration_token"` // Tozny Registration Token to associate with this realm.
 }
 
+type UserCount struct {
+	TotalAllowedUses int `json:"total_uses_allowed"`
+}
+
 // ListRealmsResponse wraps values returned from a list realms request.
 type ListRealmsResponse struct {
 	Realms []Realm `json:"realms"`

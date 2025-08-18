@@ -354,6 +354,10 @@ type UserStorage struct {
 type RealmStorage struct {
 	TotalStorage string `pg:"total_storage"`
 }
+
+type RealmExtraStorage struct {
+	ExtraStorage string `pg:"extra_storage"`
+}
 type OTPResponse struct {
 	Password string `json:"password"`
 }

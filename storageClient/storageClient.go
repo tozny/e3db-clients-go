@@ -838,6 +838,17 @@ func (c *StorageClient) UpdateStorageLimitForRealm(ctx context.Context, realmId 
 	return err
 }
 
+func (c *StorageClient) UpdateExtraStorageLimitForRealm(ctx context.Context, realmId string, extraStorage RealmExtraStorage) error {
+	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/extra/storage/limit"
+	req, err := e3dbClients.CreateRequest("PUT", path, extraStorage)
+	if err != nil {
+		return err
+	}
+	urlParams := req.URL.Query()
+	urlParams.Set("realmId", realmId)
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
+	return err
+}
 func (c *StorageClient) InitialiseUserStorageLimit(ctx context.Context, realmId string, body UserStorage) error {
 	path := c.Host + "/internal" + storageServiceBasePath + "/realm" + "/" + realmId + "/" + "user/storage/limit"
 	req, err := e3dbClients.CreateRequest("POST", path, body)

@@ -1026,6 +1026,18 @@ func (c *E3dbIdentityClient) InternalCreateRealm(ctx context.Context, params Int
 	return realm, err
 }
 
+// returning the created realm (including it's associated sovereign) and error (if any).
+func (c *E3dbIdentityClient) InternalUpdateTotalUsesAllowed(ctx context.Context, accountId string, realmId string, userCount UserCount) error {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/admin/" + accountId + "/" + realmResourceName + "/" + realmId + "/token"
+	req, err := e3dbClients.CreateRequest("PUT", path, userCount)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return err
+}
+
 // SearchRealmIdentities searches for and retrieves details about Identities in a realm based off criteria
 func (c *E3dbIdentityClient) SearchRealmIdentities(ctx context.Context, params SearchRealmIdentitiesRequest) (*SearchRealmIdentitiesResponse, error) {
 	var identitySearch *SearchRealmIdentitiesResponse
