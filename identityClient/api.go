@@ -124,6 +124,18 @@ type CreateRealmRequest struct {
 	RegistrationToken string `json:"registration_token"` // Tozny Registration Token to associate with this realm.
 }
 
+type InternalCreateRealmRequest struct {
+	AccountID         string `json:"account_id"`
+	ClientID          string `json:"client_id"`
+	RealmName         string `json:"realm_name"`         // User defined realm identifier.
+	SovereignName     string `json:"sovereign_name"`     // User defined identifier for the realm's sovereign.
+	RegistrationToken string `json:"registration_token"` // Tozny Registration Token to associate with this realm.
+}
+
+type UserCount struct {
+	TotalAllowedUses int `json:"total_uses_allowed"`
+}
+
 // ListRealmsResponse wraps values returned from a list realms request.
 type ListRealmsResponse struct {
 	Realms []Realm `json:"realms"`
@@ -1587,6 +1599,11 @@ type RealmAdminCheckRequest struct {
 
 type RealmAdminCheckResponse struct {
 	AdminEnabled bool `json:"active"`
+}
+
+type RealmAccountValidateRequest struct {
+	RealmName string    `json:"realm_name"`
+	AccountID uuid.UUID `json:"account_id"`
 }
 
 // InternalFetchClientsRealms
