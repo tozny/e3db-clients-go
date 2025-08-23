@@ -1,0 +1,20 @@
+# Use tozny base golang image to build this image
+FROM tozny/golang
+
+# Add deps needed for golang builds on alpine linux
+# https://github.com/docker-library/golang/issues/86
+RUN apk add --no-cache gcc musl-dev
+
+WORKDIR /app
+
+ENV PATH /app:$PATH
+
+COPY ./go.sum ./go.mod ./
+
+RUN go mod download
+
+RUN go get -u github.com/vakenbolt/go-test-report/
+
+COPY . ./
+
+ENTRYPOINT ["test.sh"]
