@@ -6,7 +6,7 @@ require (
 	github.com/gbrlsnchs/jwt/v2 v2.0.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/schema v1.4.1
-	github.com/tozny/utils-go v0.0.68
+	github.com/tozny/utils-go v0.0.69
 	golang.org/x/crypto v0.41.0
 	golang.org/x/oauth2 v0.27.0
 	gopkg.in/h2non/gentleman.v2 v2.0.5
