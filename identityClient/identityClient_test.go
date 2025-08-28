@@ -50,6 +50,29 @@ func TestCreateRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 	}
 }
 
+func TestCreateInternalRealmCreatesRealmWithUserDefinedName(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, accountDetails, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	realmName := uniqueString("TestCreateRealmCreatesRealmWithUserDefinedName")
+	sovereignName := "Yassqueen"
+	params := InternalCreateRealmRequest{
+		ClientID:      queenClientInfo.ClientID,
+		AccountID:     accountDetails.Profile.AccountID,
+		RealmName:     realmName,
+		SovereignName: sovereignName,
+	}
+	realm := createInternalRealm(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	if realm.Name != realmName {
+		t.Errorf("expected realm name to be %+v , got %+v", realmName, realm)
+	}
+}
+
 func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
