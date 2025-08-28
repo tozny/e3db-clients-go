@@ -347,8 +347,16 @@ type PrimeRequestBody struct {
 }
 
 type UserStorage struct {
-	UserID       uuid.UUID `pg:"user_id"`
-	TotalStorage string    `pg:"total_storage"`
+	UserID          uuid.UUID `pg:"user_id"`
+	ConsumedStorage string    `pg:"consumed_storage"`
+}
+
+type RealmStorage struct {
+	TotalStorage string `pg:"total_storage"`
+}
+
+type RealmExtraStorage struct {
+	ExtraStorage string `pg:"extra_storage"`
 }
 type OTPResponse struct {
 	Password string `json:"password"`
