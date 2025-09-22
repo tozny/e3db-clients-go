@@ -747,6 +747,18 @@ func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record
 	return result, err
 }
 
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) DeleteRecord(ctx context.Context, recordId string, versionId string) (*BulkRecordDeleteResponseErrors, error) {
+	var result *BulkRecordDeleteResponseErrors
+	path := c.Host + storageServiceBasePath + "/records/safe" + "/" + recordId + "/" + versionId
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 func (c *StorageClient) UpdateRecord(ctx context.Context, recordId string, versionId string, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records/safe/edit/" + recordId + "/" + versionId
