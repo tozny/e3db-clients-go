@@ -177,7 +177,7 @@ type TokenPermissions struct {
 
 type UpdateTokenInfo struct {
 	Token            string
-	TotalUsesAllowed int `json:"total_uses_allowed"`
+	TotalAllowedUses int `json:"total_uses_allowed"`
 }
 
 // RegTokenInfo is the return from the token endpoint on a valid request
