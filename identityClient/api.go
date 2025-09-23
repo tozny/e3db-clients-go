@@ -133,7 +133,7 @@ type InternalCreateRealmRequest struct {
 }
 
 type UserCount struct {
-	TotalAllowedUses int `json:"total_uses_allowed"`
+	TotalUsesAllowed int `json:"total_uses_allowed"`
 }
 
 // ListRealmsResponse wraps values returned from a list realms request.

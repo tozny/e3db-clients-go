@@ -61,7 +61,7 @@ func (c *E3dbAccountClientV2) DeleteAccount(ctx context.Context, params DeleteAc
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 }
 
-// RegistrationToken validates a registration token with the account service and fetches its permissions
+// When the customer upgrade/degrade the plan, updating the "total_uses_allowed" field. Called from Billing Service
 func (c *E3dbAccountClientV2) InternalUpdateTotalUsesAllowed(ctx context.Context, accountID string, tokenInfo UpdateTokenInfo) (*RegTokenInfo, error) {
 	var result *RegTokenInfo
 	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/" + accountID + "/token"

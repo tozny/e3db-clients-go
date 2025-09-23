@@ -52,7 +52,7 @@ func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID s
 	return result, err
 }
 
-// InternalAccountInfo attempts to get the account info for an accountID,
+// InternalAccountInfo attempts to get the account info for an accountID by passing Customer Id , which is stripe's customer id
 // requires the bootstrap client.
 func (c *E3dbAccountClient) InternalAccountInfoByCustomerId(ctx context.Context, customerID string) (*InternalAccountInfoResponse, error) {
 	var result *InternalAccountInfoResponse
