@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/tozny/e3db-clients-go/authClient"
@@ -752,6 +753,40 @@ func (c *StorageClient) DeleteRecord(ctx context.Context, recordId string, versi
 	var result *BulkRecordDeleteResponseErrors
 	path := c.Host + storageServiceBasePath + "/records/safe" + "/" + recordId + "/" + versionId
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) ReadRecord(ctx context.Context, recordId string, fields []string) (*Record, error) {
+	var result *Record
+	path := c.Host + storageServiceBasePath + "/records" + "/" + recordId
+	// Add fields as query params if provided
+	if len(fields) > 0 {
+		q := url.Values{}
+		for _, f := range fields {
+			q.Add("field", f)
+		}
+		path = path + "?" + q.Encode()
+	}
+
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) ReadRecordBatch(ctx context.Context, param ReadRecordsBatchRequest) (*BatchGetRecordsResult, error) {
+	var result *BatchGetRecordsResult
+	path := c.Host + storageServiceBasePath + "/records"
+
+	req, err := e3dbClients.CreateRequest("GET", path, param)
 	if err != nil {
 		return result, err
 	}
