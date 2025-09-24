@@ -67,6 +67,32 @@ func TestCreateInternalRealmCreatesRealmWithUserDefinedName(t *testing.T) {
 	}
 }
 
+func TestCreateInternalRealmFailsWithDuplicateName(t *testing.T) {
+	accountTag := uuid.New().String()
+	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
+	if err != nil {
+		t.Fatalf("Error %s making new account", err)
+	}
+	queenClientInfo.Host = e3dbIdentityHost
+	identityServiceClient := New(queenClientInfo)
+	// First creation should succeed
+	params := InternalCreateRealmRequest{
+		RealmName:     uniqueString("realm"),
+		SovereignName: "realmsovereign",
+	}
+	realm := createInternalRealmWithParams(t, identityServiceClient, params)
+	defer identityServiceClient.DeleteRealm(testContext, realm.Name)
+	// Second creation with same name should fail
+	_, err = identityServiceClient.InternalCreateRealm(testContext, params)
+	if err == nil {
+		t.Fatalf("expected error when creating duplicate realm, got nil")
+	}
+	// You can assert the error string or type depending on how your client wraps HTTP errors
+	if !strings.Contains(err.Error(), "409") && !strings.Contains(err.Error(), "Realm already exists") {
+		t.Errorf("expected conflict error, got %v", err)
+	}
+}
+
 func TestDescribeRealmReturnsDetailsOfCreatedRealm(t *testing.T) {
 	accountTag := uuid.New().String()
 	queenClientInfo, _, err := test.MakeE3DBAccount(t, &accountServiceClient, accountTag, e3dbAuthHost)
