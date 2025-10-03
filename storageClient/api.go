@@ -393,6 +393,10 @@ type Record struct {
 	RecordSignature string            `json:"rec_sig,omitempty"`
 }
 
+type LockResponse struct {
+	IsLockedByOtherUser bool   `json:"is_locked_by_other_user"`
+	LockedUser          string `json:"locked_user"`
+}
 type ClientKey struct {
 	Curve25519 string `json:"curve25519"`
 }
