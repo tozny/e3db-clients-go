@@ -61,6 +61,43 @@ func (c *E3dbAccountClientV2) DeleteAccount(ctx context.Context, params DeleteAc
 	return e3dbClients.MakeSignedServiceCall(ctx, c.requester, request, c.SigningKeys, c.ClientID, nil)
 }
 
+// When the customer upgrade/degrade the plan, updating the "total_uses_allowed" field. Called from Billing Service
+func (c *E3dbAccountClientV2) InternalUpdateTotalUsesAllowed(ctx context.Context, accountID string, tokenInfo UpdateTokenInfo) (*RegTokenInfo, error) {
+	var result *RegTokenInfo
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/" + accountID + "/token"
+	req, err := e3dbClients.CreateRequest("PUT", path, tokenInfo)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// IncrementTokenUse increases the number of uses on a registration token. It does not disable tokens
+func (c *E3dbAccountClientV2) InternalDecrementTokenUse(ctx context.Context, realmName string, token TokenUpdateRequest) (*RegTokenInfo, error) {
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/" + realmName + "/decrement"
+	result := RegTokenInfo{}
+	req, err := e3dbClients.CreateRequest("PUT", path, token)
+	if err != nil {
+		return &result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+
+	return &result, err
+}
+
+// InternalRealmAccountPlanFeatures returns the plan and features for a realm and account
+func (c *E3dbAccountClientV2) InternalRealmAccountPlanFeatures(ctx context.Context, realmID string) (*InternalRealmAccountPlanResponse, error) {
+	var result *InternalRealmAccountPlanResponse
+	path := c.Host + "/internal/" + AccountServiceV2BasePath + "/plan/features/" + realmID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
 // NewV2 returns a new E3dbAccountClient configured with the specified apiKey and apiSecret values.
 func NewV2(config e3dbClients.ClientConfig) E3dbAccountClientV2 {
 	authService := authClient.New(config)

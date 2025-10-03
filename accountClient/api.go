@@ -175,6 +175,11 @@ type TokenPermissions struct {
 	AllowedTypes []string `json:"allowed_types"` // What client types can be registered using this token
 }
 
+type UpdateTokenInfo struct {
+	Token            string `json:"token"`
+	TotalAllowedUses int    `json:"total_uses_allowed"`
+}
+
 // RegTokenInfo is the return from the token endpoint on a valid request
 type RegTokenInfo struct {
 	Token            string
@@ -183,6 +188,11 @@ type RegTokenInfo struct {
 	Name             string              `json:"name"`
 	TotalAllowedUses int                 `json:"total_uses_allowed"`
 	Uses             int                 `json:"uses"`
+}
+
+type TokenUpdateRequest struct {
+	Token     string
+	AccountID uuid.UUID `json:"account_id"`
 }
 
 // RegTokenPermissions decodes needed token permissions
@@ -204,6 +214,7 @@ type InternalAccountInfoResponse struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	AccountID string `json:"account_id"`
+	StripeID  string `json:"stripe_id"`
 }
 
 // InternalSigClientInfoResponse wraps the data returned from the
@@ -219,4 +230,12 @@ type InternalSigClientInfoResponse struct {
 // DeleteAccountRequestData wraps the values needed for account deletion
 type DeleteAccountRequestData struct {
 	AccountID uuid.UUID
+}
+
+// InternalRealmAccountPlanResponse wraps the values returned from getting the plan and features for a realm
+type InternalRealmAccountPlanResponse struct {
+	PlanID       uuid.UUID `json:"plan_id"`
+	PlanName     string    `json:"plan_name"`
+	StorageLimit string    `json:"storage_limit"`
+	Features     []string  `json:"features"`
 }

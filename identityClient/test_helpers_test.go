@@ -219,6 +219,28 @@ func createRealmWithParams(t *testing.T, identityServiceClient E3dbIdentityClien
 	return realm
 }
 
+func createInternalRealmWithParams(t *testing.T, identityServiceClient E3dbIdentityClient, params InternalCreateRealmRequest) *Realm {
+	var realm *Realm
+	var err error
+	retries := 2
+
+	ready := func() bool {
+		realm, err = identityServiceClient.InternalCreateRealm(testContext, params)
+		if err != nil {
+			t.Logf("FAILED to create realm. Will try %d times in total.", retries+1)
+			return false
+		}
+		return true
+	}
+
+	success := utils.Await(ready, retries)
+	if !success {
+		t.Fatalf("%s realm creation failed after %d retries; %+v %+v\n", err, retries, params, identityServiceClient)
+	}
+
+	return realm
+}
+
 func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
 	unique := uniqueString("realm")
 	params := CreateRealmRequest{
@@ -227,6 +249,16 @@ func createRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm 
 	}
 
 	return createRealmWithParams(t, identityServiceClient, params)
+}
+
+func createInternalRealm(t *testing.T, identityServiceClient E3dbIdentityClient) *Realm {
+	unique := uniqueString("realm")
+	params := InternalCreateRealmRequest{
+		RealmName:     unique,
+		SovereignName: "realmsovereign",
+	}
+
+	return createInternalRealmWithParams(t, identityServiceClient, params)
 }
 
 func createRealmApplication(t *testing.T, identityServiceClient E3dbIdentityClient, realmName string) *Application {

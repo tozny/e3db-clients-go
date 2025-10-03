@@ -766,6 +766,18 @@ func (c *E3dbIdentityClient) InternalDeleteRealms(ctx context.Context, params In
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, nil)
 	return err
 }
+
+func (c *E3dbIdentityClient) InternalRealmAccountValidation(ctx context.Context, params RealmAccountValidateRequest) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/validate/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("GET", path, params)
+	if err != nil {
+		return realm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
+}
+
 func (c *E3dbIdentityClient) InternalDeleteIdentitiesByProvider(ctx context.Context, params InternalDeleteIdentitiesByProviderRequest) error {
 	path := c.Host + internalIdentityServiceBasePath + "/keycloak/" + params.RealmName + "/id-provider/" + params.ProviderID.String()
 	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
@@ -999,6 +1011,31 @@ func (c *E3dbIdentityClient) CreateRealm(ctx context.Context, params CreateRealm
 	}
 	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
 	return realm, err
+}
+
+// InternalCreateRealm creates a realm using the specified parameters,
+// returning the created realm (including it's associated sovereign) and error (if any).
+func (c *E3dbIdentityClient) InternalCreateRealm(ctx context.Context, params InternalCreateRealmRequest) (*Realm, error) {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return realm, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return realm, err
+}
+
+// returning the created realm (including it's associated sovereign) and error (if any).
+func (c *E3dbIdentityClient) InternalUpdateTotalUsesAllowed(ctx context.Context, accountId string, realmId string, userCount UserCount) error {
+	var realm *Realm
+	path := c.Host + internalIdentityServiceBasePath + "/admin/" + accountId + "/" + realmResourceName + "/" + realmId + "/token"
+	req, err := e3dbClients.CreateRequest("PUT", path, userCount)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &realm)
+	return err
 }
 
 // SearchRealmIdentities searches for and retrieves details about Identities in a realm based off criteria

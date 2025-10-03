@@ -52,6 +52,20 @@ func (c *E3dbAccountClient) InternalAccountInfo(ctx context.Context, accountID s
 	return result, err
 }
 
+// InternalAccountInfo attempts to get the account info for an accountID by passing Customer Id , which is stripe's customer id
+// requires the bootstrap client.
+func (c *E3dbAccountClient) InternalAccountInfoByCustomerId(ctx context.Context, customerID string) (*InternalAccountInfoResponse, error) {
+	var result *InternalAccountInfoResponse
+
+	path := c.Host + "/internal/" + AccountServiceBasePath + "/customer/info/" + customerID
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 // InternalAccountDelete deletes the account info for an accountID,
 // requires the bootstrap client.
 func (c *E3dbAccountClient) InternalAccountDelete(ctx context.Context, accountID string) error {
