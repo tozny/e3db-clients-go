@@ -4,6 +4,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// OtpData represents the OTP data included in the verification request
+type OtpData struct {
+	AccountID uuid.UUID `json:"client"`
+	Email     string    `json:"email,omitempty"`
+	Lifespan  int       `json:"lifespan"`
+}
+
 // AdminListRequest is the information sent to the paginated /admin GET endpooint,
 // to get the clients for a specific account (determined by authN).
 type AdminListRequest struct {
