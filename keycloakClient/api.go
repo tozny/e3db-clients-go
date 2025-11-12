@@ -537,6 +537,7 @@ type AuthenticationExecutionInfoRepresentation struct {
 	FlowId               *string   `json:"flowId,omitempty"`
 	Id                   *string   `json:"id,omitempty"`
 	Index                *int32    `json:"index,omitempty"`
+	Priority             *int32    `json:"priority,omitempty"`
 	Level                *int32    `json:"level,omitempty"`
 	ProviderId           *string   `json:"providerId,omitempty"`
 	Requirement          *string   `json:"requirement,omitempty"`
