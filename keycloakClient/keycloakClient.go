@@ -1422,3 +1422,16 @@ func (c *Client) OidcUserInfo(accessToken string, realmName string) (OidcUserInf
 	var err = c.get(accessToken, &response, fmt.Sprintf("/auth/realms/%s/protocol/openid-connect/userinfo", realmName))
 	return response, err
 }
+
+// Get User Profile Config returns user profile attributes.
+func (c *Client) GetUPConfig(accessToken string, realmName string) (any, error) {
+	var config any
+	var err = c.get(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
+	return config, err
+}
+
+// Update User Profile Config updates user profile attributes.
+func (c *Client) UpdateUPConfig(accessToken string, realmName string, config map[string]any) error {
+	var err = c.put(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
+	return err
+}
