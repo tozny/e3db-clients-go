@@ -115,7 +115,13 @@ func (c *ClientServiceClient) InternalRegister(ctx context.Context, params Clien
 	if err != nil {
 		return result, err
 	}
-	err = e3dbClients.MakePublicCall(ctx, c.requester, req, &result)
+	resp, err := e3dbClients.ReturnE3dbServiceCall(ctx, c.requester, req, &result)
+	if err != nil {
+		return result, e3dbClients.NewError(err.Error(), path, 0)
+	}
+	// TODO: add this response as a field in account service so we don't have to parse it from the header here.
+	backupClient := resp.Header.Get("X-Backup-Client")
+	result.RootClientID = backupClient
 	return result, err
 }
 

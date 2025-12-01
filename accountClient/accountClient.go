@@ -63,6 +63,16 @@ func (c *E3dbAccountClient) InternalAccountDelete(ctx context.Context, accountID
 	return e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, nil)
 }
 
+// DeleteAccount deletes all the resources for an account, this endpoint has queen authentication and can be disabled
+func (c *E3dbAccountClient) DeleteAccount(ctx context.Context, params DeleteAccountRequestData) error {
+	path := c.Host + "/" + AccountServiceBasePath + "/" + params.AccountID.String()
+	request, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	return e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), request, nil)
+}
+
 // InternalGetClientAccount attempts to get the account id and other account information for the specified client id
 func (c *E3dbAccountClient) InternalGetClientAccount(ctx context.Context, clientID string) (*InternalGetClientAccountResponse, error) {
 	var result *InternalGetClientAccountResponse

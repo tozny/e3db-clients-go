@@ -74,7 +74,8 @@ type BackfillClientSigningKeysRequest struct {
 // ClientRegisterResponse sends back the client information for a newly registered client
 type ClientRegisterResponse struct {
 	Client
-	APISecret string `json:"api_secret"`
+	APISecret    string `json:"api_secret"`
+	RootClientID string
 }
 
 type ClientInfoForSignatureRequest struct {

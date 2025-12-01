@@ -1,6 +1,8 @@
 package accountClient
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 )
 
@@ -176,19 +178,40 @@ type TokenPermissions struct {
 }
 
 // RegTokenInfo is the return from the token endpoint on a valid request
+
+type RegTokenPermissions struct {
+	Enabled      bool     `json:"enabled"`
+	OneTime      bool     `json:"one_time"`
+	AllowedTypes []string `json:"allowed_types"`
+}
+
+func (p *RegTokenPermissions) UnmarshalJSON(data []byte) error {
+	// Case 1: permissions is a string (invalid, empty, or legacy)
+	var asString string
+	if err := json.Unmarshal(data, &asString); err == nil {
+		// Treat empty/legacy string as zero-value permissions
+		*p = RegTokenPermissions{}
+		return nil
+	}
+
+	// Case 2: permissions is a JSON object → unmarshal normally
+	type alias RegTokenPermissions
+	var tmp alias
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	*p = RegTokenPermissions(tmp)
+	return nil
+}
+
 type RegTokenInfo struct {
-	Token            string
+	Token            string              `json:"token"`
 	AccountID        uuid.UUID           `json:"account_id"`
 	Permissions      RegTokenPermissions `json:"permissions"`
 	Name             string              `json:"name"`
 	TotalAllowedUses int                 `json:"total_uses_allowed"`
 	Uses             int                 `json:"uses"`
-}
-
-// RegTokenPermissions decodes needed token permissions
-type RegTokenPermissions struct {
-	Enabled      bool
-	AllowedTypes []string `json:"allowed_types"`
 }
 
 // InternalGetAccountInfoResponse represents a response from calling the account service
