@@ -94,7 +94,7 @@ type PrivateRealmInfo struct {
 	TozIDFederationEnabled         bool      `json:"tozid_federation_enabled"`
 	MPCEnabled                     bool      `json:"mpc_enabled"`
 	DisableAccountTabForIdentities bool      `json:"disable_account_tab_for_identities"`
-	AllowCrossRealmCommunication   bool      `json:"allow_cross_realm_communication,omitempty"`
+	BlockCrossRealmCommunication   bool      `json:"block_cross_realm_communication,omitempty"`
 }
 
 // PublicRealm represents the public information about a realm resource
@@ -1001,7 +1001,7 @@ type RealmSettingsUpdateRequest struct {
 	MPCEnabled                   *bool     `json:"mpc_enabled,omitempty"`
 	ForgotPasswordCustomLink     *string   `json:"forgot_password_custom_link,omitempty"`
 	ForgotPasswordCustomText     *string   `json:"forgot_password_custom_text,omitempty"`
-	AllowCrossRealmCommunication *bool     `json:"allow_cross_realm_communication,omitempty"`
+	BlockCrossRealmCommunication *bool     `json:"block_cross_realm_communication,omitempty"`
 }
 
 // CreateAccessRequestRequest wraps parameters for creating a new open Access Request
@@ -1579,4 +1579,31 @@ type InternalFetchClientsRealmsRequest struct {
 
 type InternalFetchClientsRealmsResponse struct {
 	Results map[uuid.UUID]string `json:"results"` // map of client id to realm name
+}
+
+// AllowedSharesRequest wraps a request to get a list of users that a user is allowed to share with
+type AllowedSharesRequest struct {
+	Sharer     string   `json:"sharer"`
+	Recipients []string `json:"recipients"`
+}
+
+// AllowedSharesResponse returns a list of users that a user is allowed to share with
+type AllowedSharesResponse struct {
+	ValidRecipients   []string `json:"valid_recipients"`
+	InvalidRecipients []string `json:"invalid_recipients"`
+}
+
+type AddTrustedRealmRequest struct {
+	RequestedRealm string `json:"requested_realm"`
+}
+
+type AddTrustedRealmResponse struct {
+	RequestingRealmStatus string `json:"requesting_realm_status"`
+	RequestedRealmStatus  string `json:"requested_realm_status"`
+}
+
+type GetTrustedRealmsResponse struct {
+	MutuallyTrusted  []string `json:"mutually_trusted"`
+	OutgoingRequests []string `json:"outgoing_requests"`
+	IncomingRequests []string `json:"incoming_requests"`
 }

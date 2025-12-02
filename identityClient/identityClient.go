@@ -1729,3 +1729,37 @@ func (c *E3dbIdentityClient) InitiateIdentityProviderLogin(ctx context.Context, 
 	err = e3dbClients.MakeRawServiceCall(c.requester, req, &resp)
 	return resp, err
 }
+
+// GetAllowedReads gets a list of all users that a specific user is allowed to share with, based on realm sharing settings
+func (c *E3dbIdentityClient) GetAllowedReads(ctx context.Context, params AllowedSharesRequest) (*AllowedSharesResponse, error) {
+	var resp *AllowedSharesResponse
+	path := c.Host + internalIdentityServiceBasePath + "/" + realmResourceName + "/allowed_shares"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+func (c *E3dbIdentityClient) AddTrustedRealm(ctx context.Context, requestingRealm string, params AddTrustedRealmRequest) (*AddTrustedRealmResponse, error) {
+	var resp *AddTrustedRealmResponse
+	path := c.Host + identityServiceBasePath + "/admin/realm/" + requestingRealm + "/trusted"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
+
+func (c *E3dbIdentityClient) GetTrustedRealms(ctx context.Context, requestingRealm string) (*GetTrustedRealmsResponse, error) {
+	var resp *GetTrustedRealmsResponse
+	path := c.Host + identityServiceBasePath + "/admin/realm/" + requestingRealm + "/trusted"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &resp)
+	return resp, err
+}
