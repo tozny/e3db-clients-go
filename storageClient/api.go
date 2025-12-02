@@ -393,6 +393,41 @@ type Record struct {
 	RecordSignature string            `json:"rec_sig,omitempty"`
 }
 
+type LockResponse struct {
+	IsLockedByOtherUser bool   `json:"is_locked_by_other_user"`
+	LockedUser          string `json:"locked_user"`
+}
+type ClientKey struct {
+	Curve25519 string `json:"curve25519"`
+}
+
+// GetEAKResponse contains the api representation of fetching an encrypted access key.
+type GetEAKResponse struct {
+	EAK                 string              `json:"eak"`
+	AuthorizerID        string              `json:"authorizer_id"`
+	AuthorizerPublicKey ClientKey           `json:"authorizer_public_key"`
+	AccessKeyWrappers   *[]AccessKeyWrapper `json:"access_key_wrappers,omitempty"`
+}
+
+type ListedRecord struct {
+	Metadata          Meta              `json:"meta"`
+	Data              map[string]string `json:"record_data"`
+	SharingModel      string            `json:"sharing_model"`
+	AccessKey         *GetEAKResponse   `json:"access_key"`
+	GroupAccessKey    *GetEAKResponse   `json:"group_access_key"`
+	RecordSignature   string            `json:"rec_sig,omitempty"`
+	ClientsSharedWith []string          `json:"clients_shared_with,omitempty"`
+}
+
+type ReadRecordsBatchRequest struct {
+	RecordIDs   []uuid.UUID `json:"recordIds"`
+	IncludeData bool        `json:"include_data"`
+}
+
+type BatchGetRecordsResult struct {
+	Records []ListedRecord `json:"records"`
+}
+
 // Meta contains meta-information about an E3DB record, such as
 // who wrote it, when it was written, and the type of the data stored.
 // This is a copy of the PDS client Meta, except that it enforces UUID typing to match the database

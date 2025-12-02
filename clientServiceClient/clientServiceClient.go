@@ -286,6 +286,17 @@ func (c *ClientServiceClient) EmailChallenge(ctx context.Context, params IssueEm
 	return result, err
 }
 
+func (c *ClientServiceClient) VerifyEmailChallenge(ctx context.Context, params VerifyEmailChallengeRequest) (string, error) {
+	var result string
+	path := c.Host + "/internal/" + ClientServiceBasePath + "challenge/email"
+	req, err := e3dbClients.CreateRequest("PATCH", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
 func (c *ClientServiceClient) HealthCheck(ctx context.Context) error {
 	path := c.Host + "/" + ClientServiceBasePath + "healthcheck"
 	req, err := e3dbClients.CreateRequest("GET", path, nil)

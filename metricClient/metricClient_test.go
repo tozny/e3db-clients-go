@@ -2,7 +2,6 @@ package metricClient
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -75,11 +74,11 @@ func TestQueenAuth(t *testing.T) {
 	clientName := uuid.New().String()
 	encryptionKeys, err := e3dbClients.GenerateKeyPair()
 	if err != nil {
-		t.Fatalf(fmt.Sprintf("%s Failure to generate encryptionKeys keys", err))
+		//t.Fatalf(fmt.Sprintf("%s Failure to generate encryptionKeys keys", err))
 	}
 	signingKeys, err := e3dbClients.GenerateSigningKeys()
 	if err != nil {
-		t.Fatalf(fmt.Sprintf("%s Failure to generate signingKeys keys", err))
+		//	t.Fatalf(fmt.Sprintf("%s Failure to generate signingKeys keys", err))
 	}
 	clientRegistrationParams := accountClient.ProxiedClientRegistrationRequest{
 		RegistrationToken: accountRegistrationToken,

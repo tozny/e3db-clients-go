@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/tozny/e3db-clients-go/authClient"
@@ -739,6 +740,153 @@ func (c *StorageClient) GrantedAuthorizations(ctx context.Context, params Search
 func (c *StorageClient) WriteRecord(ctx context.Context, params Record) (*Record, error) {
 	var result *Record
 	path := c.Host + storageServiceBasePath + "/records"
+	req, err := e3dbClients.CreateRequest("POST", path, params)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeE3DBServiceCall(ctx, c.requester, c.E3dbAuthClient.TokenSource(), req, &result)
+	return result, err
+}
+
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) DeleteRecord(ctx context.Context, recordId string, versionId string) (*BulkRecordDeleteResponseErrors, error) {
+	var result *BulkRecordDeleteResponseErrors
+	path := c.Host + storageServiceBasePath + "/records/safe" + "/" + recordId + "/" + versionId
+	req, err := e3dbClients.CreateRequest("DELETE", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) ReadRecord(ctx context.Context, recordId string, fields []string) (*Record, error) {
+	var result *Record
+	path := c.Host + storageServiceBasePath + "/records" + "/" + recordId
+	// Add fields as query params if provided
+	if len(fields) > 0 {
+		q := url.Values{}
+		for _, f := range fields {
+			q.Add("field", f)
+		}
+		path = path + "?" + q.Encode()
+	}
+
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// GetLockStatus get lock status of the record
+func (c *StorageClient) GetLockStatus(ctx context.Context, recordId string) (*LockResponse, error) {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records" + "/" + recordId + "/lock_status"
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+// CreateEditRequest send request the record's owner for editing the shared recird
+func (c *StorageClient) CreateEditRequest(ctx context.Context, recordId string, versionId string) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/share/edit/create_request" + "/" + recordId + "/" + versionId
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// Endpoint to get all edit request sent by the logged user
+func (c *StorageClient) GetAllRequestedEditRequest(ctx context.Context, recordId string, versionId string) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/share/edit/request/sent"
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// Endpoint to get all edit request received to the logged user who's the owner of the record
+func (c *StorageClient) GetAllReceivedEditRequest(ctx context.Context, recordId string, versionId string) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/share/edit/request/received"
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// Endpoint to get all edit request's logged by the user
+func (c *StorageClient) GetAllEditRequest(ctx context.Context) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/share/edit/request/all"
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// Endpoint to approve the received request
+func (c *StorageClient) ApproveEditRequest(ctx context.Context, recordId string) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/edit/allow/" + recordId
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// Endpoint to deny the received request
+func (c *StorageClient) DenyEditRequest(ctx context.Context, recordId string, versionId string) error {
+	var result *LockResponse
+	path := c.Host + storageServiceBasePath + "/records/edit/deny/" + recordId
+	// Add fields as query params if provided
+	req, err := e3dbClients.CreateRequest("PUT", path, nil)
+	if err != nil {
+		return err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return err
+}
+
+// BulkDeleteRecords removes all records passed in
+func (c *StorageClient) ReadRecordBatch(ctx context.Context, param ReadRecordsBatchRequest) (*BatchGetRecordsResult, error) {
+	var result *BatchGetRecordsResult
+	path := c.Host + storageServiceBasePath + "/records"
+
+	req, err := e3dbClients.CreateRequest("GET", path, param)
+	if err != nil {
+		return result, err
+	}
+	err = e3dbClients.MakeSignedServiceCall(ctx, c.requester, req, c.SigningKeys, c.ClientID, &result)
+	return result, err
+}
+
+func (c *StorageClient) UpdateRecord(ctx context.Context, recordId string, versionId string, params Record) (*Record, error) {
+	var result *Record
+	path := c.Host + storageServiceBasePath + "/records/safe/edit/" + recordId + "/" + versionId
 	req, err := e3dbClients.CreateRequest("POST", path, params)
 	if err != nil {
 		return result, err
