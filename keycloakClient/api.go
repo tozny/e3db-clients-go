@@ -765,3 +765,31 @@ type IdentityProviderMapperResponse struct {
 type OidcUserInfoResponse struct {
 	SubjectId string `json:"sub"`
 }
+
+// OrganizationDomainRepresentation maps to Keycloak's OrganizationDomainRepresentation.
+type OrganizationDomainRepresentation struct {
+	Name     *string `json:"name,omitempty"`
+	Verified *bool   `json:"verified,omitempty"`
+}
+
+// OrganizationRepresentation maps to Keycloak's OrganizationRepresentation.
+type OrganizationRepresentation struct {
+	ID          *string                             `json:"id,omitempty"`
+	Name        *string                             `json:"name,omitempty"`
+	Alias       *string                             `json:"alias,omitempty"`
+	Description *string                             `json:"description,omitempty"`
+	RedirectURL *string                             `json:"redirectUrl,omitempty"`
+	Enabled     *bool                               `json:"enabled,omitempty"`
+	Domains     *[]OrganizationDomainRepresentation `json:"domains,omitempty"`
+	Attributes  *map[string][]string                `json:"attributes,omitempty"`
+}
+
+// OrganizationMemberRepresentation is the slim user object returned by the members endpoint.
+type OrganizationMemberRepresentation struct {
+	ID        *string `json:"id,omitempty"`
+	Username  *string `json:"username,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+	Enabled   *bool   `json:"enabled,omitempty"`
+}
