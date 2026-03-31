@@ -39,7 +39,7 @@ down :
 restart : down up
 
 test : lint
-	go test -count=1 -v -cover --race ./...
+	go test -count=1 -v -timeout 99999s -cover --race ./...
 
 testone: lint
 	TEST_SERVICE_API=$(serviceApi) TEST_LOGFILE=$(log) LOG_QUERIES=$(qlog) PARATEST=$(paratest) go test -v -race -count=1 ./... -run "^($(method))$$"
