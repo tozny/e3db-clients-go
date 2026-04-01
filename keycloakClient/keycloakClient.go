@@ -69,6 +69,10 @@ const (
 	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
 	toznyInternalAuthzMap                        = "__ToznyInternalAuthzMap"
 	toznyInternalAuthzResource                   = "__ToznyInternalAuthz"
+
+	//Keycloak 26+, Organization
+	organizationResourceName = "organizations"
+	memberResourceName       = "members"
 )
 
 var (
@@ -1371,10 +1375,11 @@ func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, d
 	return nil
 }
 
-const (
-	organizationResourceName = "organizations"
-	memberResourceName       = "members"
-)
+// Update User Profile Config updates user profile attributes.
+func (c *Client) UpdateUPConfig(accessToken string, realmName string, config map[string]any) error {
+	var err = c.put(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
+	return err
+}
 
 // CreateOrganization creates a new organization in the given realm.
 // Keycloak: POST /auth/admin/realms/{realm}/organizations
@@ -1392,12 +1397,6 @@ func (c *Client) CreateOrganization(accessToken string, realmName string, org Or
 // DeleteOrganization deletes the organization.
 func (c *Client) DeleteOrganization(accessToken string, realmName, organizationID string) error {
 	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, organizationResourceName, organizationID))
-}
-
-// Update User Profile Config updates user profile attributes.
-func (c *Client) UpdateUPConfig(accessToken string, realmName string, config map[string]any) error {
-	var err = c.put(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
-	return err
 }
 
 // GetOrganization fetches a single organization by its ID.
@@ -1499,32 +1498,6 @@ func (c *Client) UpdateOrganization(accessToken string, realmName string, organi
 	)
 	return c.put(accessToken, org, path)
 }
-
-// AddOrganizationMember adds an existing realm user to an organization.
-// Keycloak: POST /auth/admin/realms/{realm}/organizations/{organizationId}/members
-
-// Body: the plain Keycloak user UUID string.
-/*func (c *Client) AddOrganizationMember(accessToken string, realmName string, organizationID string, userID string) error {
-	encodedOrgID := url.PathEscape(organizationID)
-	path := fmt.Sprintf("%s/%s/%s/%s/%s",
-		realmRootPath,
-		realmName,
-		organizationResourceName,
-		encodedOrgID,
-		memberResourceName,
-	)
-	// json.Marshal on a bare string → "0cc8f05d-..."
-	// Keycloak strips the surrounding quotes internally (replaceAll("^\"|\"$", ""))
-	// Do NOT pass a struct — that produces {"id":"..."} which is NOT a quoted string
-	body, err := json.Marshal(userID)
-	if err != nil {
-		return err
-	}
-	// Keycloak expects the user ID as a plain JSON string in the body
-	_, err = c.post(accessToken, body, path)
-	return err
-}*/
-
 func (c *Client) AddOrganizationMember(accessToken string, realmName string, organizationID string, userID string) error {
 	encodedOrgID := url.PathEscape(organizationID)
 	path := fmt.Sprintf("%s/%s/%s/%s/%s",
