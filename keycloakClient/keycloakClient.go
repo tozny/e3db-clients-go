@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -68,6 +69,10 @@ const (
 	toznyInternalUserPolicyName                  = "__ToznyInternalUserPolicy"
 	toznyInternalAuthzMap                        = "__ToznyInternalAuthzMap"
 	toznyInternalAuthzResource                   = "__ToznyInternalAuthz"
+
+	//Keycloak 26+, Organization
+	organizationResourceName = "organizations"
+	memberResourceName       = "members"
 )
 
 var (
@@ -1370,6 +1375,44 @@ func (c *Client) requestWithQueryParams(accessToken string, req *http.Request, d
 	return nil
 }
 
+// Update User Profile Config updates user profile attributes.
+func (c *Client) UpdateUPConfig(accessToken string, realmName string, config map[string]any) error {
+	var err = c.put(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
+	return err
+}
+
+// CreateOrganization creates a new organization in the given realm.
+// Keycloak: POST /auth/admin/realms/{realm}/organizations
+// Returns the Location header value (URL of the created resource).
+func (c *Client) CreateOrganization(accessToken string, realmName string, org OrganizationRepresentation) (string, error) {
+	path := fmt.Sprintf("%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+	)
+	location, err := c.post(accessToken, org, path)
+	return location, err
+}
+
+// DeleteOrganization deletes the organization.
+func (c *Client) DeleteOrganization(accessToken string, realmName, organizationID string) error {
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s", realmRootPath, realmName, organizationResourceName, organizationID))
+}
+
+// GetOrganization fetches a single organization by its ID.
+// Keycloak: GET /auth/admin/realms/{realm}/organizations/{organizationId}
+func (c *Client) GetOrganization(accessToken string, realmName string, organizationID string) (OrganizationRepresentation, error) {
+	var resp OrganizationRepresentation
+	encodedOrgID := url.PathEscape(organizationID)
+	err := c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+		encodedOrgID,
+	))
+	return resp, err
+}
+
 // Create New Identity Provider
 func (c *Client) CreateIdentityProvider(accessToken string, realmName string, provider IdentityProviderRequestRepresentation) (string, error) {
 	return c.post(accessToken, provider, fmt.Sprintf("/auth/admin/realms/%s/identity-provider/instances", realmName))
@@ -1430,8 +1473,101 @@ func (c *Client) GetUPConfig(accessToken string, realmName string) (any, error) 
 	return config, err
 }
 
-// Update User Profile Config updates user profile attributes.
-func (c *Client) UpdateUPConfig(accessToken string, realmName string, config map[string]any) error {
-	var err = c.put(accessToken, &config, fmt.Sprintf("/auth/admin/realms/%s/users/profile", realmName))
-	return err
+// ListOrganizations returns all organizations for the given realm.
+// Keycloak: GET /auth/admin/realms/{realm}/organizations
+func (c *Client) ListOrganizations(accessToken string, realmName string) ([]OrganizationRepresentation, error) {
+	var resp []OrganizationRepresentation
+	err := c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s",
+		userExtensionPath,
+		realmName,
+		adminResourceName,
+		organizationResourceName,
+	))
+	return resp, err
+}
+
+// UpdateOrganization updates an existing organization.
+// Keycloak: PUT /auth/admin/realms/{realm}/organizations/{organizationId}
+func (c *Client) UpdateOrganization(accessToken string, realmName string, organizationID string, org OrganizationRepresentation) error {
+	encodedOrgID := url.PathEscape(organizationID)
+	path := fmt.Sprintf("%s/%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+		encodedOrgID,
+	)
+	return c.put(accessToken, org, path)
+}
+func (c *Client) AddOrganizationMember(accessToken string, realmName string, organizationID string, userID string) error {
+	encodedOrgID := url.PathEscape(organizationID)
+	path := fmt.Sprintf("%s/%s/%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+		encodedOrgID,
+		memberResourceName,
+	)
+
+	fullURL := c.apiURL.String() + path
+
+	// Keycloak @Consumes requires application/json.
+	// The endpoint strips surrounding quotes internally (replaceAll("^\"|\"$", ""))
+	// so send a JSON-encoded string: "0cc8f05d-..." — NOT a struct, NOT []byte
+	body, err := json.Marshal(userID) // produces: "0cc8f05d-72fd-49fa-a83b-bac9164a3e0c"
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fullURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	req, err = setAuthorizationAndHostHeaders(req, accessToken)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json") // required by @Consumes
+
+	resp, err := e3dbClients.ReturnRawServiceCall(c.httpClient, req, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("server http error %d: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+// ListOrganizationMembers returns all members of an organization.
+// Keycloak: GET /auth/admin/realms/{realm}/organizations/{organizationId}/members
+func (c *Client) ListOrganizationMembers(accessToken string, realmName string, organizationID string) ([]OrganizationMemberRepresentation, error) {
+	var resp []OrganizationMemberRepresentation
+	encodedOrgID := url.PathEscape(organizationID)
+	err := c.get(accessToken, &resp, fmt.Sprintf("%s/%s/%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+		encodedOrgID,
+		memberResourceName,
+	))
+	return resp, err
+}
+
+// RemoveOrganizationMember removes a member from an organization.
+// Keycloak: DELETE /auth/admin/realms/{realm}/organizations/{organizationId}/members/{userId}
+func (c *Client) RemoveOrganizationMember(accessToken string, realmName string, organizationID string, userID string) error {
+	encodedOrgID := url.PathEscape(organizationID)
+	encodedUserID := url.PathEscape(userID)
+	return c.delete(accessToken, nil, fmt.Sprintf("%s/%s/%s/%s/%s/%s",
+		realmRootPath,
+		realmName,
+		organizationResourceName,
+		encodedOrgID,
+		memberResourceName,
+		encodedUserID,
+	))
 }
