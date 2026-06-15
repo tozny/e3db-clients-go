@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	jwt "github.com/gbrlsnchs/jwt/v2"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
 	e3dbClients "github.com/tozny/e3db-clients-go"
 	"gopkg.in/h2non/gentleman.v2"
@@ -283,17 +283,13 @@ func extractHostFromToken(token string) (string, error) {
 	return urlIssuer.Host, nil
 }
 
-func extractIssuerFromToken(token string) (string, error) {
-	payload, _, err := jwt.Parse(token)
+func extractIssuerFromToken(tokenStr string) (string, error) {
+	var claims jwt.RegisteredClaims
+	_, _, err := jwt.NewParser().ParseUnverified(tokenStr, &claims)
 	if err != nil {
-		return "", fmt.Errorf("Could not parse token %s with error: %+v", token, err)
+		return "", fmt.Errorf("Could not parse token %s with error: %+v", tokenStr, err)
 	}
-	var jot Token
-	err = jwt.Unmarshal(payload, &jot)
-	if err != nil {
-		return "", fmt.Errorf("Could not unmarshal token with payload %+v with error: %+v", payload, err)
-	}
-	return jot.Issuer, nil
+	return claims.Issuer, nil
 }
 
 func (c *Client) post(accessToken string, data interface{}, url string) (string, error) {

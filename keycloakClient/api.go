@@ -470,7 +470,6 @@ func (e HTTPError) Error() string {
 }
 
 type Token struct {
-	hdr            *header
 	Issuer         string `json:"iss,omitempty"`
 	Subject        string `json:"sub,omitempty"`
 	ExpirationTime int64  `json:"exp,omitempty"`
@@ -478,13 +477,6 @@ type Token struct {
 	IssuedAt       int64  `json:"iat,omitempty"`
 	ID             string `json:"jti,omitempty"`
 	Username       string `json:"preferred_username,omitempty"`
-}
-
-type header struct {
-	Algorithm   string `json:"alg,omitempty"`
-	KeyID       string `json:"kid,omitempty"`
-	Type        string `json:"typ,omitempty"`
-	ContentType string `json:"cty,omitempty"`
 }
 
 type UserDetailsRepresentation struct {
