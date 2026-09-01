@@ -138,7 +138,7 @@ func (c *Client) AutoRefreshToken(realm string, username string, password string
 	info.autorefreshes = true
 	info.onRefreshFailure = onFailure
 	// Pass in arguments to allow original args to get garbage collected.
-	info.refresher = c.tokenAutoRefresher(info.Expires, username, username, password, onFailure)
+	info.refresher = c.tokenAutoRefresher(info.Expires, realm, username, password, onFailure)
 }
 
 // toTokenJson translated the expiration info in a tokenJSON to a full token with time.Time
