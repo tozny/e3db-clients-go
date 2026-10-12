@@ -904,7 +904,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Missing class in class list of user LDAP classes -- looked for %q in %+v", c, expectedLDAPData.Classes)
+			t.Errorf("Missing class in class list of user LDAP classes -- looked for %d in %+v", c, expectedLDAPData.Classes)
 		}
 	}
 	if len(fetchedData.Groups) != len(expectedLDAPData.Groups) {
@@ -919,7 +919,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Missing group in group list of user LDAP groups -- looked for %q in %+v", c, expectedLDAPData.Groups)
+			t.Errorf("Missing group in group list of user LDAP groups -- looked for %d in %+v", c, expectedLDAPData.Groups)
 		}
 	}
 	if len(fetchedData.Roles) != len(expectedLDAPData.Roles) {
@@ -934,7 +934,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Missing role in role list of user LDAP roles -- looked for %q in %+v", c, expectedLDAPData.Roles)
+			t.Errorf("Missing role in role list of user LDAP roles -- looked for %d in %+v", c, expectedLDAPData.Roles)
 		}
 	}
 	if len(fetchedData.ReadOnlyAttributes) != len(expectedLDAPData.ReadOnlyAttributes) {
@@ -949,7 +949,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Missing read only attribute in list of user LDAP read only attributes -- looked for %q in %+v", c, expectedLDAPData.ReadOnlyAttributes)
+			t.Errorf("Missing read only attribute in list of user LDAP read only attributes -- looked for %d in %+v", c, expectedLDAPData.ReadOnlyAttributes)
 		}
 	}
 	if len(fetchedData.Attributes) != len(expectedLDAPData.Attributes) {
@@ -972,7 +972,7 @@ func TestInternalLDAPCacheCRUD(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("Missing item in attribute list %q of user LDAP read only attributes -- looked for %q in %+v", name, c, expectedAttrs)
+				t.Errorf("Missing item in attribute list %q of user LDAP read only attributes -- looked for %d in %+v", name, c, expectedAttrs)
 			}
 		}
 	}
